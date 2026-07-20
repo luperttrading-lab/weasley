@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Standort-Uhr</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&display=swap');
+</style>
+<style>
+  :root{--ink:#46330f;--ink2:#34250b;--bord:#6e1a24;--creme:#f3e9d2;--messing:#c79a3e;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'EB Garamond',Georgia,serif;color:var(--creme);
+    background:radial-gradient(125% 95% at 50% 0%, #3a2a18 0%, #241810 55%, #150d06 100%);
+    min-height:100%;display:flex;flex-direction:column;align-items:center;
+    padding:16px 12px calc(20px + env(safe-area-inset-bottom));overflow-x:hidden;
+  }
+  .bgfix{position:fixed;inset:0;z-index:0;background:radial-gradient(125% 95% at 50% 0%, #3a2a18 0%, #241810 55%, #120b05 100%);}
+  .wrap{position:relative;z-index:1;width:100%;max-width:470px;display:flex;flex-direction:column;align-items:center;}
+  .titel{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(19px,5.4vw,25px);letter-spacing:.13em;color:#e8cf8a;text-align:center;margin:2px 0;text-shadow:0 1px 0 #000,0 0 14px rgba(199,154,62,.25);}
+  .sub{font-style:italic;font-size:13.5px;color:#c8b58a;opacity:.85;margin-bottom:10px;}
+  .stage{width:min(93vw,450px);aspect-ratio:1/1;touch-action:none;}
+  svg{width:100%;height:100%;display:block;touch-action:none;}
+  .hit{cursor:pointer;fill:transparent;transition:fill .12s;}
+  .hit:active{fill:rgba(231,216,180,.16);}
+  .status{width:100%;min-height:62px;display:flex;align-items:center;justify-content:center;text-align:center;margin:16px 0 4px;padding:0 8px;font-size:clamp(19px,5.6vw,25px);line-height:1.3;}
+  .status .nm{font-family:'Cinzel',serif;font-weight:700;color:#e8cf8a;letter-spacing:.03em;}
+  .status .ort{font-style:italic;}
+  .status .gef{color:#ef9aa3;font-weight:600;}
+  .people{display:flex;gap:14px;justify-content:center;width:100%;}
+  .chip{padding:6px;border-radius:50%;background:linear-gradient(#34250f,#241809);border:1px solid #5a4322;cursor:pointer;display:grid;place-items:center;transition:border-color .16s,box-shadow .16s,transform .07s;}
+  .chip:active{transform:scale(.94);}
+  .chip.on{border-color:var(--messing);box-shadow:0 0 0 1px var(--messing),0 0 12px rgba(199,154,62,.4);}
+  .dot{width:30px;height:30px;border-radius:50%;flex:none;border:1.5px solid rgba(244,233,210,.55);}
+  .hint{margin-top:12px;font-size:13px;font-style:italic;color:#bca987;opacity:.8;text-align:center;max-width:300px;line-height:1.45;}
+  .gpsbtn{margin-top:16px;font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:.06em;
+    color:#efd79a;background:linear-gradient(#3d2e1d,#241a10);border:1.5px solid #7d5f30;border-radius:999px;
+    padding:11px 24px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+    box-shadow:0 2px 9px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,222,150,.16);}
+  .gpsbtn:active{transform:translateY(1px);}
+  .gpsbtn[disabled]{opacity:.55;}
+  .gpsmsg{min-height:40px;margin-top:9px;font-size:13.5px;font-style:italic;color:#c3b08c;
+    text-align:center;max-width:320px;line-height:1.45;display:flex;align-items:center;justify-content:center;}
+  .gpsmsg .ok{color:#9ecf9e;font-style:normal;}
+  .gpsmsg .warn{color:#e8b48a;}
+  .ver{margin-top:14px;margin-bottom:6px;font-size:11px;letter-spacing:.14em;color:#8a7a5e;opacity:.55;}
+</style>
+</head>
+<body>
+<div class="bgfix"></div>
+<div class="wrap">
+  <div class="titel">DIE STANDORT&middot;UHR</div>
+  <div class="sub">&mdash; wer ist gerade wo &mdash;</div>
+  <div class="stage"><svg id="clock" viewBox="0 0 400 400"></svg></div>
+  <div class="status" id="status"></div>
+  <div class="people" id="people"></div>
+  <button class="gpsbtn" id="gpsbtn">Standort erkennen</button>
+  <div class="gpsmsg" id="gpsmsg"></div>
+  <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
+  <div class="ver">v0.15</div>
+</div>
+<script>
+const CX=200,CY=200,SVGNS='http://www.w3.org/2000/svg';
+function E(t,a){const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function polar(r,deg){const a=deg*Math.PI/180;return{x:CX+r*Math.sin(a),y:CY-r*Math.cos(a)};}
+function arc(r,a0,a1,sw){const p0=polar(r,a0),p1=polar(r,a1);const big=Math.abs(a1-a0)>180?1:0;return `M${p0.x.toFixed(2)} ${p0.y.toFixed(2)} A${r} ${r} 0 ${big} ${sw} ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;}
+const svg=document.getElementById('clock');
+
+const orte=[
+  {t:'ERLENTAL'},{t:'SCHULE'},{t:'SCHWIMMBAD'},{t:'TISCHTENNIS'},
+  {t:'BEI FREUNDEN'},{t:'UNTERWEGS'},{t:'VERSCHOLLEN'},{t:'IN GEFAHR',danger:true}
+];
+const N=orte.length,STEP=360/N;
+const ortName={0:'in Erlental',1:'in der Schule',2:'im Schwimmbad',3:'in der Tischtennishalle',4:'bei Freunden',5:'unterwegs',6:'verschollen',7:'in Gefahr'};
+
+// ============ GPS-ZONEN ============
+// Koordinaten hier eintragen (Dezimalgrad). null = noch kein Ort hinterlegt.
+// r = Radius in Metern: großzügig wählen (Gelände, nicht Hauseingang).
+const ortGPS={
+  0:{lat:50.6479779, lon:8.6739803, r:250},   // ERLENTAL
+  1:null,                                      // SCHULE
+  2:null,                                      // SCHWIMMBAD
+  3:null,                                      // TISCHTENNIS
+  4:null,                                      // BEI FREUNDEN
+  //  5 = UNTERWEGS  -> Rückfallwert, bekommt bewusst KEINE Zone
+  6:null,                                      // VERSCHOLLEN  (nie automatisch)
+  7:null                                       // IN GEFAHR    (nie automatisch)
+};
+const SEK_UNTERWEGS=5;
+
+// Entfernung zweier Koordinaten in Metern (Haversine, Erdradius 6371 km)
+function distM(la1,lo1,la2,lo2){
+  const R=6371000, t=Math.PI/180;
+  const dla=(la2-la1)*t, dlo=(lo2-lo1)*t;
+  const a=Math.sin(dla/2)**2 + Math.cos(la1*t)*Math.cos(la2*t)*Math.sin(dlo/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(a)));
+}
+// Passenden Ort suchen: nur Zonen, in deren Radius man liegt; bei mehreren die nächste.
+// Kein Treffer -> unterwegs.
+function ortAusGPS(lat,lon){
+  let best=null,bd=Infinity;
+  for(const s in ortGPS){const z=ortGPS[s];if(!z)continue;
+    const d=distM(lat,lon,z.lat,z.lon);
+    if(d<=z.r && d<bd){bd=d;best=+s;}}
+  return {sektor: best===null?SEK_UNTERWEGS:best, dist: best===null?null:bd};
+}
+
+const personen=[
+  {name:'Claudia',ton:'#a8423f',sektor:0},
+  {name:'Lutz',   ton:'#3f5e91',sektor:5},
+  {name:'Anton',  ton:'#3c7d52',sektor:2},
+  {name:'Emilia', ton:'#8a5a9e',sektor:1},
+  {name:'Leander',ton:'#2f8a8a',sektor:4},
+];
+let aktiv=0;
+
+// ================= DEFS =================
+const defs=E('defs',{});
+defs.innerHTML=`
+  <radialGradient id="perg" cx="50%" cy="45%" r="62%"><stop offset="0%" stop-color="#f3e8ca"/><stop offset="62%" stop-color="#e6d4a8"/><stop offset="100%" stop-color="#cdb582"/></radialGradient>
+  <radialGradient id="nabe" cx="40%" cy="32%" r="78%"><stop offset="0%" stop-color="#f6e0a0"/><stop offset="55%" stop-color="#b88e32"/><stop offset="100%" stop-color="#604a1c"/></radialGradient>
+  <linearGradient id="silv" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0%" stop-color="#eef1f4"/><stop offset="25%" stop-color="#9aa0a6"/><stop offset="50%" stop-color="#c4cace"/><stop offset="62%" stop-color="#6f757b"/><stop offset="100%" stop-color="#42474c"/></linearGradient>
+  <linearGradient id="silvD" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#aeb4ba"/><stop offset="55%" stop-color="#5a6066"/><stop offset="100%" stop-color="#2e3338"/></linearGradient>
+  <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".5"/><stop offset="42%" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <linearGradient id="silvTxt" x1="0" y1="0" x2="0.12" y2="1"><stop offset="0%" stop-color="#cfd4d9"/><stop offset="30%" stop-color="#848a90"/><stop offset="52%" stop-color="#525860"/><stop offset="74%" stop-color="#353b42"/><stop offset="100%" stop-color="#20252b"/></linearGradient>
+  <radialGradient id="vign" cx="50%" cy="48%" r="60%"><stop offset="68%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(40,22,8,.4)"/></radialGradient>
+  <filter id="patina"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.26 0 0 0 0 0.18 0 0 0 0 0.08 0 0 0 0.5 0"/></filter>
+  <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.2 0 0 0 0 0.13 0 0 0 0 0.05 0 0 0 0.18 0"/></filter>
+  <filter id="sh"><feDropShadow dx="0" dy="1.1" stdDeviation="1.3" flood-color="#2a1c0c" flood-opacity=".5"/></filter>
+  <filter id="zsh"><feDropShadow dx="0" dy="1.4" stdDeviation="1.6" flood-color="#1a120a" flood-opacity=".55"/></filter>
+`;
+svg.appendChild(defs);
+const INK='#46330f',INK2='#34250b',BORD='#6e1a24';
+
+// ================= ZIFFERBLATT =================
+const R_OUT=176,R_LAB=160,R_LAB_IN=143,R_TICK=140,R_NUM=124,R_HOUR=108;
+
+// Pergament-Panel + Rand + Eck-Schnörkel
+svg.appendChild(E('rect',{x:5,y:5,width:390,height:390,rx:8,fill:'url(#perg)'}));
+svg.appendChild(E('rect',{x:5,y:5,width:390,height:390,rx:8,fill:'#000',opacity:.5,filter:'url(#paper)'}));
+svg.appendChild(E('rect',{x:10,y:10,width:380,height:380,rx:6,fill:'none',stroke:INK,'stroke-width':2.2}));
+svg.appendChild(E('rect',{x:16,y:16,width:368,height:368,rx:4,fill:'none',stroke:INK,'stroke-width':0.8,opacity:.7}));
+(function ecken(){
+  const d="M22 58 C22 38 38 22 58 22 M30 58 C30 44 44 30 58 30 M22 58 C14 58 12 50 16 46 C19 43 24 44 24 49 C24 53 20 54 18 52 M58 22 C58 14 50 12 46 16 C43 19 44 24 49 24 C53 24 54 20 52 18";
+  ['translate(0,0)','translate(400,0) scale(-1,1)','translate(0,400) scale(1,-1)','translate(400,400) scale(-1,-1)'].forEach(tr=>
+    svg.appendChild(E('path',{d,transform:tr,fill:'none',stroke:'#7a5c24','stroke-width':1.6,'stroke-linecap':'round','stroke-linejoin':'round'})));
+})();
+
+// Ringe
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_OUT,fill:'none',stroke:INK,'stroke-width':2}));
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_OUT-3,fill:'none',stroke:INK,'stroke-width':0.6,opacity:.6}));
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_LAB_IN,fill:'none',stroke:INK,'stroke-width':1.4}));
+for(let i=0;i<N;i++){const a=i*STEP-STEP/2;const p0=polar(R_LAB_IN,a),p1=polar(R_OUT,a);svg.appendChild(E('line',{x1:p0.x,y1:p0.y,x2:p1.x,y2:p1.y,stroke:INK,'stroke-width':1,opacity:.8}));}
+// Ticks + Gradzahlen
+for(let d=0;d<360;d+=3){const lng=(d%15===0);const p0=polar(R_TICK,d),p1=polar(R_TICK-(lng?7:3.5),d);svg.appendChild(E('line',{x1:p0.x,y1:p0.y,x2:p1.x,y2:p1.y,stroke:INK,'stroke-width':lng?0.9:0.5,opacity:.6}));}
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_TICK,fill:'none',stroke:INK,'stroke-width':0.7,opacity:.5}));
+for(let d=0;d<360;d+=30){const p=polar(R_NUM,d);const t=E('text',{x:p.x,y:p.y,'text-anchor':'middle','dominant-baseline':'central','font-family':'EB Garamond, serif','font-size':'6.5',fill:INK,opacity:.5,transform:`rotate(${d} ${p.x} ${p.y})`});t.textContent=d;svg.appendChild(t);}
+// Stundenkranz
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_HOUR,fill:'none',stroke:INK,'stroke-width':0.7,opacity:.42}));
+for(let h=1;h<=12;h++){const p=polar(R_HOUR-9,h*30);const t=E('text',{x:p.x,y:p.y,'text-anchor':'middle','dominant-baseline':'central','font-family':'Cinzel, serif','font-weight':'600','font-size':'8',fill:INK,opacity:.38});t.textContent=h;svg.appendChild(t);}
+// Sterne
+[[70,150,5],[330,140,4],[120,300,4.5],[290,310,5],[210,80,3.5]].forEach(([x,y,s])=>svg.appendChild(E('path',{d:`M${x} ${y-s} L${x+s*0.3} ${y-s*0.3} L${x+s} ${y} L${x+s*0.3} ${y+s*0.3} L${x} ${y+s} L${x-s*0.3} ${y+s*0.3} L${x-s} ${y} L${x-s*0.3} ${y-s*0.3} Z`,fill:INK,opacity:.26})));
+
+// Gebogene Orts-Labels
+const dpaths=E('defs',{}); svg.appendChild(dpaths);
+const gLab=E('g',{});
+orte.forEach((o,i)=>{
+  const mid=i*STEP,half=STEP/2-2,upper=(mid>270||mid<90);
+  const d=upper?arc(R_LAB,mid-half,mid+half,1):arc(R_LAB,mid+half,mid-half,0);
+  const pid=`lab${i}`; dpaths.appendChild(E('path',{id:pid,d,fill:'none'}));
+  const txt=E('text',{'font-family':'Cinzel, serif','font-weight':'600','font-size':o.t.length>9?'10.5':'12','letter-spacing':'0.05em',fill:o.danger?BORD:INK2});
+  const tp=E('textPath',{href:'#'+pid,startOffset:'50%','text-anchor':'middle'});tp.textContent=o.t;txt.appendChild(tp);gLab.appendChild(txt);
+});
+svg.appendChild(gLab);
+
+// Klick-/Greif-Logik läuft über Pointer-Winkel (siehe unten) — keine Sektor-Pfade nötig
+
+// ================= ZEIGER (schlanke geschmiedete Nadeln) =================
+const R_ZEIGER=126, MED_R=12, NY=CY-67;
+// Nadel-Form bei Winkel 0 (zeigt nach oben), gemeinsame g wird rotiert
+function buildNadel(p){
+  const g=E('g',{});
+  const len=R_ZEIGER;
+  const NM=p.name.toUpperCase();
+  const FS=Math.min(15.5, 150/NM.length);
+  const L=NM.length*FS*0.64;             // ungefähre Schriftzug-Länge entlang der Achse
+  const pad=5;
+  const yNabe=CY-24, yMed=CY-len+13;     // Schaft-Enden an Nabe bzw. Medaillon
+  const yInner=NY+L/2+pad, yOuter=NY-L/2-pad;
+  // Schaft NUR an den Enden (nicht hinter den Buchstaben durch)
+  [['#23282d',4.2],['url(#silv)',2.6]].forEach(([col,w])=>{
+    if(yNabe-yInner>1.5) g.appendChild(E('path',{d:`M${CX} ${yNabe} L${CX} ${yInner}`,stroke:col,'stroke-width':w,'stroke-linecap':'round',fill:'none'}));
+    if(yOuter-yMed>1.5) g.appendChild(E('path',{d:`M${CX} ${yOuter} L${CX} ${yMed}`,stroke:col,'stroke-width':w,'stroke-linecap':'round',fill:'none'}));
+  });
+  // Name fest auf dem Zeiger (dreht mit; rechte Hälfte wird in setRot umgeklappt)
+  const nameTx=[];
+  [['#1b1e23','#1b1e23',1.7],['url(#silvTxt)','#2b3036',0.35]].forEach(([f,s,sw])=>{
+    const tx=E('text',{x:CX,y:NY,'text-anchor':'middle','dominant-baseline':'central','font-family':'Cinzel, serif','font-weight':'700','font-size':FS,'letter-spacing':'-0.2',fill:f,stroke:s,'stroke-width':sw,'stroke-linejoin':'round',transform:`rotate(90 ${CX} ${NY})`});
+    tx.textContent=NM; g.appendChild(tx); nameTx.push(tx);
+  });
+  // kleines Medaillon am Ende (außen)
+  const my=CY-len;
+  g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R+2.5,fill:'url(#silvD)',stroke:'#1c1f22','stroke-width':0.9}));
+  g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R+0.5,fill:'none',stroke:'#3a4046','stroke-width':0.7}));
+  g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R,fill:p.ton}));
+  g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R,fill:'url(#shine)'}));
+  // Highlight-Ring (aktiv)
+  const hi=E('circle',{cx:CX,cy:my,r:MED_R+4.5,fill:'none',stroke:'#f0d98a','stroke-width':2,opacity:0});
+  g.appendChild(hi);
+  return {g,hi,nameTx};
+}
+const gZeiger=E('g',{'pointer-events':'none'});
+const zeiger=personen.map(p=>{const z=buildNadel(p);gZeiger.appendChild(z.g);return z;});
+svg.appendChild(gZeiger);
+
+// Nabe (über Zeiger-Ursprung)
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:22,fill:'url(#nabe)',stroke:INK,'stroke-width':1,filter:'url(#sh)'}));
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:15,fill:'none',stroke:'#5a431c','stroke-width':1}));
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:5.5,fill:'#4a380f'}));
+// Vignette
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
+
+// ================= ANIMATION =================
+function targets(){
+  const groups={};personen.forEach((p,i)=>{(groups[p.sektor]=groups[p.sektor]||[]).push(i);});
+  const t=[];for(const sek in groups){const arr=groups[sek],m=arr.length,mid=+sek*STEP;
+    const sp=m>1?Math.min(18,36/(m-1)):0, st=-(m-1)/2;
+    arr.forEach((pi,k)=>t[pi]=mid+(st+k)*sp);}
+  return t;
+}
+const cur=targets();          // beim Laden bereits aufgefächert (keine Überlappung)
+let anim=personen.map(()=>null); // {from,to,t0,dur}
+function easeOutBack(t){const c1=1.5,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2);}
+function angDiff(a,b){let d=(b-a)%360;if(d>180)d-=360;if(d<-180)d+=360;return d;}
+
+let grabbed=-1;
+function setRot(i){
+  zeiger[i].g.setAttribute('transform',`rotate(${cur[i]} ${CX} ${CY})`);
+  // Leserichtung im Ruhezustand nach ORT (alle am selben Ort gleich), beim Ziehen live nach Winkel
+  const ref = (i===grabbed) ? cur[i] : personen[i].sektor*STEP;
+  const cn=((ref%360)+360)%360;
+  const rot = cn<180 ? 270 : 90;
+  zeiger[i].nameTx.forEach(t=>t.setAttribute('transform',`rotate(${rot} ${CX} ${NY})`));
+}
+personen.forEach((p,i)=>setRot(i));
+
+let raf=null;
+function startAnim(){
+  const tgt=targets();
+  const now=performance.now();
+  personen.forEach((p,i)=>{
+    if(Math.abs(angDiff(cur[i],tgt[i]))>0.1){anim[i]={from:cur[i],delta:angDiff(cur[i],tgt[i]),t0:now,dur:780};}
+  });
+  if(!raf)raf=requestAnimationFrame(loop);
+}
+function loop(now){
+  let busy=false;
+  personen.forEach((p,i)=>{
+    const a=anim[i];if(!a)return;
+    let k=Math.min(1,(now-a.t0)/a.dur);
+    cur[i]=a.from+a.delta*easeOutBack(k);
+    setRot(i);
+    if(k>=1){anim[i]=null;cur[i]=a.from+a.delta;setRot(i);} else busy=true;
+  });
+  if(busy)raf=requestAnimationFrame(loop);else raf=null;
+}
+
+// ================= STATUS + CHIPS =================
+function statusText(){
+  const p=personen[aktiv],s=orte[p.sektor];
+  const cls=s.danger?'gef':'ort';
+  document.getElementById('status').innerHTML=`<span><span class="nm">${p.name}</span> ist <span class="${cls}">${ortName[p.sektor]}</span></span>`;
+}
+function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?1:0));}
+function buildChips(){
+  const box=document.getElementById('people');box.innerHTML='';
+  personen.forEach((p,i)=>{
+    const c=document.createElement('button');c.className='chip'+(i===aktiv?' on':'');
+    c.innerHTML=`<span class="dot" style="background:${p.ton}"></span>`;
+    c.addEventListener('click',()=>{aktiv=i;buildChips();statusText();highlight();});
+    box.appendChild(c);
+  });
+}
+// ===== Interaktion: Zeiger greifen + ziehen ODER Bereich antippen =====
+function svgPt(cx,cy){const r=svg.getBoundingClientRect();return {x:(cx-r.left)/r.width*400, y:(cy-r.top)/r.height*400};}
+function winkelVon(x,y){return (Math.atan2(x-CX,-(y-CY))*180/Math.PI+360)%360;}
+function radiusVon(x,y){return Math.hypot(x-CX,y-CY);}
+function sektorVon(w){return ((Math.round(w/STEP)%N)+N)%N;}
+function hitMedaillon(cx,cy){
+  const p=svgPt(cx,cy); let best=-1,bd=28;
+  personen.forEach((pe,i)=>{const m=polar(R_ZEIGER,cur[i]);const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<bd){bd=d;best=i;}});
+  return best;
+}
+let dragging=false, moved=false, dragFlag=false, pendingTap=-1, downX=0, downY=0;
+
+function onDown(e){
+  const cx=e.clientX, cy=e.clientY, g=hitMedaillon(cx,cy);
+  if(g>=0){ grabbed=g; dragging=true; moved=false; dragFlag=true; downX=cx; downY=cy; aktiv=g; buildChips(); statusText(); highlight(); }
+  else{
+    const p=svgPt(cx,cy), r=radiusVon(p.x,p.y);
+    pendingTap=(r>28 && r<R_LAB_IN)?sektorVon(winkelVon(p.x,p.y)):-1;
+  }
+}
+function onMove(e){
+  if(!dragging) return;
+  if(!moved && Math.hypot(e.clientX-downX,e.clientY-downY)<4) return; // kleine Wackler = Tap
+  moved=true;
+  const p=svgPt(e.clientX,e.clientY);
+  cur[grabbed]=winkelVon(p.x,p.y);
+  setRot(grabbed);
+}
+function onUp(e){
+  if(dragging){
+    if(moved){ const p=svgPt(e.clientX,e.clientY); personen[grabbed].sektor=sektorVon(winkelVon(p.x,p.y)); }
+    dragging=false; grabbed=-1; statusText(); startAnim();
+  } else if(pendingTap>=0){
+    personen[aktiv].sektor=pendingTap; pendingTap=-1; statusText(); startAnim();
+  }
+  dragFlag=false;
+}
+svg.addEventListener('pointerdown',onDown);
+document.addEventListener('pointermove',onMove);
+document.addEventListener('pointerup',onUp);
+document.addEventListener('pointercancel',()=>{dragging=false;grabbed=-1;dragFlag=false;});
+// iOS: Seiten-Scroll während Zeiger-Drag unterbinden
+svg.addEventListener('touchstart',e=>{ if(e.touches[0]&&hitMedaillon(e.touches[0].clientX,e.touches[0].clientY)>=0) dragFlag=true; },{passive:false});
+document.addEventListener('touchmove',e=>{ if(dragFlag) e.preventDefault(); },{passive:false});
+
+buildChips();statusText();highlight();
+
+// ============ STANDORT ERKENNEN ============
+const gpsBtn=document.getElementById('gpsbtn'), gpsMsg=document.getElementById('gpsmsg');
+function melde(html){gpsMsg.innerHTML='<div>'+html+'</div>';}
+gpsBtn.addEventListener('click',()=>{
+  const wer=personen[aktiv].name;
+  if(!navigator.geolocation){melde('<span class="warn">Dieses Gerät liefert keinen Standort.</span>');return;}
+  gpsBtn.disabled=true; melde('Standort wird gesucht &hellip;');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    gpsBtn.disabled=false;
+    const la=pos.coords.latitude, lo=pos.coords.longitude, acc=Math.round(pos.coords.accuracy||0);
+    const r=ortAusGPS(la,lo);
+    personen[aktiv].sektor=r.sektor; statusText(); startAnim(); highlight();
+    if(r.dist===null){
+      melde(`<span>${wer}: kein hinterlegter Ort in der N&auml;he &rarr; <b>unterwegs</b><br><small>Messgenauigkeit &plusmn;${acc}&nbsp;m</small></span>`);
+    }else{
+      melde(`<span class="ok">${wer} &rarr; ${orte[r.sektor].t}</span><br><small>${Math.round(r.dist)}&nbsp;m zur Ortsmitte &middot; Messgenauigkeit &plusmn;${acc}&nbsp;m</small>`);
+    }
+  },err=>{
+    gpsBtn.disabled=false;
+    const t={1:'Standort-Freigabe verweigert &mdash; in den Einstellungen f&uuml;r diese Seite erlauben.',
+             2:'Standort momentan nicht ermittelbar (kein Empfang?).',
+             3:'Zeit&uuml;berschreitung bei der Standortsuche.'}[err.code]||'Standort konnte nicht ermittelt werden.';
+    melde(`<span class="warn">${t}</span>`);
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+});
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 <title>Standort-Uhr</title>
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v3.png">
 <meta name="apple-mobile-web-app-title" content="Standort-Uhr">
-<meta name="theme-color" content="#241a10">
+<meta name="theme-color" content="#2c1f13">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&display=swap');
 </style>
@@ -14,7 +14,7 @@
   :root{--ink:#46330f;--ink2:#34250b;--bord:#6e1a24;--creme:#f3e9d2;--messing:#c79a3e;}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
-  html{background:#241a10;}
+  html{background:#2c1f13;}
   body{
     font-family:'EB Garamond',Georgia,serif;color:var(--creme);
     background:radial-gradient(125% 95% at 50% 0%, #3a2a18 0%, #241810 55%, #150d06 100%);
@@ -86,7 +86,7 @@
   <div class="geraet" id="geraet"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div class="ver">v0.38</div>
+  <div class="ver">v0.39</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -317,7 +317,9 @@ function buildNadel(p){
   return {g,hi};
 }
 const gZeiger=E('g',{'pointer-events':'none'});
-const zeiger=personen.map(p=>{const z=buildNadel(p);gZeiger.appendChild(z.g);return z;});
+const zeiger=personen.map(p=>buildNadel(p));
+// Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
+[4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
 svg.appendChild(gZeiger);
 // Namen exakt auf die Strecke Nabe -> Medaillon sperren (Gravur-Satz)
 (function passeNamenEin(){

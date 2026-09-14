@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.50 mit Firebase-Sync gebaut (Einrichtung in Firebase noch offen) · Hardware in Planung
+**Stand:** App v0.50 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -15,7 +15,7 @@ Das Projekt hat drei Ausbaustufen:
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
 | **A · Web-App** | fertig (v0.50) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
-| **B · Firebase-Sync** | Code fertig, Einrichtung offen | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
+| **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
 Eine **native App (Capacitor)** ist ebenfalls angedacht — sie ist der einzige Weg zu automatischem Melden im Hintergrund. Apple-Entwicklerkonto ist vorhanden, aber noch nicht eingerichtet.
@@ -435,22 +435,44 @@ So merkt Lutz nach einem Abend, ob ihm das Hardware-Basteln liegt.
 
 ## 6. Offene Punkte
 
-### Blockiert den Sync — muss als Erstes passieren
-1. **Nutzer in Firebase anlegen** (Authentication → Nutzer → Nutzer hinzufügen).
-   Empfehlung: ein gemeinsames Familienkonto, z. B. `volumentrader+uhr@gmail.com`
-   — Gmail liefert Plus-Adressen ins normale Postfach, die Adresse ist aber vom
-   Hauptkonto getrennt.
-2. **uid des Nutzers unter `/erlaubt/<uid>` mit Wert `true` eintragen.**
-   Ohne diesen Schritt sieht auch das eigene Konto nichts — die App meldet dann
-   „Dieses Konto ist nicht freigeschaltet".
-3. **`firebase-rules.json` in die Konsole übertragen** (Realtime Database → Regeln).
-4. **Zonen importieren** unter `/zonen` (JSON-Import in der Konsole).
+### Erledigt am 14.09.2026
+Firebase-Projekt eingerichtet, gemeinsames Konto `uhr@standort-uhr.de`, uid auf
+der Whitelist, zehn Zonen importiert, Regeln veröffentlicht, v0.50 auf `main`
+und über GitHub Pages ausgeliefert. Auf Lutz' Gerät verifiziert: Anmeldung,
+Zonenabruf, GPS-Messung (Erlental, 10 m zur Ortsmitte bei ±9 m Genauigkeit),
+Schreiben nach `/status/1`.
 
-### Danach
-5. `index.html` (v0.50) hochladen, auf allen fünf Geräten Homescreen-App neu öffnen
-6. **„Bei Freunden"-Koordinaten** — fehlender Ort. Bei eng beieinanderliegenden
+### Als Nächstes
+1. **Die anderen vier Geräte einrichten** — dieselbe E-Mail, dasselbe Passwort,
+   nur die Personenwahl bei „Wem gehört dieses Gerät?" unterscheidet sich.
+2. **Gedränge-Problem** (siehe unten) beobachten und entscheiden
+3. **„Bei Freunden"-Koordinaten** — fehlender Ort. Bei eng beieinanderliegenden
    Adressen Radius auf 120–150 m senken.
-7. Bestellung Block A (ESP32, Breadboard, USB-**Daten**kabel)
+4. Bestellung Block A (ESP32, Breadboard, USB-**Daten**kabel)
+
+### Gedränge im selben Sektor — offenes Designproblem
+Sobald mehrere Personen auf demselben Ort stehen, überlappen die Medaillons und
+die Gravur-Namen stapeln sich zu einem unleserlichen Klumpen. Beim ersten Start
+mit vier Verschollenen sofort sichtbar.
+
+**Das ist kein Randfall:** abends sind alle fünf in Erlental. Vor v0.50 fiel es
+nicht auf, weil jedes Gerät gestreute Startwerte zeigte.
+
+Rechnerisch lässt es sich in der jetzigen Geometrie nicht auflösen: Ein
+Medaillon (r≈34) belegt bei R_ZEIGER=121 rund 32° Bogen, ein Sektor hat 45°.
+Mehr als zwei passen nebeneinander nicht — `targets()` fächert aktuell mit
+maximal 18° auf.
+
+Kategorisch verschiedene Auswege (nicht Varianten derselben Idee):
+1. **Radial staffeln** wie beim Original mit konzentrischen Achsen — feste
+   unterschiedliche Zeigerlängen je Person. Für fünf Ringe reicht der Platz
+   von r=20 bis r=155 (135 px) nicht bei 68 px Medaillondurchmesser; zwei bis
+   drei Radien sind machbar, kombiniert mit Winkelversatz.
+2. **Namen ausblenden**, sobald mehr als eine Person im Sektor steht — löst den
+   Textklumpen, nicht die verdeckten Gesichter.
+3. **Medaillons schrumpfen** proportional zur Belegung des Sektors.
+4. **Stapel zusammenfassen** zu einem Medaillon mit Zähler — verliert die
+   Einzelgesichter, widerspricht der Projektidee.
 
 ### Später
 8. Nischenmaße, Steckdose, WLAN-Test (5.2)

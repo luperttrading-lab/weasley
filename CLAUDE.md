@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.55 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.56 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.55) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.56) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.55)
+## 2. Teil A — Die Web-App (v0.56)
 
 ### 2.1 Aufbau
 
@@ -708,10 +708,42 @@ hier lädt die App nach 1,2 s **von selbst**. Deshalb der Schleifenschutz über
 `sessionStorage` — dieselbe Zielversion wird je Sitzung nur einmal
 angefahren, danach steht „App schließen und neu öffnen".
 
+### Vier Bausteine aus dem Projekt Zettel (v0.56)
+
+Lutz hat die Doku `UPDATE-MECHANIK.md` aus `luperttrading-lab/Zettel`
+beigesteuert. Übernommen:
+
+1. **Service Worker `sw.js`, „Netz zuerst"** — der strukturelle Fix für
+   „wegwischen und neu öffnen bringt die alte Fassung". Jeder Start fragt mit
+   `cache:'no-cache'` beim Server nach; unverändert kommt 304. `skipWaiting()`
+   und `clients.claim()` sind Pflicht, sonst wartet der neue Worker, bis alle
+   Fenster zu sind (auf dem iPhone: nie).
+   **Bewusste Abweichung:** Zettels Worker cacht auch fremde Dateien „Cache
+   zuerst". Hier laufen über fremde Adressen die Firebase-Verbindungen — ein
+   gecachter Datenbank-Abruf wäre fatal. Unser Worker fasst **nur eigene
+   Dateien** an (`origin`-Prüfung), alles andere läuft unberührt durch.
+   `sw.js` gehört ins Repo-Root neben `index.html`.
+2. **Kein Neuladen, während jemand tippt oder zieht** (`beschaeftigt()`):
+   Anmeldemaske mit halbem Passwort, Zeiger in der Hand. Die Leiste sagt dann
+   „wird geladen, sobald du fertig bist"; der Schleifenschutz wird dabei
+   **nicht** gesetzt, die nächste Prüfung versucht es erneut.
+3. **Tipp auf die Versionszeile prüft von Hand** und meldet auch „ist aktuell"
+   oder „Offline" — sonst weiß man nie, ob die Prüfung arbeitet oder schweigt.
+4. **Nach einem Update einmal „Version vX ist geladen"** (`localStorage`
+   `uhr_gesehen`), beim allerersten Start still. Kam in Zettel am 12.9. dazu,
+   nachdem Lutz die klein gesetzte Nummer nicht wahrgenommen hatte — dieselbe
+   Rückmeldung wie hier bei v0.53.
+
+Nicht übernommen, weil unseres besser ist: Zettel vergleicht Zeichenketten auf
+*ungleich* (die Doku nennt die Schwäche selbst) und lädt zur Prüfung die ganze
+`index.html` — bei uns 210 KB alle 60 s. Wir bleiben bei numerisch *höher* und
+`version.json` (20 Bytes), Takt seit v0.56 alle 5 Minuten.
+
 ### Veröffentlichen
 
 - **Repo:** GitHub Pages unter `luperttrading-lab`, Settings → Pages → main → root.
-  Drei Dateien gehören ins Root: `index.html`, `version.json`, `apple-touch-icon-v3.png`.
+  Vier Dateien gehören ins Root: `index.html`, `sw.js`, `version.json`,
+  `apple-touch-icon-v3.png`.
 - **Ablauf:** auf `main` pushen → Live-Kontrolle:
   `curl -s https://luperttrading-lab.github.io/weasley/ | grep -o 'class="ver">v[0-9.]*'`
   (Pages braucht 1–2 Minuten). Die Geräte holen sich die Fassung dann selbst.

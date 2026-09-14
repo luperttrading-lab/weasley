@@ -12,7 +12,7 @@
       ".read": "auth != null && root.child('erlaubt').child(auth.uid).val() === true",
 
       "$p": {
-        ".write": "auth != null && root.child('erlaubt').child(auth.uid).val() === true && $p.matches(/^[0-4]$/)",
+        ".write": "auth != null && root.child('erlaubt').child(auth.uid).val() === true && $p.matches(/^[01234]$/)",
         ".validate": "newData.hasChildren(['sektor','ts'])",
 
         "sektor": {

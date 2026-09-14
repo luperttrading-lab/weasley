@@ -149,7 +149,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.56</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.57</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -614,8 +614,20 @@ function eigeneVersion(){const t=document.getElementById('verzeile');return t?St
 let versionGeprueft=0;
 const VER_MINDEST_MS=2*60*1000;     // Sichtbarkeitswechsel: hoechstens alle 2 Minuten
 const VER_TAKT_MS=5*60*1000;        // waehrend die App offen liegt: alle 5 Minuten (20 Bytes je Abfrage)
+let neuverTimer=null, wartendeVersion=null;   // wartendeVersion: eine gefundene, noch nicht geladene Fassung
 function zeigeNeuver(html){const l=document.getElementById('neuver');l.innerHTML=html;l.hidden=false;}
-let neuverTimer=null;
+// Ein Tipp auf die Leiste (wie in Zettel): eine Info verschwindet, eine wartende
+// Version wird sofort geladen — auch im Aufschub, wenn man gerade tippt.
+document.getElementById('neuver').addEventListener('click',()=>{
+  if(wartendeVersion){ const v=wartendeVersion; wartendeVersion=null; sofortLaden(v); return; }
+  document.getElementById('neuver').hidden=true;
+});
+function sofortLaden(neu){
+  try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
+  zeigeNeuver('Du hast <b>v'+eigeneVersion()+'</b> &middot; neu ist <b>v'+neu+'</b> &mdash; wird geladen &hellip;');
+  const weiter=()=>location.replace(location.pathname+'?v='+Date.now());
+  try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();}
+}
 function zeigeKurz(html,ms){   // fluechtige Rueckmeldung, verschwindet von selbst
   zeigeNeuver(html); clearTimeout(neuverTimer);
   neuverTimer=setTimeout(()=>{const l=document.getElementById('neuver'); if(l) l.hidden=true;},ms||2600);
@@ -636,7 +648,8 @@ function neuLaden(neu){
   if(schon===neu){ zeigeNeuver(beide+' &mdash; App schlie&szlig;en und neu &ouml;ffnen'); return; }
   // Aufschub: Hinweis zeigen, aber nicht laden — die naechste Pruefung versucht es erneut.
   // Der Schleifenschutz wird dabei bewusst NICHT gesetzt.
-  if(beschaeftigt()){ zeigeNeuver(beide+' &mdash; wird geladen, sobald du fertig bist'); return; }
+  wartendeVersion=neu;
+  if(beschaeftigt()){ zeigeNeuver(beide+' &mdash; wird geladen, sobald du fertig bist (antippen: jetzt)'); return; }
   try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
   zeigeNeuver(beide+' &mdash; wird geladen &hellip;');
   // Erst die NACKTE Adresse (ohne ?v=) mit cache:"reload" holen: das erneuert
@@ -645,7 +658,8 @@ function neuLaden(neu){
   // nicht: ohne das erste kommt beim naechsten Start wieder die alte Fassung,
   // ohne das zweite liefert ein blosses reload() den alten Cache.
   const weiter=()=>location.replace(location.pathname+'?v='+Date.now());
-  setTimeout(()=>{ try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();} },1200);
+  setTimeout(()=>{ if(wartendeVersion!==neu) return;   // schon per Tipp geladen
+    try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();} },1200);
 }
 
 function pruefeVersion(erzwingen,vonHand){
@@ -683,7 +697,7 @@ function pruefeVersion(erzwingen,vonHand){
   const jetzt=eigeneVersion();
   if(jetzt && vorher!==jetzt){
     try{localStorage.setItem('uhr_gesehen',jetzt);}catch(e){}
-    if(vorher) setTimeout(()=>zeigeKurz('Version <b>v'+jetzt+'</b> ist geladen',3200),700);
+    if(vorher) setTimeout(()=>zeigeKurz('Version <b>v'+jetzt+'</b> ist geladen',4000),700);
   }
 }
 

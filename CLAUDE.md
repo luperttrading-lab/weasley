@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.56 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.57 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.56) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.57) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.56)
+## 2. Teil A — Die Web-App (v0.57)
 
 ### 2.1 Aufbau
 
@@ -730,7 +730,10 @@ beigesteuert. Übernommen:
 3. **Tipp auf die Versionszeile prüft von Hand** und meldet auch „ist aktuell"
    oder „Offline" — sonst weiß man nie, ob die Prüfung arbeitet oder schweigt.
 4. **Nach einem Update einmal „Version vX ist geladen"** (`localStorage`
-   `uhr_gesehen`), beim allerersten Start still. Kam in Zettel am 12.9. dazu,
+   `uhr_gesehen`), 4 s, beim allerersten Start still. Seit v0.57 wie in Zettel
+   **antippbar**: eine Info verschwindet, eine wartende Version — auch im
+   Aufschub — wird sofort geladen. Beim ersten Start von v0.56 war die
+   Meldung still, weil keine ältere Fassung `uhr_gesehen` je gesetzt hatte. Kam in Zettel am 12.9. dazu,
    nachdem Lutz die klein gesetzte Nummer nicht wahrgenommen hatte — dieselbe
    Rückmeldung wie hier bei v0.53.
 

@@ -149,7 +149,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div class="ver" id="verzeile">v0.53</div>
+  <div id="verzeile" class="ver">v0.55</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -605,42 +605,57 @@ function fragGeraetWennNoetig(){ if(geraetIdx===null) setTimeout(ovlAuf,500); }
 let meldeSync=function(){};   // (idx, sektor, quelle)
 
 // ---- Neue Version erkennen und laden ----
-// iOS haelt die Homescreen-App hartnaeckig im Speicher und im Cache. Ohne diese
-// Pruefung laeuft auf den Geraeten monatelang eine alte Fassung weiter, ohne dass
-// es jemand merkt. version.json wird bei jeder Lieferung mitgepflegt.
-const APP_VERSION='0.54';
-{const e=document.getElementById('verzeile'); if(e) e.textContent='v'+APP_VERSION;}
+// Uebernommen aus dem Wetter-Projekt (dort seit v2.53 im Einsatz, zuletzt v3.87),
+// wo sich das ueber Dutzende Fassungen eingeschliffen hat. Die Versionsnummer
+// steht an GENAU EINER Stelle: im .ver-Div. Von dort liest sie dieses Skript,
+// der Workflow version.yml und die Live-Kontrolle per curl.
+function verNum(v){const m=String(v).match(/(\d+)\.(\d+)/);return m?(+m[1])*1000+(+m[2]):0;}
+function eigeneVersion(){const t=document.getElementById('verzeile');return t?String(t.textContent||'').replace(/^v/,''):'';}
 let versionGeprueft=0;
-async function pruefeVersion(){
-  if(Date.now()-versionGeprueft < 30000) return;   // nicht bei jedem Tab-Wechsel
-  versionGeprueft=Date.now();
-  const leiste=document.getElementById('neuver');
-  try{
-    // Cache-Buster UND no-store: sonst beantwortet der Cache die Frage nach dem Cache
-    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
-    if(!r.ok) return;
-    const d=await r.json();
-    if(!d || !d.version || d.version===APP_VERSION) return;
+const VER_MINDEST_MS=2*60*1000;     // Sichtbarkeitswechsel: hoechstens alle 2 Minuten
+const VER_TAKT_MS=10*60*1000;       // waehrend die App offen liegt: alle 10 Minuten
+function zeigeNeuver(html){const l=document.getElementById('neuver');l.innerHTML=html;l.hidden=false;}
 
-    // Schon einmal vergeblich neu geladen? Dann nicht in der Schleife haengen
-    // bleiben, sondern ehrlich sagen, was zu tun ist.
-    let schon=null; try{ schon=sessionStorage.getItem('uhr_reload'); }catch(e){}
-    if(schon===d.version){
-      leiste.textContent='Neue Version '+d.version+' verfügbar — App schließen und neu öffnen';
-      leiste.hidden=false;
-      return;
-    }
-    try{ sessionStorage.setItem('uhr_reload',d.version); }catch(e){}
-    leiste.textContent='Neue Version '+d.version+' wird geladen …';
-    leiste.hidden=false;
-    setTimeout(async()=>{
-      // Erst die Datei am Cache vorbei neu holen, dann neu laden — ein blosses
-      // reload() wuerde dieselbe alte Fassung aus dem Cache bekommen.
-      try{ await fetch(location.href,{cache:'reload'}); }catch(e){}
-      location.reload();
-    },1400);
-  }catch(e){ /* offline: kein Grund, irgendetwas anzuzeigen */ }
+function neuLaden(neu){
+  const beide='Du hast <b>v'+eigeneVersion()+'</b> &middot; neu ist <b>v'+neu+'</b>';
+  // Schleifenschutz: dieselbe Zielversion nur einmal je Sitzung anfahren.
+  // Bringt der Neustart sie nicht, ehrlich sagen, was zu tun ist.
+  let schon=null; try{schon=sessionStorage.getItem('uhr_reload');}catch(e){}
+  if(schon===neu){ zeigeNeuver(beide+' &mdash; App schlie&szlig;en und neu &ouml;ffnen'); return; }
+  try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
+  zeigeNeuver(beide+' &mdash; wird geladen &hellip;');
+  // Erst die NACKTE Adresse (ohne ?v=) mit cache:"reload" holen: das erneuert
+  // den Cache-Eintrag, den der naechste Start vom Homescreen benutzt. Dann zu
+  // einer garantiert frischen Adresse mit ?v= springen. Eines allein reicht
+  // nicht: ohne das erste kommt beim naechsten Start wieder die alte Fassung,
+  // ohne das zweite liefert ein blosses reload() den alten Cache.
+  const weiter=()=>location.replace(location.pathname+'?v='+Date.now());
+  setTimeout(()=>{ try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();} },1200);
 }
+
+function pruefeVersion(erzwingen){
+  if(!erzwingen && Date.now()-versionGeprueft<VER_MINDEST_MS) return;
+  versionGeprueft=Date.now();
+  const hier=verNum(eigeneVersion()); if(!hier) return;
+  const bewerten=vTxt=>{ const dort=verNum(vTxt); if(!dort) return false;
+    if(dort>hier) neuLaden(String(vTxt).replace(/^v/,''));   // nur bei HOEHERER Nummer, nie bei blossem Unterschied
+    return true; };
+  // Weg 1: version.json, rund 20 Bytes. Cache-Buster UND no-store —
+  // sonst beantwortet der Cache die Frage nach dem Cache.
+  fetch('version.json?v='+Date.now(),{cache:'no-store'})
+    .then(r=>r.ok?r.json():Promise.reject('HTTP '+r.status))
+    .then(j=>{ if(!(j&&j.version&&bewerten(String(j.version)))) return Promise.reject('unbrauchbar'); })
+    .catch(()=>{
+      // Weg 2: die eigene Seite lesen und die Nummer herausziehen. Greift, wenn
+      // version.json fehlt oder der Workflow noch nicht gelaufen ist.
+      fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'})
+        .then(r=>r.ok?r.text():Promise.reject('HTTP '+r.status))
+        .then(t=>{ const m=t.match(/class="ver">v([\d.]+)</); if(!m||!bewerten(m[1])) throw 'keine Versionsnummer'; })
+        .catch(()=>{ /* offline: nichts anzeigen */ });
+    });
+}
+// Wer die App offen liegen laesst, bekaeme sonst nie einen Hinweis (Wetter v3.60)
+setInterval(()=>{ if(document.visibilityState==='visible') pruefeVersion(true); },VER_TAKT_MS);
 
 // ---- Automatisches Nachmessen ----
 // getCurrentPosition ist eine Einzelmessung. Ohne diese Automatik stuende der

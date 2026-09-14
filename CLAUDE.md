@@ -463,13 +463,29 @@ Medaillon (r≈34) belegt bei R_ZEIGER=121 rund 32° Bogen, ein Sektor hat 45°.
 Mehr als zwei passen nebeneinander nicht — `targets()` fächert aktuell mit
 maximal 18° auf.
 
-Kategorisch verschiedene Auswege (nicht Varianten derselben Idee):
-1. **Radial staffeln** wie beim Original mit konzentrischen Achsen — feste
-   unterschiedliche Zeigerlängen je Person. Für fünf Ringe reicht der Platz
-   von r=20 bis r=155 (135 px) nicht bei 68 px Medaillondurchmesser; zwei bis
-   drei Radien sind machbar, kombiniert mit Winkelversatz.
+**Radiale Staffelung ist durchgerechnet und scheidet aus** (14.09.2026, von
+Lutz vermutet, dann gemessen). Die Gravur füllt die Strecke Nabe → Medaillon:
+
+    zielL(r) = (r - MED_R*KOPF_K) - R_NABE - 8 = r - 62,08
+
+Gegenprobe bei r=121: 58,92 — deckt sich mit der Messung im Browser.
+Gemessene Schriftgrößen heute: LUTZ/ANTON/EMILIA 15,5 (ungeschrumpft),
+CLAUDIA 12,69, LEANDER 12,1. Die beiden Siebenbuchstaber schöpfen den
+Puffer also bereits aus.
+
+Da die Schrift proportional mitschrumpft, wird LEANDER bei r=100 auf 7,8 px
+gestaucht, bei r=90 auf 5,7 px, bei r=80 auf 3,7 px. Die SVG wird auf dem
+iPhone praktisch 1:1 dargestellt, die Lesbarkeitsgrenze liegt bei etwa
+r = 96. Nutzbarer Spielraum: 121 bis 96 = **25 px** bei 68 px
+Medaillondurchmesser — die Medaillons überlappen danach praktisch unverändert,
+die Namen sind aber hin. Preis bezahlt, Leistung nicht geliefert.
+
+Verbleibende Auswege:
+1. ~~Radial staffeln~~ — siehe Rechnung oben, erledigt.
 2. **Namen ausblenden**, sobald mehr als eine Person im Sektor steht — löst den
-   Textklumpen, nicht die verdeckten Gesichter.
+   Textklumpen, nicht die verdeckten Gesichter. Kostet nichts an Geometrie und
+   ist der billigste wirksame Eingriff. Überlappende Gesichter liest man noch
+   als „da sind mehrere", überlappender Text ist reiner Schmutz.
 3. **Medaillons schrumpfen** proportional zur Belegung des Sektors.
 4. **Stapel zusammenfassen** zu einem Medaillon mit Zähler — verliert die
    Einzelgesichter, widerspricht der Projektidee.

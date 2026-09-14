@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.45 fertig und im Einsatz · Firebase-Sync geplant, noch nicht gebaut · Hardware in Planung
+**Stand:** App v0.50 mit Firebase-Sync gebaut (Einrichtung in Firebase noch offen) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,8 +14,8 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.45) | Einzelne HTML-Datei, läuft auf jedem iPhone. Jeder sieht nur seine eigene Uhr. |
-| **B · Firebase-Sync** | geplant | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
+| **A · Web-App** | fertig (v0.50) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **B · Firebase-Sync** | Code fertig, Einrichtung offen | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
 Eine **native App (Capacitor)** ist ebenfalls angedacht — sie ist der einzige Weg zu automatischem Melden im Hintergrund. Apple-Entwicklerkonto ist vorhanden, aber noch nicht eingerichtet.
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.45)
+## 2. Teil A — Die Web-App (v0.50)
 
 ### 2.1 Aufbau
 
@@ -122,38 +122,42 @@ const personen=[
 `[4,1,2,0,3]` → Leander, Lutz, Anton, Claudia, **Emilia ganz vorn**.
 Wird beim Ziehen **nicht** umsortiert.
 
-### 2.5 GPS-Zonen
+### 2.5 GPS-Zonen — seit v0.50 in der Datenbank
 
-Im Dateikopf, bewusst **nicht** in der App editierbar — damit alle fünf Geräte dieselben Zonen nutzen.
+**Die Koordinaten stehen nicht mehr in `index.html`.** Sie liegen in der Realtime
+Database unter `/zonen` und sind nur für angemeldete Geräte lesbar, die auf der
+Whitelist stehen.
 
-**Konzept (wichtig!):** Pro Ort ist eine **Liste von Zonen** erlaubt, **ohne Personenbindung**. Wer in irgendeiner Schul-Zone steht, bekommt SCHULE — egal ob Claudia oder Anton. Begründung von Lutz: In der Praxis taucht an einer bestimmten Schule ohnehin nur eine bestimmte Person auf.
+**Warum der Umzug zwingend war:** Das Repo ist öffentlich und Erlental ist die
+Wohnadresse. Das Repo privat zu stellen hätte nichts gebracht — GitHub Pages
+liefert die `index.html` ohnehin öffentlich aus, die Koordinaten standen im
+JavaScript, das jeder Browser herunterlädt. (Zusätzlich: Pages mit privatem Repo
+gibt es erst ab GitHub Pro.) Der einzige Weg war, sie hinter das Login zu legen.
 
-```js
-const ortGPS={
-  0:[{lat:50.6479779, lon:8.6739803, r:250}],  // ERLENTAL (Wohnadresse!)
-  1:[{lat:50.5968855, lon:8.6772881, r:200},   // SCHULE 1
-     {lat:50.5916110, lon:8.8248888, r:200}],  // SCHULE 2
-  2:[{lat:50.5931950, lon:8.6574002, r:200},   // SCHWIMMBAD 1
-     {lat:50.5893294, lon:8.6848674, r:200},
-     {lat:50.5440611, lon:8.7256671, r:200},
-     {lat:50.6256405, lon:8.6292411, r:200}],
-  3:[{lat:50.4526332, lon:7.6616858, r:200},   // TISCHTENNIS 1
-     {lat:50.6798770, lon:8.8237347, r:200},
-     {lat:50.6379399, lon:8.6745379, r:200}],
-  4:null,  // BEI FREUNDEN — offen
-  6:null, 7:null   // nie automatisch
-};
+**Konzept unverändert:** Pro Ort eine **Liste von Zonen**, **ohne Personenbindung**.
+Wer in irgendeiner Schul-Zone steht, bekommt SCHULE. `ortAusGPS()` nimmt die
+nächstgelegene Zone im Radius; kein Treffer → `SEK_UNTERWEGS`.
+Die Funktion akzeptiert Arrays **und** Objekte, weil Firebase je nach
+Schlüssellage das eine oder andere liefert.
+
+Struktur in der Datenbank:
+
+```
+/zonen/0/0  { lat, lon, r }     ERLENTAL (1 Zone)
+/zonen/1/0..1                   SCHULE (2 Zonen)
+/zonen/2/0..3                   SCHWIMMBAD (4 Zonen)
+/zonen/3/0..2                   TISCHTENNIS (3 Zonen)
 ```
 
-`ortAusGPS()` akzeptiert sowohl Listen als auch Einzelobjekte. Gewinner ist die **nächstgelegene Zone im Radius**; kein Treffer → `SEK_UNTERWEGS`.
+Orte 4 (BEI FREUNDEN), 5 (UNTERWEGS), 6, 7 haben bewusst keine Zonen.
 
-**Engste Paarung:** Tischtennis 3 liegt nur **1117 m** von Erlental entfernt. Bei Radien 250+200 bleiben 667 m Luft. Das ist die Obergrenze für spätere Radius-Erhöhungen.
+**Engste Paarung:** Tischtennis 3 liegt nur **1117 m** von Erlental entfernt.
+Bei Radien 250+200 bleiben 667 m Luft — Obergrenze für spätere Erhöhungen.
 
-**Radius-Faustwerte:** Gebäude 120–180 m, Schule mit Hof 200 m, weitläufiges Gelände 250–300 m. Zu großzügig ist weniger riskant als zu knapp, weil nur auf Knopfdruck gemessen wird.
+**Radius-Faustwerte:** Gebäude 120–180 m, Schule mit Hof 200 m, weitläufiges
+Gelände 250–300 m.
 
-⚠️ **Datenschutz-Hinweis:** Das Repo ist öffentlich, Erlental ist die Wohnadresse. Mit Firebase sollten die Zonen in die Datenbank wandern.
-
-### 2.6 GPS-Logik (Lutz' Entwurf, in v0.45 umgesetzt)
+### 2.6 GPS-Logik (Lutz' Entwurf)
 
 | Situation | Ergebnis |
 |---|---|
@@ -165,7 +169,11 @@ const ortGPS={
 
 Der letzte Fall ist bewusst ausgenommen: Fehlende Ortungserlaubnis ist ein Einstellungsproblem, kein verschollener Mensch.
 
-**Zusätzlich seit v0.45:** Beim erfolgreichen Messen werden **alle anderen Personen auf verschollen** gesetzt. Begründung von Lutz: Dieses Gerät kann nur die eigene Person messen, für die anderen liegen in diesem Moment keine Daten vor. Die Uhr zeigt damit ehrlich, was sie weiß. Bei komplettem Signalausfall stehen alle fünf auf verschollen.
+**Geändert in v0.50:** Die Notlösung aus v0.45 — „beim Messen alle anderen auf
+verschollen setzen" — ist **entfernt**. Ein Gerät setzt jetzt ausschließlich die
+eigene Person; wo die anderen stehen, sagt die Datenbank. Bei fehlender
+Ortungsfreigabe (`err.code 1`) wird weiterhin gar nichts gemeldet, der Zeiger
+bleibt stehen.
 
 Ziehen und Antippen funktionieren danach weiter — von Hand korrigierte Positionen bleiben bis zur nächsten Messung.
 
@@ -234,40 +242,81 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 
 ---
 
-## 3. Teil B — Firebase-Sync (geplant, noch nicht gebaut)
+## 3. Teil B — Firebase-Sync (in v0.50 gebaut)
 
-### 3.1 Warum
+### 3.1 Projekt
 
-Ohne Sync läuft die App auf jedem Handy für sich. Emilias GPS-Messung bewegt nur ihren Zeiger auf ihrem Gerät. Seit v0.45 macht die App das ehrlich sichtbar: Nach dem Messen stehen alle anderen auf verschollen.
+Firebase-Projekt `standort-uhr`, Spark-Plan (kostenlos), Realtime Database in
+**europe-west1 (Belgien)**, Anmeldung per E-Mail/Passwort. Das Config-Objekt
+steht offen in `index.html` — das ist bei Web-Apps so vorgesehen, der Schutz
+kommt über die Zugriffsregeln.
 
-### 3.2 Was Lutz tun muss (~15 Min, geht vom iPhone)
+### 3.2 Datenmodell
 
-1. `console.firebase.google.com` → mit Google-Konto anmelden
-2. „Projekt hinzufügen" → Name z. B. `standort-uhr`, Analytics abwählen
-3. **Realtime Database** → „Datenbank erstellen" → Region **europe-west1** (Belgien, EU)
-4. Sicherheitsregeln: erst „Gesperrt", die richtigen Regeln kommen später
-5. Projektübersicht → Web-App registrieren (`</>`-Symbol)
-6. Das Konfigurations-Objekt (`apiKey`, `databaseURL`, …) an Claude geben
+```
+/erlaubt/<uid>          true    Whitelist — wer hier nicht steht, sieht nichts
+/status/<0..4>/sektor   0..7    eine Person, ein Sektor
+/status/<0..4>/ts       Server-Zeitstempel
+/zonen/<0..3>/<n>       { lat, lon, r }
+```
 
-**Kosten:** Spark-Plan ist kostenlos, 1 GB Speicher / 10 GB Download pro Monat. Fünf Personen erzeugen ein paar Kilobyte am Tag.
+Personen werden über den **Index 0–4** adressiert (Reihenfolge im `personen`-Array:
+Claudia, Lutz, Anton, Emilia, Leander). Keine Koordinaten in der Datenbank außer
+den Zonen — es steht nur „Person 3 → Sektor 2 → Zeitstempel".
 
-Das Config-Objekt ist zur Veröffentlichung in Web-Apps gedacht — der Schutz kommt über die Zugriffsregeln, nicht über Geheimhaltung des Keys.
+### 3.3 Warum `auth != null` als Regel nicht reicht
 
-### 3.3 Was gebaut werden soll
+**Zentraler Sicherheitsbefund:** Mit aktiviertem E-Mail/Passwort-Login kann sich
+**jeder**, der den `apiKey` aus der öffentlichen `index.html` liest, selbst ein
+Konto anlegen. Er wäre dann `auth != null` und käme an die Zonen — also an die
+Wohnadresse. Die naheliegende Regel ist damit wertlos.
 
-1. **Einmaliges Login** beim Einrichten, Token bleibt gespeichert, danach nie wieder (Lutz' ausdrücklicher Wunsch: nicht bei jedem App-Öffnen)
-2. **Gemeinsame Datenbank:** jedes Gerät schreibt seinen Sektor, alle Uhren lesen
-3. **Live-Aktualisierung** ohne Neuladen
-4. **Automatisch messen beim Öffnen** — kein Knopfdruck mehr
-5. **Zeitstempel pro Person:** „Anton · Schule · vor 25 Min"
-6. **Verschollen-Automatik:** wer sich länger als X Stunden nicht gemeldet hat, rutscht auf verschollen
-7. **Zonen in die Datenbank** statt ins öffentliche Repo
+**Lösung:** Die Regeln prüfen zusätzlich, ob die uid unter `/erlaubt` steht.
+Ein fremdes Konto ist zwar angemeldet, aber nicht freigeschaltet und sieht nichts.
+`/erlaubt` selbst ist für Clients weder les- noch schreibbar — nur über die
+Konsole pflegbar. Sicherheitsregeln dürfen den Knoten trotzdem lesen.
 
-**Datensparsamkeit:** In der Datenbank steht nur `Person 3 → Sektor 2 → Zeitstempel`. Keine Koordinaten. Selbst wer mitliest, sieht „Emilia war um 15:40 im Schwimmbad" — nicht wo das Schwimmbad ist.
+Die vollständigen Regeln liegen als **`firebase-rules.json`** im Repo. Sie
+validieren zusätzlich: Sektor 0–7, Personenindex 0–4, Zeitstempel muss der
+Serverzeit entsprechen (keine gefälschten Alter), keine Fremdfelder.
 
-**Alternative, die erwogen wurde:** Cloudflare Worker + KV-Store mit geteiltem Schlüssel. Lutz hat mit Cloudflare Workers schon gearbeitet. Firebase gewinnt beim Live-Update (Push statt Polling), Cloudflare bei Schlankheit und Kontrolle.
+### 3.4 Was v0.50 kann
 
----
+1. **Einmaliges Login** (`browserLocalPersistence`) — danach nie wieder Passwort
+2. **Gemeinsamer Stand:** jedes Gerät schreibt nur die eigene Person, liest alle
+3. **Live** ohne Neuladen (`onValue`)
+4. **Automatisch messen beim Öffnen**, ~1,2 s nach dem Login
+5. **Zeitstempel pro Person:** „Anton ist im Schwimmbad · vor 1 Std"
+6. **Verschollen-Automatik:** `VERSCHOLLEN_NACH_MS` (3 h). Ältere Meldung → der
+   Zeiger rutscht auf verschollen. Wird alle 30 s neu bewertet.
+7. **Zonen aus der Datenbank** statt aus dem öffentlichen Repo
+
+**Die „alle anderen auf verschollen"-Notlösung aus v0.45 ist raus.** Sie war nur
+nötig, solange ein Gerät nichts über die anderen wissen konnte.
+
+### 3.5 Architektur in der Datei
+
+Zwei getrennte Script-Blöcke, die ausschließlich über `window.UHR` reden:
+
+- **klassisches `<script>`** — baut die Uhr wie bisher, kennt kein Firebase
+- **`<script type="module">`** — Firebase-SDK v12.10.0 per CDN von gstatic
+
+Grund für die Trennung: Das SDK ist ESM, der bestehende Code ist es nicht.
+Die Modul-Version ist **fest gepinnt** — gstatic liefert für falsche Versionen
+404, was einen stillen Totalausfall bedeutet. Vor jeder Änderung der Version
+prüfen, dass `firebase-app.js`, `firebase-auth.js` und `firebase-database.js`
+unter der neuen Nummer wirklich existieren.
+
+**Wächter:** Lädt das Modul nicht (kein Netz, CDN blockiert, Browser ohne
+ES-Module), meldet die App nach 9 s „keine Verbindung zur Datenbank". Die
+Startwerte aller fünf Personen stehen auf **verschollen** — die Uhr behauptet
+nie etwas, was sie nicht weiß.
+
+**Zeiger-Einblendung:** `#zeiger` startet mit `opacity:0` und erscheint erst,
+wenn der erste Stand da ist oder der Wächter zuschlägt. Ohne das blitzen beim
+Laden fünf übereinanderliegende „verschollen"-Medaillons auf — fünf Medaillons
+(r≈34) passen bei R_ZEIGER=121 rechnerisch nicht nebeneinander in einen
+45°-Sektor, dafür bräuchte man ~32° je Medaillon.
 
 ## 4. Teil C — Native App (später)
 
@@ -386,24 +435,43 @@ So merkt Lutz nach einem Abend, ob ihm das Hardware-Basteln liegt.
 
 ## 6. Offene Punkte
 
-### Sofort machbar
-1. **Bestellung Block A** (ESP32, Motoren hat Lutz gefunden; Breadboard und Datenkabel fehlen noch)
-2. **Firebase einrichten** — die sechs Schritte aus 3.2, dann Config-Objekt an Claude
-3. **„Bei Freunden"-Koordinaten** — fehlender Ort. Bei eng beieinanderliegenden Adressen Radius auf 120–150 m senken.
+### Blockiert den Sync — muss als Erstes passieren
+1. **Nutzer in Firebase anlegen** (Authentication → Nutzer → Nutzer hinzufügen).
+   Empfehlung: ein gemeinsames Familienkonto, z. B. `volumentrader+uhr@gmail.com`
+   — Gmail liefert Plus-Adressen ins normale Postfach, die Adresse ist aber vom
+   Hauptkonto getrennt.
+2. **uid des Nutzers unter `/erlaubt/<uid>` mit Wert `true` eintragen.**
+   Ohne diesen Schritt sieht auch das eigene Konto nichts — die App meldet dann
+   „Dieses Konto ist nicht freigeschaltet".
+3. **`firebase-rules.json` in die Konsole übertragen** (Realtime Database → Regeln).
+4. **Zonen importieren** unter `/zonen` (JSON-Import in der Konsole).
 
-### Nach dem Prototyp
-4. Nischenmaße, Steckdose, WLAN-Test (5.2)
-5. Holz-Entscheidung: Eigenbau oder Objektrahmen (5.4)
-6. Zifferblatt-PDF in der finalen Größe erzeugen
+### Danach
+5. `index.html` (v0.50) hochladen, auf allen fünf Geräten Homescreen-App neu öffnen
+6. **„Bei Freunden"-Koordinaten** — fehlender Ort. Bei eng beieinanderliegenden
+   Adressen Radius auf 120–150 m senken.
+7. Bestellung Block A (ESP32, Breadboard, USB-**Daten**kabel)
 
 ### Später
-7. Native App mit Geofencing (Apple-Konto einrichten)
-8. Hall-Sensoren für automatische Referenzfahrt
+8. Nischenmaße, Steckdose, WLAN-Test (5.2)
+9. Holz-Entscheidung: Eigenbau oder Objektrahmen (5.4)
+10. Zifferblatt-PDF in der finalen Größe
+11. Native App mit Geofencing (Apple-Konto einrichten)
+12. Hall-Sensoren für automatische Referenzfahrt
+13. Eigenes Konto mit Nur-Lese-Rechten für die physische Uhr
 
-### Angeboten, unbeantwortet
-9. Chips unten als **Mini-Gesichter** statt Farbkreise
-
----
+### Zu entscheiden
+14. **Verschollen-Schwelle:** aktuell 3 h (`VERSCHOLLEN_NACH_MS`). Da nur beim
+    Öffnen der App gemessen wird, ist das knapp — wer morgens losgeht und die App
+    nicht öffnet, gilt mittags als verschollen. Das ist ehrlich, aber vielleicht
+    zu streng. Kandidaten: 6 h oder 12 h.
+15. **Fünf Einzelkonten statt einem Familienkonto?** Erlaubt die Regel „nur die
+    eigene Person schreiben". Kostet fünf Konten Verwaltung und Passwörter bei
+    den Kindern; der Gewinn ist gering, weil Zeiger ohnehin von Hand gezogen
+    werden dürfen.
+16. Chips unten als **Mini-Gesichter** statt Farbkreise
+17. Doppel-Lieferung (`index.html` + versionierte Kopie) beibehalten oder
+    durch Git-Tags ersetzen?
 
 ## 7. Fallen und Lehren
 
@@ -434,6 +502,23 @@ Erst Sättigung, dann Hautton. Umgekehrt verschiebt die Sättigungskorrektur die
 
 ### `min-height` vs. `height`
 `body { min-height:100% }` erzeugte 8 px Überhang gegenüber dem Fenster → die Seite ließ sich minimal scrollen. Mit `height:100%` behoben.
+
+### Playwright im Container
+Die vorinstallierte Chromium-Version passt nicht zur frisch per pip installierten
+Playwright-Version. **Kein `playwright install`** — stattdessen
+`launch(executable_path="/opt/pw-browsers/chromium", args=["--no-sandbox"])`.
+
+### Testkopie veraltet
+Beim Vorher/Nachher-Vergleich über einen lokalen HTTP-Server lief der Test gegen
+eine Kopie, die vor den letzten Änderungen erstellt worden war — das Ergebnis sah
+nach einem Bug in der App aus, war aber eine alte Datei. Vor jedem Lauf neu kopieren.
+
+### gstatic-Versionen prüfen, nicht raten
+`https://www.gstatic.com/firebasejs/<version>/firebase-app.js` liefert für falsche
+Versionen 404. Im Browser ist das ein **stiller** Totalausfall: Das Modul läuft
+nicht, die Uhr zeigt einfach ihre Startwerte. Gegenprobe mit einer garantiert
+ungültigen Nummer (99.0.0) gehört dazu — sonst weiß man nicht, ob der Test
+überhaupt etwas prüft.
 
 ### Container-Resets
 Die Arbeitsumgebung wird zwischen Sitzungen zurückgesetzt. Fonts (Cinzel.ttf, EBGaramond.ttf) mussten mehrfach neu geladen werden. Die Arbeitsdatei lässt sich aus der letzten Auslieferung wiederherstellen.

@@ -1,0 +1,35 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "erlaubt": {
+      ".read": false,
+      ".write": false
+    },
+
+    "status": {
+      ".read": "auth != null && root.child('erlaubt').child(auth.uid).val() === true",
+
+      "$p": {
+        ".write": "auth != null && root.child('erlaubt').child(auth.uid).val() === true && $p.matches(/^[0-4]$/)",
+        ".validate": "newData.hasChildren(['sektor','ts'])",
+
+        "sektor": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7"
+        },
+        "ts": {
+          ".validate": "newData.val() === now"
+        },
+        "$sonst": {
+          ".validate": false
+        }
+      }
+    },
+
+    "zonen": {
+      ".read": "auth != null && root.child('erlaubt').child(auth.uid).val() === true",
+      ".write": false
+    }
+  }
+}

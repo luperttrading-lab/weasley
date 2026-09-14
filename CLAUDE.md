@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.51 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.52 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.51) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.52) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.51)
+## 2. Teil A — Die Web-App (v0.52)
 
 ### 2.1 Aufbau
 
@@ -285,7 +285,7 @@ Serverzeit entsprechen (keine gefälschten Alter), keine Fremdfelder.
 1. **Einmaliges Login** (`browserLocalPersistence`) — danach nie wieder Passwort
 2. **Gemeinsamer Stand:** jedes Gerät schreibt nur die eigene Person, liest alle
 3. **Live** ohne Neuladen (`onValue`)
-4. **Automatisch messen beim Öffnen**, ~1,2 s nach dem Login
+4. **Automatisch messen** (seit v0.52 ausgebaut, siehe 3.6)
 5. **Zeitstempel pro Person:** „Anton ist im Schwimmbad · vor 1 Std"
 6. **Verschollen-Automatik:** `VERSCHOLLEN_NACH_MS` (3 h). Ältere Meldung → der
    Zeiger rutscht auf verschollen. Wird alle 30 s neu bewertet.
@@ -317,6 +317,42 @@ wenn der erste Stand da ist oder der Wächter zuschlägt. Ohne das blitzen beim
 Laden fünf übereinanderliegende „verschollen"-Medaillons auf — fünf Medaillons
 (r≈34) passen bei R_ZEIGER=121 rechnerisch nicht nebeneinander in einen
 45°-Sektor, dafür bräuchte man ~32° je Medaillon.
+
+### 3.6 Automatisches Nachmessen (v0.52)
+
+`getCurrentPosition` ist eine **Einzelmessung**, kein `watchPosition`. Bis v0.51
+gab es nur drei Auslöser (nach dem Login, Knopfdruck, Gerätezuordnung) — dazwischen
+stand der eigene Zeiger still.
+
+**Der eigentliche Mangel war subtiler:** iOS lädt die Homescreen-App beim
+Zurückholen aus dem App-Umschalter **nicht neu**. Wer die App nach der Ankunft
+öffnete, bekam also nicht einmal dann eine frische Messung und konnte trotz
+offener App auf „verschollen" rutschen.
+
+Jetzt:
+
+```
+MESS_TAKT_MS       = 2 min    Takt, solange die App im Vordergrund ist
+MESS_MINDEST_MS    = 60 s     nie zwei Messungen dichter beieinander
+MELDE_AUFFRISCH_MS = 20 min   Zeitstempel spätestens so oft erneuern
+```
+
+`autoMessen()` prüft der Reihe nach: Gerät zugeordnet? Zonen da? Sichtbar?
+Läuft keine Messung? Mindestabstand eingehalten? Ausgelöst von
+`visibilitychange`, `pageshow` (bfcache) und dem Takt.
+
+**Geschrieben wird nicht bei jeder Messung**, sondern nur bei Ortswechsel, wenn
+der Zeitstempel älter als 20 Minuten ist, oder bei Knopfdruck. Das senkt die
+Schreiblast von ~30 auf ~3 Vorgänge je Gerät und Stunde, hält den Zeitstempel
+aber frisch genug für die Verschollen-Automatik.
+
+**Fehlgeschlagene Taktmessungen ändern nichts.** Wer vor zwei Minuten Empfang
+hatte, ist nicht verschollen; der Zeitstempel altert, die 3-Stunden-Regel greift
+bei Bedarf von allein. Nur ein manueller Knopfdruck setzt bei fehlendem Signal
+sofort auf verschollen.
+
+Automatische Messungen ändern außerdem **nicht** die Chip-Auswahl und melden nur
+dann in der Textzeile, wenn sich der Ort tatsächlich geändert hat.
 
 ## 4. Teil C — Native App (später)
 
@@ -557,6 +593,22 @@ Versionen 404. Im Browser ist das ein **stiller** Totalausfall: Das Modul läuft
 nicht, die Uhr zeigt einfach ihre Startwerte. Gegenprobe mit einer garantiert
 ungültigen Nummer (99.0.0) gehört dazu — sonst weiß man nicht, ob der Test
 überhaupt etwas prüft.
+
+### `maximumAge` ist kein Detail
+`getCurrentPosition` mit `maximumAge: 30000` darf eine **bis zu 30 Sekunden alte**
+Position aus dem Cache liefern. Bei 50 km/h sind das über 400 m — mehr als jeder
+Zonenradius. Im Test mit simuliertem GPS sah es so aus, als reagiere die App nicht
+auf Positionswechsel; tatsächlich gab der Browser brav den Cache zurück.
+
+Seit v0.52: `maximumAge: 0` für Erstmessung, Knopfdruck und
+Sichtbarkeitswechsel — Ankunft ist der Moment, auf den es ankommt. Nur der
+2-Minuten-Takt nimmt 30000, weil dort ohnehin laufend gemessen wird.
+
+### Race Condition zwischen Zonen und erster Messung
+Bis v0.51 löste das Sync-Modul die erste Messung mit `setTimeout(…, 1200)` aus,
+während die Zonen asynchron über `onValue` eintrafen. Ein Rennen gegen das Netz:
+Bei langsamer Verbindung wurde ohne Zonen gemessen und jeder Ort als „unterwegs"
+gewertet. Seit v0.52 hängt die erste Messung am Zonen-Listener, nicht an einer Uhr.
 
 ### Container-Resets
 Die Arbeitsumgebung wird zwischen Sitzungen zurückgesetzt. Fonts (Cinzel.ttf, EBGaramond.ttf) mussten mehrfach neu geladen werden. Die Arbeitsdatei lässt sich aus der letzten Auslieferung wiederherstellen.

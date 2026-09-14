@@ -138,7 +138,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div class="ver">v0.51</div>
+  <div class="ver">v0.52</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -583,6 +583,34 @@ function fragGeraetWennNoetig(){ if(geraetIdx===null) setTimeout(ovlAuf,500); }
 // Wird vom Sync-Modul ueberschrieben: meldet eine neue eigene Position an die Datenbank.
 let meldeSync=function(){};
 
+// ---- Automatisches Nachmessen ----
+// getCurrentPosition ist eine Einzelmessung. Ohne diese Automatik stuende der
+// eigene Zeiger zwischen zwei Knopfdruecken still — und iOS laedt die
+// Homescreen-App beim Zurueckholen aus dem App-Umschalter NICHT neu, es gaebe
+// also nicht einmal beim Oeffnen eine frische Messung.
+const MESS_TAKT_MS       = 2*60*1000;    // Takt, solange die App im Vordergrund ist
+const MESS_MINDEST_MS    =   60*1000;    // nie zwei Messungen dichter beieinander
+const MELDE_AUFFRISCH_MS = 20*60*1000;   // Zeitstempel spaetestens so oft erneuern
+let letzteMessung=0, messungLaeuft=false;
+
+// Messen nur, wenn es etwas bringen kann.
+function autoMessen(maxAlter){
+  if(geraetIdx===null) return;                       // niemand zugeordnet
+  if(!zonenDa) return;                               // ohne Zonen waere alles "unterwegs"
+  if(document.visibilityState!=='visible') return;   // im Hintergrund nicht funken
+  if(messungLaeuft) return;
+  if(Date.now()-letzteMessung < MESS_MINDEST_MS) return;
+  messeStandort(true,maxAlter);
+}
+// Rueckkehr aus dem App-Umschalter oder aus dem Seiten-Cache: frisch messen (0)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible') autoMessen(0);
+});
+window.addEventListener('pageshow',e=>{ if(e.persisted) autoMessen(0); });
+// Takt darf einen bis zu 30 s alten Wert nehmen — spart Strom, und es wird
+// ohnehin alle zwei Minuten nachgemessen.
+setInterval(()=>autoMessen(30000), MESS_TAKT_MS);
+
 // Waechter: Wenn das Sync-Modul nicht laedt (kein Netz, CDN blockiert, altes
 // Geraet ohne ES-Module), darf die Uhr nicht stillschweigend Startwerte zeigen.
 // Alle Zeiger stehen dann auf verschollen — die Uhr weiss wirklich nichts.
@@ -599,7 +627,7 @@ setTimeout(()=>{
 
 // Eigene Position messen. still=true -> automatische Messung beim Oeffnen,
 // dann keine "wird gesucht"-Zwischenmeldung.
-function messeStandort(still){
+function messeStandort(still,maxAlter){
   if(geraetIdx===null){
     if(!still){melde('Bitte zuerst festlegen, wem dieses Ger&auml;t geh&ouml;rt.');ovlAuf();}
     return;
@@ -609,16 +637,29 @@ function messeStandort(still){
     if(!still)melde('<span class="warn">Dieses Ger&auml;t liefert keinen Standort.</span>');
     return;
   }
-  gpsBtn.disabled=true; if(!still)melde('Standort wird gesucht &hellip;');
+  gpsBtn.disabled=true; messungLaeuft=true; letzteMessung=Date.now();
+  if(!still)melde('Standort wird gesucht &hellip;');
   navigator.geolocation.getCurrentPosition(pos=>{
-    gpsBtn.disabled=false;
+    gpsBtn.disabled=false; messungLaeuft=false;
     const la=pos.coords.latitude, lo=pos.coords.longitude, acc=Math.round(pos.coords.accuracy||0);
     const r=ortAusGPS(la,lo);
     // Nur die EIGENE Person wird gesetzt. Wo die anderen stehen, sagt die
     // Datenbank — dieses Geraet weiss darueber nichts und erfindet nichts.
-    personen[idx].sektor=r.sektor; letzteMeldung[idx]=Date.now();
-    aktiv=idx; buildChips(); statusText(); startAnim(); highlight();
-    meldeSync(idx,r.sektor);
+    const vorher=personen[idx].sektor, alt=letzteMeldung[idx];
+    personen[idx].sektor=r.sektor;
+    // Nicht bei jeder Taktmessung schreiben: nur wenn sich der Ort geaendert hat
+    // oder der Zeitstempel zu alt wird (sonst rutscht man trotz offener App auf
+    // verschollen). Ein Knopfdruck meldet immer.
+    const gewechselt = (vorher!==r.sektor);
+    if(!still || gewechselt || !alt || (Date.now()-alt)>MELDE_AUFFRISCH_MS){
+      letzteMeldung[idx]=Date.now();
+      meldeSync(idx,r.sektor);
+    }
+    // Automatische Messung soll die Chip-Auswahl des Nutzers nicht wegreissen
+    if(!still) aktiv=idx;
+    buildChips(); statusText(); startAnim(); highlight();
+    // Bei stillen Messungen nur melden, wenn sich wirklich etwas geaendert hat
+    if(still && !gewechselt) return;
     if(!zonenDa){
       melde(`<span class="warn">${wer}: Zonen noch nicht geladen &rarr; <b>unterwegs</b></span>`);
     }else if(r.dist===null){
@@ -627,7 +668,11 @@ function messeStandort(still){
       melde(`<span class="ok">${wer} &rarr; ${orte[r.sektor].t}</span><br><small>${Math.round(r.dist)}&nbsp;m zur Ortsmitte &middot; Messgenauigkeit &plusmn;${acc}&nbsp;m</small>`);
     }
   },err=>{
-    gpsBtn.disabled=false;
+    gpsBtn.disabled=false; messungLaeuft=false;
+    // Fehlgeschlagene Taktmessung aendert nichts: wer vor zwei Minuten noch
+    // Empfang hatte, ist nicht verschollen. Der Zeitstempel altert weiter,
+    // die 3-Stunden-Automatik greift bei Bedarf von allein.
+    if(still) return;
     if(err.code===1){
       // Freigabe fehlt: das ist eine Einstellungssache, kein verschollener Mensch.
       // Zeiger bleibt stehen, es wird auch nichts gemeldet.
@@ -640,7 +685,10 @@ function messeStandort(still){
     meldeSync(idx,SEK_VERSCHOLLEN);
     const grund = err.code===3 ? 'keine Antwort vom Standortdienst' : 'kein Standortsignal';
     melde(`<span class="warn">${wer}: ${grund} &rarr; <b>verschollen</b></span>`);
-  },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  },{enableHighAccuracy:true,timeout:12000,
+     // Ankunft ist der entscheidende Moment: dann frisch messen, nicht aus dem
+     // Cache. Nur der 2-Minuten-Takt darf sparen, dort wird ohnehin laufend gemessen.
+     maximumAge:(maxAlter===undefined?0:maxAlter)});
 }
 gpsBtn.addEventListener('click',()=>messeStandort(false));
 
@@ -755,7 +803,7 @@ async function anmelden(){
 lgbtn.addEventListener('click',anmelden);
 lgpass.addEventListener('keydown',e=>{ if(e.key==='Enter') anmelden(); });
 
-let abStand=null, abZonen=null;
+let abStand=null, abZonen=null, ersteMessung=false;
 
 onAuthStateChanged(auth, user=>{
   if(!user){
@@ -784,7 +832,13 @@ function starte(){
 
   // Zonen: enthalten die Koordinaten, stehen bewusst nur in der Datenbank
   abZonen = onValue(ref(db,'zonen'),
-    snap=>{ U.setzeZonen(snap.val()||{}); },
+    snap=>{
+      U.setzeZonen(snap.val()||{});
+      // Erst messen, wenn die Zonen wirklich da sind. Eine feste Wartezeit waere
+      // ein Rennen gegen das Netz — bei langsamer Verbindung haette die Messung
+      // ohne Zonen stattgefunden und jeden Ort als "unterwegs" gewertet.
+      if(!ersteMessung){ ersteMessung=true; setTimeout(()=>U.messen(true),300); }
+    },
     err =>{ leserFehler(err,'Zonen'); });
 
   // Gemeinsamer Stand aller fuenf, live
@@ -798,10 +852,9 @@ function starte(){
       .catch(e=>sag('Melden fehlgeschlagen ('+(e.code||'Fehler')+')',true));
   });
 
-  // Geraetezuordnung erst jetzt erfragen, danach automatisch messen —
-  // der Knopf "Standort erkennen" bleibt fuer die Nachmessung.
+  // Geraetezuordnung erfragen. Die erste Messung haengt am Zonen-Listener
+  // oben, nicht an einer Wartezeit.
   U.fragGeraet();
-  setTimeout(()=>U.messen(true),1200);
 }
 </script>
 </body>

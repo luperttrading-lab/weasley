@@ -138,7 +138,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div class="ver">v0.50</div>
+  <div class="ver">v0.51</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -167,11 +167,11 @@ function arc(r,a0,a1,sw){const p0=polar(r,a0),p1=polar(r,a1);const big=Math.abs(
 const svg=document.getElementById('clock');
 
 const orte=[
-  {t:'ERLENTAL'},{t:'SCHULE'},{t:'SCHWIMMBAD'},{t:'TISCHTENNIS'},
+  {t:'ZU HAUSE'},{t:'SCHULE'},{t:'SCHWIMMBAD'},{t:'TISCHTENNIS'},
   {t:'BEI FREUNDEN'},{t:'UNTERWEGS'},{t:'VERSCHOLLEN',lost:true},{t:'IN GEFAHR',danger:true}
 ];
 const N=orte.length,STEP=360/N;
-const ortName={0:'in Erlental',1:'in der Schule',2:'im Schwimmbad',3:'in der Tischtennishalle',4:'bei Freunden',5:'unterwegs',6:'verschollen',7:'in Gefahr'};
+const ortName={0:'zu Hause',1:'in der Schule',2:'im Schwimmbad',3:'in der Tischtennishalle',4:'bei Freunden',5:'unterwegs',6:'verschollen',7:'in Gefahr'};
 
 // ============ GPS-ZONEN ============
 // Die Koordinaten stehen NICHT mehr in dieser Datei, sondern in der Datenbank

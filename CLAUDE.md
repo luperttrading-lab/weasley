@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.50 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.51 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.50) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.51) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.50)
+## 2. Teil A — Die Web-App (v0.51)
 
 ### 2.1 Aufbau
 
@@ -95,7 +95,7 @@ NEBEL= #2f3a4a   VERSCHOLLEN
 
 | Index | Ort | Besonderheit |
 |---|---|---|
-| 0 | ERLENTAL | Zuhause |
+| 0 | ZU HAUSE | die Wohnadresse |
 | 1 | SCHULE | |
 | 2 | SCHWIMMBAD | |
 | 3 | TISCHTENNIS | |
@@ -128,8 +128,8 @@ Wird beim Ziehen **nicht** umsortiert.
 Database unter `/zonen` und sind nur für angemeldete Geräte lesbar, die auf der
 Whitelist stehen.
 
-**Warum der Umzug zwingend war:** Das Repo ist öffentlich und Erlental ist die
-Wohnadresse. Das Repo privat zu stellen hätte nichts gebracht — GitHub Pages
+**Warum der Umzug zwingend war:** Das Repo ist öffentlich, und hinter Sektor 0
+steht die Wohnadresse. Das Repo privat zu stellen hätte nichts gebracht — GitHub Pages
 liefert die `index.html` ohnehin öffentlich aus, die Koordinaten standen im
 JavaScript, das jeder Browser herunterlädt. (Zusätzlich: Pages mit privatem Repo
 gibt es erst ab GitHub Pro.) Der einzige Weg war, sie hinter das Login zu legen.
@@ -143,7 +143,7 @@ Schlüssellage das eine oder andere liefert.
 Struktur in der Datenbank:
 
 ```
-/zonen/0/0  { lat, lon, r }     ERLENTAL (1 Zone)
+/zonen/0/0  { lat, lon, r }     ZU HAUSE (1 Zone)
 /zonen/1/0..1                   SCHULE (2 Zonen)
 /zonen/2/0..3                   SCHWIMMBAD (4 Zonen)
 /zonen/3/0..2                   TISCHTENNIS (3 Zonen)
@@ -151,7 +151,7 @@ Struktur in der Datenbank:
 
 Orte 4 (BEI FREUNDEN), 5 (UNTERWEGS), 6, 7 haben bewusst keine Zonen.
 
-**Engste Paarung:** Tischtennis 3 liegt nur **1117 m** von Erlental entfernt.
+**Engste Paarung:** Tischtennis 3 liegt nur **1117 m** von Sektor 0 entfernt.
 Bei Radien 250+200 bleiben 667 m Luft — Obergrenze für spätere Erhöhungen.
 
 **Radius-Faustwerte:** Gebäude 120–180 m, Schule mit Hof 200 m, weitläufiges
@@ -439,7 +439,7 @@ So merkt Lutz nach einem Abend, ob ihm das Hardware-Basteln liegt.
 Firebase-Projekt eingerichtet, gemeinsames Konto `uhr@standort-uhr.de`, uid auf
 der Whitelist, zehn Zonen importiert, Regeln veröffentlicht, v0.50 auf `main`
 und über GitHub Pages ausgeliefert. Auf Lutz' Gerät verifiziert: Anmeldung,
-Zonenabruf, GPS-Messung (Erlental, 10 m zur Ortsmitte bei ±9 m Genauigkeit),
+Zonenabruf, GPS-Messung (Sektor 0, 10 m zur Ortsmitte bei ±9 m Genauigkeit),
 Schreiben nach `/status/1`.
 
 ### Als Nächstes
@@ -455,7 +455,7 @@ Sobald mehrere Personen auf demselben Ort stehen, überlappen die Medaillons und
 die Gravur-Namen stapeln sich zu einem unleserlichen Klumpen. Beim ersten Start
 mit vier Verschollenen sofort sichtbar.
 
-**Das ist kein Randfall:** abends sind alle fünf in Erlental. Vor v0.50 fiel es
+**Das ist kein Randfall:** abends sind alle fünf zu Hause. Vor v0.50 fiel es
 nicht auf, weil jedes Gerät gestreute Startwerte zeigte.
 
 Rechnerisch lässt es sich in der jetzigen Geometrie nicht auflösen: Ein

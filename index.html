@@ -52,7 +52,7 @@
     text-align:center;max-width:320px;line-height:1.45;display:flex;align-items:center;justify-content:center;}
   .gpsmsg .ok{color:#9ecf9e;font-style:normal;}
   .gpsmsg .warn{color:#e8b48a;}
-  .ver{margin-top:14px;margin-bottom:6px;font-size:11px;letter-spacing:.14em;color:#8a7a5e;opacity:.55;}
+  .ver{margin-top:14px;margin-bottom:6px;font-size:12px;letter-spacing:.14em;color:#a5947a;}
 
   /* Textumgebung schrumpft, die Uhr bleibt gross */
   @media (max-height:850px){
@@ -121,6 +121,11 @@
   .syncz{min-height:16px;margin-top:3px;font-size:11.5px;font-style:italic;
     color:#9b8a6e;text-align:center;opacity:.85;}
   .syncz .weg{color:#e8b48a;}
+  .neuver{width:100%;margin-bottom:9px;padding:9px 12px;border-radius:10px;
+    background:linear-gradient(#3d2e1d,#2a1f12);border:1px solid #7d5f30;
+    color:#efd79a;font-size:13px;font-style:italic;text-align:center;line-height:1.4;
+    box-shadow:0 2px 9px rgba(0,0,0,.35);}
+  .neuver[hidden]{display:none;}
   #lgovl{z-index:60;}
   #zeiger{transition:opacity .45s ease;}
 </style>
@@ -128,6 +133,7 @@
 <body>
 <div class="bgfix"></div>
 <div class="wrap">
+  <div class="neuver" id="neuver" hidden></div>
   <div class="titel">DIE STANDORT&middot;UHR</div>
   <div class="sub">&mdash; wer ist gerade wo &mdash;</div>
   <div class="stage"><svg id="clock" viewBox="0 0 400 400"></svg></div>
@@ -138,7 +144,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div class="ver">v0.52</div>
+  <div class="ver" id="verzeile">v0.53</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -583,6 +589,44 @@ function fragGeraetWennNoetig(){ if(geraetIdx===null) setTimeout(ovlAuf,500); }
 // Wird vom Sync-Modul ueberschrieben: meldet eine neue eigene Position an die Datenbank.
 let meldeSync=function(){};
 
+// ---- Neue Version erkennen und laden ----
+// iOS haelt die Homescreen-App hartnaeckig im Speicher und im Cache. Ohne diese
+// Pruefung laeuft auf den Geraeten monatelang eine alte Fassung weiter, ohne dass
+// es jemand merkt. version.json wird bei jeder Lieferung mitgepflegt.
+const APP_VERSION='0.53';
+{const e=document.getElementById('verzeile'); if(e) e.textContent='v'+APP_VERSION;}
+let versionGeprueft=0;
+async function pruefeVersion(){
+  if(Date.now()-versionGeprueft < 30000) return;   // nicht bei jedem Tab-Wechsel
+  versionGeprueft=Date.now();
+  const leiste=document.getElementById('neuver');
+  try{
+    // Cache-Buster UND no-store: sonst beantwortet der Cache die Frage nach dem Cache
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!d || !d.version || d.version===APP_VERSION) return;
+
+    // Schon einmal vergeblich neu geladen? Dann nicht in der Schleife haengen
+    // bleiben, sondern ehrlich sagen, was zu tun ist.
+    let schon=null; try{ schon=sessionStorage.getItem('uhr_reload'); }catch(e){}
+    if(schon===d.version){
+      leiste.textContent='Neue Version '+d.version+' verfügbar — App schließen und neu öffnen';
+      leiste.hidden=false;
+      return;
+    }
+    try{ sessionStorage.setItem('uhr_reload',d.version); }catch(e){}
+    leiste.textContent='Neue Version '+d.version+' wird geladen …';
+    leiste.hidden=false;
+    setTimeout(async()=>{
+      // Erst die Datei am Cache vorbei neu holen, dann neu laden — ein blosses
+      // reload() wuerde dieselbe alte Fassung aus dem Cache bekommen.
+      try{ await fetch(location.href,{cache:'reload'}); }catch(e){}
+      location.reload();
+    },1400);
+  }catch(e){ /* offline: kein Grund, irgendetwas anzuzeigen */ }
+}
+
 // ---- Automatisches Nachmessen ----
 // getCurrentPosition ist eine Einzelmessung. Ohne diese Automatik stuende der
 // eigene Zeiger zwischen zwei Knopfdruecken still — und iOS laedt die
@@ -604,12 +648,14 @@ function autoMessen(maxAlter){
 }
 // Rueckkehr aus dem App-Umschalter oder aus dem Seiten-Cache: frisch messen (0)
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible') autoMessen(0);
+  if(document.visibilityState!=='visible') return;
+  autoMessen(0); pruefeVersion();
 });
-window.addEventListener('pageshow',e=>{ if(e.persisted) autoMessen(0); });
+window.addEventListener('pageshow',e=>{ if(e.persisted){ autoMessen(0); pruefeVersion(); } });
 // Takt darf einen bis zu 30 s alten Wert nehmen — spart Strom, und es wird
 // ohnehin alle zwei Minuten nachgemessen.
 setInterval(()=>autoMessen(30000), MESS_TAKT_MS);
+setTimeout(pruefeVersion,2500);
 
 // Waechter: Wenn das Sync-Modul nicht laedt (kein Netz, CDN blockiert, altes
 // Geraet ohne ES-Module), darf die Uhr nicht stillschweigend Startwerte zeigen.

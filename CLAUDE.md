@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.52 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.53 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.52) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.53) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.52)
+## 2. Teil A — Die Web-App (v0.53)
 
 ### 2.1 Aufbau
 
@@ -594,6 +594,19 @@ nicht, die Uhr zeigt einfach ihre Startwerte. Gegenprobe mit einer garantiert
 ungültigen Nummer (99.0.0) gehört dazu — sonst weiß man nicht, ob der Test
 überhaupt etwas prüft.
 
+### Ein `reload()` allein holt keine neue Fassung
+iOS hält die Homescreen-App im Speicher **und** im Cache. `location.reload()`
+bekommt dieselbe alte Datei zurück. Seit v0.53 wird deshalb erst
+`fetch(location.href,{cache:'reload'})` ausgeführt — das erneuert den
+HTTP-Cache-Eintrag — und danach neu geladen. Ebenso muss die Abfrage von
+`version.json` selbst am Cache vorbei (`?t=`+Zeitstempel **und**
+`cache:'no-store'`), sonst beantwortet der Cache die Frage nach dem Cache.
+
+**Schutz vor der Endlosschleife:** Vor dem Neuladen wird die erwartete Version in
+`sessionStorage` vermerkt. Bringt der Reload sie nicht, lädt die App **nicht**
+erneut, sondern zeigt „App schließen und neu öffnen". Ohne diesen Merker
+entstünde eine Reload-Schleife, sobald der Cache sich hartnäckig zeigt.
+
 ### `maximumAge` ist kein Detail
 `getCurrentPosition` mit `maximumAge: 30000` darf eine **bis zu 30 Sekunden alte**
 Position aus dem Cache liefern. Bei 50 km/h sind das über 400 m — mehr als jeder
@@ -617,8 +630,20 @@ Die Arbeitsumgebung wird zwischen Sitzungen zurückgesetzt. Fonts (Cinzel.ttf, E
 
 ## 8. Deploy-Ablauf (bewährt)
 
+⚠️ **Bei JEDER Lieferung drei Stellen gleichziehen:**
+
+1. `const APP_VERSION='X.YZ'` im Skript
+2. `version.json` → `{"version": "X.YZ"}`
+3. Die `.ver`-Zeile füllt sich seit v0.53 automatisch aus `APP_VERSION` — dort
+   ist nichts mehr von Hand zu ändern.
+
+Laufen 1 und 2 auseinander, zeigt die App entweder dauerhaft einen
+Aktualisierungshinweis (version.json zu hoch) oder gar keinen (zu niedrig).
+Gegenprobe vor dem Push:
+`grep -o "APP_VERSION='[0-9.]*'" index.html; cat version.json`
+
 - **Repo:** GitHub Pages unter `luperttrading-lab`, Settings → Pages → main → root.
-  Zwei Dateien gehören ins Root: `index.html` und `apple-touch-icon-v3.png`.
+  Drei Dateien gehören ins Root: `index.html`, `version.json` und `apple-touch-icon-v3.png`.
 - **Ablauf:** neue `index.html` hochladen → ~1 Min warten (GitHub Pages baut) → auf dem iPhone die Homescreen-App **komplett schließen** (App-Umschalter, wegwischen) und neu öffnen. iOS hält Web-Apps gern im Speicher.
 - **Icon-Wechsel:** Der neue Dateiname (`-v3`) ist Absicht — iOS und GitHub Pages cachen Icons hartnäckig. Altes Icon vom Homescreen löschen und neu hinzufügen.
 - **`build_deliver.py`** ersetzte in der Chat-Umgebung lokale `@font-face`-Blöcke durch Google-CDN-Imports und erzeugte die Doppel-Lieferung. **In Claude Code entfällt das** — dort wird direkt an der `index.html` gearbeitet.

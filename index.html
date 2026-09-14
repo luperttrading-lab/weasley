@@ -7,6 +7,11 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v3.png">
 <meta name="apple-mobile-web-app-title" content="Standort-Uhr">
 <meta name="theme-color" content="#2c1f13">
+<!-- Zweite Sicherung gegen haengende Fassungen. GitHub Pages sendet
+     cache-control: max-age=600, der echte Header schlaegt dieses Meta-Tag
+     in den meisten Browsern; die Versionspruefung im Skript bleibt der
+     verlaessliche Weg. -->
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&display=swap');
 </style>
@@ -469,6 +474,10 @@ function loop(now){
 // zeigen, wie alt ihr Wissen ist.
 const VERSCHOLLEN_NACH_MS=3*60*60*1000;
 const letzteMeldung=personen.map(()=>0);   // 0 = noch nie gemeldet
+// 'gps' = gemessen, 'hand' = von jemandem auf dem Zifferblatt gesetzt, null = unbekannt.
+// Ohne diese Unterscheidung behauptet die Uhr "gerade eben" fuer eine Position,
+// die in Wahrheit nur jemand mit dem Finger dorthin geschoben hat.
+const quelle=personen.map(()=>null);
 
 function vorWieLange(ms){
   if(!ms) return '';
@@ -485,7 +494,11 @@ function vorWieLange(ms){
 function statusText(){
   const p=personen[aktiv],s=orte[p.sektor];
   const cls=s.danger?'gef':'ort';
-  const zeit=letzteMeldung[aktiv]?'<span class="seit">'+vorWieLange(letzteMeldung[aktiv])+'</span>':'';
+  let zeit='';
+  if(letzteMeldung[aktiv]){
+    const wie = quelle[aktiv]==='hand' ? 'von Hand gesetzt &middot; ' : '';
+    zeit='<span class="seit">'+wie+vorWieLange(letzteMeldung[aktiv])+'</span>';
+  }
   document.getElementById('status').innerHTML=`<span><span class="nm">${p.name}</span> ist <span class="${cls}">${ortName[p.sektor]}</span>${zeit}</span>`;
 }
 function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?1:0));}
@@ -532,11 +545,13 @@ function onUp(e){
       const p=svgPt(e.clientX,e.clientY), s=sektorVon(winkelVon(p.x,p.y));
       // Von Hand gesetzte Position gilt fuer alle — nur so kommt z.B.
       // "IN GEFAHR" auf die Uhren der anderen.
-      personen[grabbed].sektor=s; letzteMeldung[grabbed]=Date.now(); meldeSync(grabbed,s);
+      personen[grabbed].sektor=s; letzteMeldung[grabbed]=Date.now();
+      quelle[grabbed]='hand'; meldeSync(grabbed,s,'hand');
     }
     dragging=false; grabbed=-1; statusText(); startAnim();
   } else if(pendingTap>=0){
-    personen[aktiv].sektor=pendingTap; letzteMeldung[aktiv]=Date.now(); meldeSync(aktiv,pendingTap);
+    personen[aktiv].sektor=pendingTap; letzteMeldung[aktiv]=Date.now();
+    quelle[aktiv]='hand'; meldeSync(aktiv,pendingTap,'hand');
     pendingTap=-1; statusText(); startAnim();
   }
   dragFlag=false;
@@ -587,13 +602,13 @@ zeigeGeraet();
 function fragGeraetWennNoetig(){ if(geraetIdx===null) setTimeout(ovlAuf,500); }
 
 // Wird vom Sync-Modul ueberschrieben: meldet eine neue eigene Position an die Datenbank.
-let meldeSync=function(){};
+let meldeSync=function(){};   // (idx, sektor, quelle)
 
 // ---- Neue Version erkennen und laden ----
 // iOS haelt die Homescreen-App hartnaeckig im Speicher und im Cache. Ohne diese
 // Pruefung laeuft auf den Geraeten monatelang eine alte Fassung weiter, ohne dass
 // es jemand merkt. version.json wird bei jeder Lieferung mitgepflegt.
-const APP_VERSION='0.53';
+const APP_VERSION='0.54';
 {const e=document.getElementById('verzeile'); if(e) e.textContent='v'+APP_VERSION;}
 let versionGeprueft=0;
 async function pruefeVersion(){
@@ -698,8 +713,8 @@ function messeStandort(still,maxAlter){
     // verschollen). Ein Knopfdruck meldet immer.
     const gewechselt = (vorher!==r.sektor);
     if(!still || gewechselt || !alt || (Date.now()-alt)>MELDE_AUFFRISCH_MS){
-      letzteMeldung[idx]=Date.now();
-      meldeSync(idx,r.sektor);
+      letzteMeldung[idx]=Date.now(); quelle[idx]='gps';
+      meldeSync(idx,r.sektor,'gps');
     }
     // Automatische Messung soll die Chip-Auswahl des Nutzers nicht wegreissen
     if(!still) aktiv=idx;
@@ -726,9 +741,9 @@ function messeStandort(still,maxAlter){
       return;
     }
     // kein Signal / Zeitueberschreitung: ueber DIESE Person liegen keine Daten vor
-    personen[idx].sektor=SEK_VERSCHOLLEN; letzteMeldung[idx]=Date.now();
+    personen[idx].sektor=SEK_VERSCHOLLEN; letzteMeldung[idx]=Date.now(); quelle[idx]='gps';
     aktiv=idx; buildChips(); statusText(); startAnim(); highlight();
-    meldeSync(idx,SEK_VERSCHOLLEN);
+    meldeSync(idx,SEK_VERSCHOLLEN,'gps');
     const grund = err.code===3 ? 'keine Antwort vom Standortdienst' : 'kein Standortsignal';
     melde(`<span class="warn">${wer}: ${grund} &rarr; <b>verschollen</b></span>`);
   },{enableHighAccuracy:true,timeout:12000,
@@ -751,10 +766,13 @@ window.UHR={
     const jetzt=Date.now();
     personen.forEach((p,i)=>{
       const e=stand&&stand[i];
-      if(!e||typeof e.sektor!=='number'){ letzteMeldung[i]=0; p.sektor=SEK_VERSCHOLLEN; return; }
+      if(!e||typeof e.sektor!=='number'){ letzteMeldung[i]=0; quelle[i]=null; p.sektor=SEK_VERSCHOLLEN; return; }
       letzteMeldung[i]=e.ts||0;
       // Zu alte Meldung -> verschollen. Die Uhr behauptet nichts, was sie nicht weiss.
-      p.sektor=(e.ts && (jetzt-e.ts)>VERSCHOLLEN_NACH_MS) ? SEK_VERSCHOLLEN : e.sektor;
+      const veraltet = !!(e.ts && (jetzt-e.ts)>VERSCHOLLEN_NACH_MS);
+      p.sektor = veraltet ? SEK_VERSCHOLLEN : e.sektor;
+      // Hat die Automatik den Sektor ueberschrieben, sagt die alte Quelle nichts mehr
+      quelle[i] = veraltet ? null : (e.quelle||null);
     });
     buildChips(); statusText(); startAnim(); highlight(); zeigeZeiger();
   },
@@ -892,9 +910,10 @@ function starte(){
     snap=>{ U.setzeStand(snap.val()||{}); sag('verbunden'); },
     err =>{ leserFehler(err,'Stand'); });
 
-  // Eigene Position in die Datenbank schreiben
-  U.setMelder((idx,sektor)=>{
-    set(ref(db,'status/'+idx),{ sektor:sektor, ts:serverTimestamp() })
+  // Eigene Position in die Datenbank schreiben. 'quelle' unterscheidet eine
+  // echte Messung von einer Position, die jemand auf dem Zifferblatt gesetzt hat.
+  U.setMelder((idx,sektor,q)=>{
+    set(ref(db,'status/'+idx),{ sektor:sektor, ts:serverTimestamp(), quelle:(q==='hand'?'hand':'gps') })
       .catch(e=>sag('Melden fehlgeschlagen ('+(e.code||'Fehler')+')',true));
   });
 

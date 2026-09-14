@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.53 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.54 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.53) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.54) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.53)
+## 2. Teil A — Die Web-App (v0.54)
 
 ### 2.1 Aufbau
 
@@ -257,6 +257,7 @@ kommt über die Zugriffsregeln.
 /erlaubt/<uid>          true    Whitelist — wer hier nicht steht, sieht nichts
 /status/<0..4>/sektor   0..7    eine Person, ein Sektor
 /status/<0..4>/ts       Server-Zeitstempel
+/status/<0..4>/quelle   'gps' | 'hand'   gemessen oder von Hand gesetzt
 /zonen/<0..3>/<n>       { lat, lon, r }
 ```
 
@@ -318,7 +319,37 @@ Laden fünf übereinanderliegende „verschollen"-Medaillons auf — fünf Medai
 (r≈34) passen bei R_ZEIGER=121 rechnerisch nicht nebeneinander in einen
 45°-Sektor, dafür bräuchte man ~32° je Medaillon.
 
-### 3.6 Automatisches Nachmessen (v0.52)
+### 3.6 Gemessen oder behauptet (v0.54)
+
+Ein Gerät kann **nur die eigene Person messen**. Schiebt jemand einen fremden
+Zeiger auf dem Zifferblatt, landet das als ganz normale Meldung in der Datenbank
+— alle fünf Uhren zeigen es dann. Das ist gewollt, sonst käme „IN GEFAHR" nie auf
+die anderen Uhren.
+
+**Das Problem dabei:** Bis v0.53 stand in der Statuszeile „gerade eben", auch wenn
+niemand gemessen, sondern nur jemand geschoben hatte. Die Uhr behauptete damit
+etwas, das sie nicht wusste — genau das, was sonst überall vermieden wird.
+
+Seit v0.54 trägt jede Meldung ein Feld `quelle`:
+
+| Auslöser | quelle |
+|---|---|
+| GPS-Messung (auch fehlgeschlagene → verschollen) | `gps` |
+| Medaillon ziehen, Sektor antippen | `hand` |
+
+Die Statuszeile zeigt dann „von Hand gesetzt · vor 7 Min" statt nur „vor 7 Min".
+
+**Feinheit:** Hat die Verschollen-Automatik den Sektor überschrieben (Meldung
+älter als 3 h), wird `quelle` auf `null` gesetzt. Die alte Quelle sagt über den
+angezeigten Zustand nichts mehr aus, und „verschollen · von Hand gesetzt" wäre
+irreführend.
+
+⚠️ **Die Sicherheitsregeln müssen mitziehen.** `"$sonst": {".validate": false}`
+lehnt jedes unbekannte Feld ab — ohne den `quelle`-Eintrag in den Regeln kann
+**kein Gerät mehr melden**. Regeln immer **vor** der App ausliefern. Umgekehrt
+ist es unkritisch: `quelle` ist optional, eine alte App ohne das Feld bleibt gültig.
+
+### 3.7 Automatisches Nachmessen (v0.52)
 
 `getCurrentPosition` ist eine **Einzelmessung**, kein `watchPosition`. Bis v0.51
 gab es nur drei Auslöser (nach dem Login, Knopfdruck, Gerätezuordnung) — dazwischen

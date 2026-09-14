@@ -21,6 +21,9 @@
         "ts": {
           ".validate": "newData.val() === now"
         },
+        "quelle": {
+          ".validate": "newData.isString() && (newData.val() === 'gps' || newData.val() === 'hand')"
+        },
         "$sonst": {
           ".validate": false
         }

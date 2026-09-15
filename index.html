@@ -57,7 +57,7 @@
     text-align:center;max-width:320px;line-height:1.45;display:flex;align-items:center;justify-content:center;}
   .gpsmsg .ok{color:#9ecf9e;font-style:normal;}
   .gpsmsg .warn{color:#e8b48a;}
-  .ver{margin-top:14px;margin-bottom:6px;font-size:12px;letter-spacing:.14em;color:#a5947a;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .ver{margin-top:14px;margin-bottom:6px;font-size:12px;letter-spacing:.14em;color:#a5947a;cursor:pointer;-webkit-tap-highlight-color:transparent;text-decoration:underline dotted;text-underline-offset:3px;}
 
   /* Textumgebung schrumpft, die Uhr bleibt gross */
   @media (max-height:850px){
@@ -126,11 +126,18 @@
   .syncz{min-height:16px;margin-top:3px;font-size:11.5px;font-style:italic;
     color:#9b8a6e;text-align:center;opacity:.85;}
   .syncz .weg{color:#e8b48a;}
-  .neuver{width:100%;margin-bottom:9px;padding:9px 12px;border-radius:10px;
+  /* Banner UEBERLAGERT die Seite (Zettel): position:fixed, direkt im body — im Fluss
+     wuerde es beim Erscheinen die ganze Uhr nach unten schieben. z-index ueber der
+     Anmeldemaske (60), damit "sobald du fertig bist" beim Tippen sichtbar bleibt. */
+  .neuver{position:fixed;left:12px;right:12px;top:max(env(safe-area-inset-top),12px);z-index:70;
+    padding:9px 12px;border-radius:10px;
     background:linear-gradient(#3d2e1d,#2a1f12);border:1px solid #7d5f30;
     color:#efd79a;font-size:13px;font-style:italic;text-align:center;line-height:1.4;
     box-shadow:0 2px 9px rgba(0,0,0,.35);}
   .neuver[hidden]{display:none;}
+  .neuver.unten{top:auto;bottom:max(env(safe-area-inset-bottom),12px);}   /* Antwort an der Kante des Ausloesers */
+  .vertop{font-style:normal;font-size:.92em;letter-spacing:.08em;color:#a5947a;cursor:pointer;
+    text-decoration:underline dotted;text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
   .neuver.neu{border-color:#c79a3e;background:linear-gradient(#4a381f,#2e2114);color:#f3dc9c;font-style:normal;
     box-shadow:0 2px 12px rgba(0,0,0,.45),0 0 0 1px rgba(199,154,62,.35);}
   .neubtn{margin-left:10px;font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:.05em;
@@ -142,10 +149,10 @@
 </head>
 <body>
 <div class="bgfix"></div>
+<div class="neuver" id="neuver" hidden></div>
 <div class="wrap">
-  <div class="neuver" id="neuver" hidden></div>
-  <div class="titel">DIE STANDORT&middot;UHR</div>
-  <div class="sub">&mdash; wer ist gerade wo &mdash;</div>
+  <div class="titel" id="titel" title="antippen: nach neuer Version suchen">DIE STANDORT&middot;UHR</div>
+  <div class="sub">&mdash; wer ist gerade wo &mdash; <span id="vertop" class="vertop">v0.59</span></div>
   <div class="stage"><svg id="clock" viewBox="0 0 400 400"></svg></div>
   <div class="status" id="status"></div>
   <div class="people" id="people"></div>
@@ -154,7 +161,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.58</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.59</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -620,7 +627,16 @@ let versionGeprueft=0;
 const VER_MINDEST_MS=15*1000;       // Sichtbarkeitswechsel: nur Doppelzuendung mit pageshow abfangen
 const VER_TAKT_MS=60*1000;          // waehrend die App offen liegt: jede Minute (Zettel-Takt, 20 Bytes je Abfrage)
 let neuverTimer=null, wartendeVersion=null;   // wartendeVersion: eine gefundene, noch nicht geladene Fassung
-function zeigeNeuver(html,neu){const l=document.getElementById('neuver');l.innerHTML=html;l.classList.toggle('neu',!!neu);l.hidden=false;}
+let bannerAusloeser=null;   // null = die App selbst meldet -> fester Ort oben
+// Meldung auf einen Handtipp erscheint an der Kante des Ausloesers (Zettel): unten
+// getippt, unten geantwortet — sonst uebersieht man die Antwort am anderen Ende.
+function bannerAnKante(el){
+  const l=document.getElementById('neuver');
+  if(!el){ l.classList.remove('unten'); return; }
+  const r=el.getBoundingClientRect();
+  l.classList.toggle('unten', r.top+r.height/2 > window.innerHeight/2);
+}
+function zeigeNeuver(html,neu){const l=document.getElementById('neuver');bannerAnKante(bannerAusloeser);l.innerHTML=html;l.classList.toggle('neu',!!neu);l.hidden=false;}
 const KNOPF='<button type="button" class="neubtn">Jetzt laden</button>';
 // Ein Tipp auf die Leiste (wie in Zettel): eine Info verschwindet, eine wartende
 // Version wird sofort geladen — auch im Aufschub, wenn man gerade tippt.
@@ -669,8 +685,9 @@ function neuLaden(neu){
 }
 
 let pruefungLaeuft=false;   // keine Doppellaeufe (Zettel: `checking`)
-async function pruefeVersion(erzwingen,vonHand){
+async function pruefeVersion(erzwingen,vonHand,ausloeser){
   if(pruefungLaeuft) return;
+  bannerAusloeser = vonHand ? (ausloeser||null) : null;
   if(!erzwingen && !vonHand && Date.now()-versionGeprueft<VER_MINDEST_MS) return;
   versionGeprueft=Date.now();
   const hier=verNum(eigeneVersion()); if(!hier) return;
@@ -698,7 +715,9 @@ async function pruefeVersion(erzwingen,vonHand){
   }finally{ pruefungLaeuft=false; }
 }
 // Tipp auf die Versionszeile: von Hand pruefen, mit Rueckmeldung in jedem Fall
-{const vz=document.getElementById('verzeile'); if(vz) vz.addEventListener('click',()=>pruefeVersion(true,true));}
+['verzeile','vertop','titel'].forEach(id=>{ const el=document.getElementById(id);
+  if(el) el.addEventListener('click',()=>pruefeVersion(true,true,el)); });
+{const t=document.getElementById('vertop'); if(t) t.textContent='v'+eigeneVersion();}   // eine Quelle, zwei Anzeigen
 
 // Nach einem Update einmal sagen, was jetzt laeuft — sonst merkt niemand, dass es
 // angekommen ist, und haelt einen behobenen Fehler fuer offen. Beim allerersten

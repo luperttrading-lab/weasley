@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.58 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.59 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.58) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.59) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.58)
+## 2. Teil A — Die Web-App (v0.59)
 
 ### 2.1 Aufbau
 
@@ -739,6 +739,34 @@ beigesteuert. Übernommen:
    Meldung still, weil keine ältere Fassung `uhr_gesehen` je gesetzt hatte. Kam in Zettel am 12.9. dazu,
    nachdem Lutz die klein gesetzte Nummer nicht wahrgenommen hatte — dieselbe
    Rückmeldung wie hier bei v0.53.
+
+### Nachtrag aus der Zettel-Doku vom 15.9. (v0.59)
+
+5. **Das Banner überlagert, es schiebt nicht.** `#neuver` liegt seit v0.59
+   `position:fixed` direkt im `<body>` (nicht mehr im `.wrap`), oben mit
+   `top:max(env(safe-area-inset-top),12px)`, `z-index:70` — also **über** der
+   Anmeldemaske (60), damit „wird geladen, sobald du fertig bist" beim Tippen
+   sichtbar bleibt. Im Fluss hätte es beim Erscheinen die ganze Uhr nach unten
+   geschoben. Gemessen (393×852): Uhr-Position und Scrollhöhe sind ohne Banner,
+   mit Auskunft und mit Update-Banner identisch (Prüfliste 8).
+6. **Der Auslöser ist sichtbar und steht auch oben.** Ein `title`-Attribut sieht
+   auf dem iPhone niemand — genau der Zettel-Fehler von hundert Fassungen. Jetzt:
+   Versionsnummer **oben neben dem Untertitel** (`#vertop`, gepunktet
+   unterstrichen, aus derselben Quelle gefüllt) und unten (`#verzeile`, ebenfalls
+   gepunktet). Titel, obere und untere Nummer lösen die Handprüfung aus.
+7. **Antwort an der Kante des Auslösers** (`bannerAnKante`): Tipp auf die untere
+   Nummer → Banner unten (`.neuver.unten`), Tipp oben oder Meldung der App selbst
+   → oben. Sonst tippt man unten und die Antwort erscheint am anderen Ende
+   (Prüfliste 9).
+8. **Takt bewusst beibehalten — Abweichung von Zettel.** Zettel hat den
+   60-s-Takt nach 3.36 ausgebaut, weil jede Prüfung dort die ganze `index.html`
+   holt (~87 KB, ~5 MB/h). Bei uns sind es 20 Bytes je Prüfung — 0,02 % davon,
+   rund 18 KB/h. Lutz hatte am 14.9. ausdrücklich das Verhalten „auch bei
+   offener App" gewünscht. Zettels Prüfliste 7 („es darf nichts fließen")
+   gilt hier deshalb nicht; wer den Takt streichen will: `VER_TAKT_MS`.
+   Auf kleinen Displays (≤780 px) ist der Untertitel samt oberer Nummer
+   ausgeblendet, ≤700 px auch die untere — der **Titel** bleibt als Auslöser
+   immer sichtbar.
 
 Nicht übernommen, weil unseres besser ist: Zettel vergleicht Zeichenketten auf
 *ungleich* (die Doku nennt die Schwäche selbst) und lädt zur Prüfung die ganze

@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.59 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.60 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.59) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.60) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.59)
+## 2. Teil A — Die Web-App (v0.60)
 
 ### 2.1 Aufbau
 
@@ -749,15 +749,19 @@ beigesteuert. Übernommen:
    sichtbar bleibt. Im Fluss hätte es beim Erscheinen die ganze Uhr nach unten
    geschoben. Gemessen (393×852): Uhr-Position und Scrollhöhe sind ohne Banner,
    mit Auskunft und mit Update-Banner identisch (Prüfliste 8).
-6. **Der Auslöser ist sichtbar und steht auch oben.** Ein `title`-Attribut sieht
-   auf dem iPhone niemand — genau der Zettel-Fehler von hundert Fassungen. Jetzt:
-   Versionsnummer **oben neben dem Untertitel** (`#vertop`, gepunktet
-   unterstrichen, aus derselben Quelle gefüllt) und unten (`#verzeile`, ebenfalls
-   gepunktet). Titel, obere und untere Nummer lösen die Handprüfung aus.
-7. **Antwort an der Kante des Auslösers** (`bannerAnKante`): Tipp auf die untere
-   Nummer → Banner unten (`.neuver.unten`), Tipp oben oder Meldung der App selbst
-   → oben. Sonst tippt man unten und die Antwort erscheint am anderen Ende
-   (Prüfliste 9).
+6. **Der Auslöser ist die untere Versionsnummer — und nur sie.** Gepunktet
+   unterstrichen (ein `title`-Attribut sieht auf dem iPhone niemand). v0.59
+   hatte zusätzlich eine Nummer oben neben dem Untertitel und den Titel als
+   Auslöser — **von Lutz am 15.9. verworfen**: „zerstört das Bild der App".
+   Der Kopf bleibt, wie er war. Folge: auf Displays ≤700 px (Versionszeile
+   ausgeblendet) gibt es keine Handprüfung; die Familiengeräte sind größer.
+7. **Antwort an der Kante des Auslösers** (`bannerAnKante`): Tipp auf die
+   Nummer unten → Banner unten (`.neuver.unten`); Meldungen der App selbst
+   (Start, Takt, Sichtbarwerden) → fester Ort oben (Prüfliste 9).
+   **Beides als Überblendung** (`.neuver` opacity 0 → `.an` 1, 0,35 s; `hidden`
+   nur als Endzustand nach dem Ausblenden) — Lutz' Vorgabe: einblenden, ohne
+   das Bild zu verschieben. Gemessen: Uhr-Position und Scrollhöhe bleiben in
+   jedem Zustand gleich; Deckkraft 0,09 nach 60 ms, 1,00 nach 560 ms.
 8. **Takt bewusst beibehalten — Abweichung von Zettel.** Zettel hat den
    60-s-Takt nach 3.36 ausgebaut, weil jede Prüfung dort die ganze `index.html`
    holt (~87 KB, ~5 MB/h). Bei uns sind es 20 Bytes je Prüfung — 0,02 % davon,

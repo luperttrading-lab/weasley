@@ -136,8 +136,9 @@
     box-shadow:0 2px 9px rgba(0,0,0,.35);}
   .neuver[hidden]{display:none;}
   .neuver.unten{top:auto;bottom:max(env(safe-area-inset-bottom),12px);}   /* Antwort an der Kante des Ausloesers */
-  .vertop{font-style:normal;font-size:.92em;letter-spacing:.08em;color:#a5947a;cursor:pointer;
-    text-decoration:underline dotted;text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
+  /* Ueberblendung statt hartem Ein/Aus: hidden nur als Endzustand, sichtbar ueber .an */
+  .neuver{opacity:0;transition:opacity .35s ease;pointer-events:none;}
+  .neuver.an{opacity:1;pointer-events:auto;}
   .neuver.neu{border-color:#c79a3e;background:linear-gradient(#4a381f,#2e2114);color:#f3dc9c;font-style:normal;
     box-shadow:0 2px 12px rgba(0,0,0,.45),0 0 0 1px rgba(199,154,62,.35);}
   .neubtn{margin-left:10px;font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:.05em;
@@ -151,8 +152,8 @@
 <div class="bgfix"></div>
 <div class="neuver" id="neuver" hidden></div>
 <div class="wrap">
-  <div class="titel" id="titel" title="antippen: nach neuer Version suchen">DIE STANDORT&middot;UHR</div>
-  <div class="sub">&mdash; wer ist gerade wo &mdash; <span id="vertop" class="vertop">v0.59</span></div>
+  <div class="titel">DIE STANDORT&middot;UHR</div>
+  <div class="sub">&mdash; wer ist gerade wo &mdash;</div>
   <div class="stage"><svg id="clock" viewBox="0 0 400 400"></svg></div>
   <div class="status" id="status"></div>
   <div class="people" id="people"></div>
@@ -161,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.59</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.60</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -636,13 +637,23 @@ function bannerAnKante(el){
   const r=el.getBoundingClientRect();
   l.classList.toggle('unten', r.top+r.height/2 > window.innerHeight/2);
 }
-function zeigeNeuver(html,neu){const l=document.getElementById('neuver');bannerAnKante(bannerAusloeser);l.innerHTML=html;l.classList.toggle('neu',!!neu);l.hidden=false;}
+let ausTimer=null;
+function zeigeNeuver(html,neu){
+  const l=document.getElementById('neuver'); clearTimeout(ausTimer);
+  bannerAnKante(bannerAusloeser); l.innerHTML=html; l.classList.toggle('neu',!!neu);
+  l.hidden=false; void l.offsetWidth;   // Reflow erzwingen, sonst laeuft die Ueberblendung nicht an
+  l.classList.add('an');
+}
+function verbergeNeuver(){
+  const l=document.getElementById('neuver'); l.classList.remove('an'); clearTimeout(ausTimer);
+  ausTimer=setTimeout(()=>{ if(!l.classList.contains('an')) l.hidden=true; },380);
+}
 const KNOPF='<button type="button" class="neubtn">Jetzt laden</button>';
 // Ein Tipp auf die Leiste (wie in Zettel): eine Info verschwindet, eine wartende
 // Version wird sofort geladen — auch im Aufschub, wenn man gerade tippt.
 document.getElementById('neuver').addEventListener('click',()=>{
   if(wartendeVersion){ const v=wartendeVersion; wartendeVersion=null; sofortLaden(v); return; }
-  document.getElementById('neuver').hidden=true;
+  verbergeNeuver();
 });
 function sofortLaden(neu){
   try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
@@ -652,7 +663,7 @@ function sofortLaden(neu){
 }
 function zeigeKurz(html,ms){   // fluechtige Rueckmeldung, verschwindet von selbst
   zeigeNeuver(html); clearTimeout(neuverTimer);
-  neuverTimer=setTimeout(()=>{const l=document.getElementById('neuver'); if(l) l.hidden=true;},ms||2600);
+  neuverTimer=setTimeout(verbergeNeuver,ms||2600);
 }
 // Nicht neu laden, waehrend jemand tippt (Anmeldemaske) oder einen Zeiger zieht —
 // sonst ist das halbe Passwort weg oder der Zeiger landet irgendwo. (Zettel, G)
@@ -715,9 +726,7 @@ async function pruefeVersion(erzwingen,vonHand,ausloeser){
   }finally{ pruefungLaeuft=false; }
 }
 // Tipp auf die Versionszeile: von Hand pruefen, mit Rueckmeldung in jedem Fall
-['verzeile','vertop','titel'].forEach(id=>{ const el=document.getElementById(id);
-  if(el) el.addEventListener('click',()=>pruefeVersion(true,true,el)); });
-{const t=document.getElementById('vertop'); if(t) t.textContent='v'+eigeneVersion();}   // eine Quelle, zwei Anzeigen
+{const el=document.getElementById('verzeile'); if(el) el.addEventListener('click',()=>pruefeVersion(true,true,el));}
 
 // Nach einem Update einmal sagen, was jetzt laeuft — sonst merkt niemand, dass es
 // angekommen ist, und haelt einen behobenen Fehler fuer offen. Beim allerersten

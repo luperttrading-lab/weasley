@@ -768,9 +768,12 @@ beigesteuert. Übernommen:
    rund 18 KB/h. Lutz hatte am 14.9. ausdrücklich das Verhalten „auch bei
    offener App" gewünscht. Zettels Prüfliste 7 („es darf nichts fließen")
    gilt hier deshalb nicht; wer den Takt streichen will: `VER_TAKT_MS`.
-   Auf kleinen Displays (≤780 px) ist der Untertitel samt oberer Nummer
-   ausgeblendet, ≤700 px auch die untere — der **Titel** bleibt als Auslöser
-   immer sichtbar.
+9. **Die Zettel-Doku wurde zurückkorrigiert** (15.9., Fassung im Scratchpad an
+   Lutz geliefert für `Zettel/docs/UPDATE-MECHANIK.md`): Auslöser bleibt, wo das
+   Design ihn hat; Banner antwortet an seiner Kante; Überblendung als
+   Anforderung; Takt-Hinweis relativiert (billig mit `version.json`); Warnung
+   vor Cache-zuerst bei fremden Datenadressen; Hinweis, dass die erste
+   nachgerüstete Fassung noch kein „ist geladen" zeigt.
 
 Nicht übernommen, weil unseres besser ist: Zettel vergleicht Zeichenketten auf
 *ungleich* (die Doku nennt die Schwäche selbst) und lädt zur Prüfung die ganze

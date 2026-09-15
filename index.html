@@ -131,6 +131,11 @@
     color:#efd79a;font-size:13px;font-style:italic;text-align:center;line-height:1.4;
     box-shadow:0 2px 9px rgba(0,0,0,.35);}
   .neuver[hidden]{display:none;}
+  .neuver.neu{border-color:#c79a3e;background:linear-gradient(#4a381f,#2e2114);color:#f3dc9c;font-style:normal;
+    box-shadow:0 2px 12px rgba(0,0,0,.45),0 0 0 1px rgba(199,154,62,.35);}
+  .neubtn{margin-left:10px;font-family:'Cinzel',serif;font-weight:700;font-size:12px;letter-spacing:.05em;
+    color:#2a1c0c;background:#e8cf8a;border:none;border-radius:999px;padding:5px 12px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;vertical-align:middle;}
   #lgovl{z-index:60;}
   #zeiger{transition:opacity .45s ease;}
 </style>
@@ -149,7 +154,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.57</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.58</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -612,10 +617,11 @@ let meldeSync=function(){};   // (idx, sektor, quelle)
 function verNum(v){const m=String(v).match(/(\d+)\.(\d+)/);return m?(+m[1])*1000+(+m[2]):0;}
 function eigeneVersion(){const t=document.getElementById('verzeile');return t?String(t.textContent||'').replace(/^v/,''):'';}
 let versionGeprueft=0;
-const VER_MINDEST_MS=2*60*1000;     // Sichtbarkeitswechsel: hoechstens alle 2 Minuten
-const VER_TAKT_MS=5*60*1000;        // waehrend die App offen liegt: alle 5 Minuten (20 Bytes je Abfrage)
+const VER_MINDEST_MS=15*1000;       // Sichtbarkeitswechsel: nur Doppelzuendung mit pageshow abfangen
+const VER_TAKT_MS=60*1000;          // waehrend die App offen liegt: jede Minute (Zettel-Takt, 20 Bytes je Abfrage)
 let neuverTimer=null, wartendeVersion=null;   // wartendeVersion: eine gefundene, noch nicht geladene Fassung
-function zeigeNeuver(html){const l=document.getElementById('neuver');l.innerHTML=html;l.hidden=false;}
+function zeigeNeuver(html,neu){const l=document.getElementById('neuver');l.innerHTML=html;l.classList.toggle('neu',!!neu);l.hidden=false;}
+const KNOPF='<button type="button" class="neubtn">Jetzt laden</button>';
 // Ein Tipp auf die Leiste (wie in Zettel): eine Info verschwindet, eine wartende
 // Version wird sofort geladen — auch im Aufschub, wenn man gerade tippt.
 document.getElementById('neuver').addEventListener('click',()=>{
@@ -624,7 +630,7 @@ document.getElementById('neuver').addEventListener('click',()=>{
 });
 function sofortLaden(neu){
   try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
-  zeigeNeuver('Du hast <b>v'+eigeneVersion()+'</b> &middot; neu ist <b>v'+neu+'</b> &mdash; wird geladen &hellip;');
+  zeigeNeuver('Du hast <b>v'+eigeneVersion()+'</b> &middot; neu ist <b>v'+neu+'</b> &mdash; wird geladen &hellip;',true);
   const weiter=()=>location.replace(location.pathname+'?v='+Date.now());
   try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();}
 }
@@ -645,13 +651,13 @@ function neuLaden(neu){
   // Schleifenschutz: dieselbe Zielversion nur einmal je Sitzung anfahren.
   // Bringt der Neustart sie nicht, ehrlich sagen, was zu tun ist.
   let schon=null; try{schon=sessionStorage.getItem('uhr_reload');}catch(e){}
-  if(schon===neu){ zeigeNeuver(beide+' &mdash; App schlie&szlig;en und neu &ouml;ffnen'); return; }
+  if(schon===neu){ zeigeNeuver(beide+' &mdash; App schlie&szlig;en und neu &ouml;ffnen',true); return; }
   // Aufschub: Hinweis zeigen, aber nicht laden — die naechste Pruefung versucht es erneut.
   // Der Schleifenschutz wird dabei bewusst NICHT gesetzt.
   wartendeVersion=neu;
-  if(beschaeftigt()){ zeigeNeuver(beide+' &mdash; wird geladen, sobald du fertig bist (antippen: jetzt)'); return; }
+  if(beschaeftigt()){ zeigeNeuver(beide+' &mdash; wird geladen, sobald du fertig bist'+KNOPF,true); return; }
   try{sessionStorage.setItem('uhr_reload',neu);}catch(e){}
-  zeigeNeuver(beide+' &mdash; wird geladen &hellip;');
+  zeigeNeuver(beide+' &mdash; wird geladen &hellip;'+KNOPF,true);
   // Erst die NACKTE Adresse (ohne ?v=) mit cache:"reload" holen: das erneuert
   // den Cache-Eintrag, den der naechste Start vom Homescreen benutzt. Dann zu
   // einer garantiert frischen Adresse mit ?v= springen. Eines allein reicht
@@ -662,7 +668,9 @@ function neuLaden(neu){
     try{fetch(location.pathname,{cache:'reload'}).then(weiter,weiter);}catch(e){weiter();} },1200);
 }
 
-function pruefeVersion(erzwingen,vonHand){
+let pruefungLaeuft=false;   // keine Doppellaeufe (Zettel: `checking`)
+async function pruefeVersion(erzwingen,vonHand){
+  if(pruefungLaeuft) return;
   if(!erzwingen && !vonHand && Date.now()-versionGeprueft<VER_MINDEST_MS) return;
   versionGeprueft=Date.now();
   const hier=verNum(eigeneVersion()); if(!hier) return;
@@ -673,19 +681,21 @@ function pruefeVersion(erzwingen,vonHand){
     // ob die Pruefung funktioniert oder nur schweigt. (Zettel, I)
     else if(vonHand) zeigeKurz('Version <b>v'+eigeneVersion()+'</b> ist aktuell');
     return true; };
-  // Weg 1: version.json, rund 20 Bytes. Cache-Buster UND no-store —
-  // sonst beantwortet der Cache die Frage nach dem Cache.
-  fetch('version.json?v='+Date.now(),{cache:'no-store'})
-    .then(r=>r.ok?r.json():Promise.reject('HTTP '+r.status))
-    .then(j=>{ if(!(j&&j.version&&bewerten(String(j.version)))) return Promise.reject('unbrauchbar'); })
-    .catch(()=>{
-      // Weg 2: die eigene Seite lesen und die Nummer herausziehen. Greift, wenn
-      // version.json fehlt oder der Workflow noch nicht gelaufen ist.
-      fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'})
-        .then(r=>r.ok?r.text():Promise.reject('HTTP '+r.status))
-        .then(t=>{ const m=t.match(/class="ver">v([\d.]+)</); if(!m||!bewerten(m[1])) throw 'keine Versionsnummer'; })
-        .catch(()=>{ if(vonHand) zeigeKurz('Pr&uuml;fung fehlgeschlagen'); });
-    });
+  pruefungLaeuft=true;
+  try{
+    let ok=false;
+    // Weg 1: version.json, rund 20 Bytes. Cache-Buster UND no-store —
+    // sonst beantwortet der Cache die Frage nach dem Cache.
+    try{ const r=await fetch('version.json?v='+Date.now(),{cache:'no-store'});
+         if(r.ok){ const j=await r.json(); ok=!!(j&&j.version&&bewerten(String(j.version))); } }catch(e){}
+    // Weg 2: die eigene Seite lesen und die Nummer herausziehen. Greift, wenn
+    // version.json fehlt oder der Workflow noch nicht gelaufen ist.
+    if(!ok){
+      try{ const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
+           if(r.ok){ const m=(await r.text()).match(/class="ver">v([\d.]+)</); ok=!!(m&&bewerten(m[1])); } }catch(e){}
+    }
+    if(!ok && vonHand) zeigeKurz('Pr&uuml;fung fehlgeschlagen');
+  }finally{ pruefungLaeuft=false; }
 }
 // Tipp auf die Versionszeile: von Hand pruefen, mit Rueckmeldung in jedem Fall
 {const vz=document.getElementById('verzeile'); if(vz) vz.addEventListener('click',()=>pruefeVersion(true,true));}

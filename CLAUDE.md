@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.57 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.58 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.57) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.58) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -51,7 +51,7 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 
 ---
 
-## 2. Teil A — Die Web-App (v0.57)
+## 2. Teil A — Die Web-App (v0.58)
 
 ### 2.1 Aufbau
 
@@ -729,6 +729,9 @@ beigesteuert. Übernommen:
    **nicht** gesetzt, die nächste Prüfung versucht es erneut.
 3. **Tipp auf die Versionszeile prüft von Hand** und meldet auch „ist aktuell"
    oder „Offline" — sonst weiß man nie, ob die Prüfung arbeitet oder schweigt.
+   Seit v0.58 mit Doppellauf-Schutz (`pruefungLaeuft`, Zettels `checking`) und
+   **zwei Banner-Zuständen** wie in Zettel: hervorgehoben mit Knopf „Jetzt laden"
+   für eine wartende Version (`.neuver.neu`), gedämpft für bloße Auskunft.
 4. **Nach einem Update einmal „Version vX ist geladen"** (`localStorage`
    `uhr_gesehen`), 4 s, beim allerersten Start still. Seit v0.57 wie in Zettel
    **antippbar**: eine Info verschwindet, eine wartende Version — auch im
@@ -740,7 +743,9 @@ beigesteuert. Übernommen:
 Nicht übernommen, weil unseres besser ist: Zettel vergleicht Zeichenketten auf
 *ungleich* (die Doku nennt die Schwäche selbst) und lädt zur Prüfung die ganze
 `index.html` — bei uns 210 KB alle 60 s. Wir bleiben bei numerisch *höher* und
-`version.json` (20 Bytes), Takt seit v0.56 alle 5 Minuten.
+`version.json` (20 Bytes). Takt seit v0.58 **jede Minute** wie in Zettel — Lutz hat dort
+beobachtet, dass ein Update bei offener App binnen einer Minute kommt; mit 5 Minuten
+hätte er es hier für kaputt gehalten. Gemessen: 53 s nach Erscheinen der neuen Nummer.
 
 ### Veröffentlichen
 

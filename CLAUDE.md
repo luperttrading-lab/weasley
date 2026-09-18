@@ -186,9 +186,14 @@ und Beschriftung auszuprobieren, statt jedes Mal eine neue Version zu bauen.
 
 Adresse: `https://luperttrading-lab.github.io/weasley/labor.html`
 
+**Die Voreinstellung ist seit 18.09. der Stand der App** (v0.71: Zeiger `perl`,
+Forum fett, Faktor 0,95, Höhe 0,330, längs +0,065, Groß-klein, alle gleich groß).
+„Zurücksetzen" fährt damit auf die echte Uhr zurück, nicht auf einen Laborwert,
+den es so nie gegeben hat.
+
 Einstellbar über den Knopf unten rechts, alles in `localStorage` unter
 `labor_einst` gemerkt:
-Zeiger (5), Schriftart (16), Stärke, Schreibweise (GROSS / Groß-klein /
+Zeiger (10), Schriftart (16), Stärke, Schreibweise (GROSS / Groß-klein /
 Kapitälchen / klein), Größe, Höhe auf dem Schild, Sperrung, Deckkraft, Farbe,
 „alle Namen gleich groß", Verteilung der fünf Personen. Unten stehen die
 gemessenen Werte (Portraitradius, Ringaußenkante, Schild, Bogen je Zeiger,
@@ -196,13 +201,33 @@ Schriftgrade je Person).
 
 **Die fünf Zeiger, gemessen (Zeigerende überall auf r=160,5):**
 
-| Schlüssel | Portrait r | Ring außen | Ringmitte | Bogen | Schild B × H |
+| Schlüssel | Portrait r | Ring außen | Bogen | Schild B × H | Schriftgrad |
 |---|---|---|---|---|---|
-| `schlicht` (v0.69) | 14,59 | 19,10 | 141,3 | 15,5° | 51,7 × 12,6 |
-| `flach` (A) | 17,40 | 20,99 | 124,0 | 19,5° | 55,6 × 13,3 |
-| `hoch` (B) | 17,39 | 20,84 | 123,9 | 19,4° | 55,3 × 18,4 |
-| `perl` (D) | 17,29 | 21,30 | 123,7 | 19,8° | 54,9 × 18,8 |
-| `perlklein` (C) | 12,55 | 18,07 | 125,2 | 16,6° | 48,3 × 16,2 |
+| `schlicht` (v0.69) | 14,59 | 19,10 | 15,5° | 51,7 × 12,6 | |
+| `flach` (A) | 17,40 | 20,99 | 19,5° | 55,6 × 13,3 | |
+| `hoch` (B) | 17,39 | 20,84 | 19,4° | 55,3 × 18,4 | |
+| **`perl` (D) — in der App** | **17,29** | **21,30** | **19,8°** | **54,9 × 18,8** | **15,71** |
+| `perlklein` (C) | 12,55 | 18,07 | 16,6° | 48,3 × 16,2 | |
+| `glatt` (E) | 25,89 | 29,99 | 28,0° | 55,6 × 11,8 | 9,83 |
+| `lilie` (F) | 14,03 | 27,03 | 25,1° | 60,2 × 12,1 | 10,14 |
+| `ranke` (G) | 16,85 | 21,92 | 20,4° | 58,9 × 14,8 | 12,37 |
+| `deko` (H) | 14,77 | 22,11 | 20,4° | 44,5 × 18,3 | 12,89 |
+| `spindel` (I) | 16,13 | 24,53 | 23,1° | 52,0 × 12,9 | 10,82 |
+
+Schriftgrad = mit der Voreinstellung (Forum fett, Faktor 0,95, alle gleich groß).
+
+**Wie die Schildfläche bei den fünf neuen Zeigern bestimmt wurde:** Die Ränder
+sind ornamentiert, ein Plateau konstanter Höhe gibt es nicht mehr. Deshalb wird
+das **größte einbeschriebene Rechteck** unter dem Höhenprofil der Silhouette
+gesucht (Stapel-Verfahren, je Spalte der Messinglauf durch die Mittellinie) und
+anschließend um 10 % in der Breite und 20 % in der Höhe eingezogen — der
+gravierte Rahmen soll frei bleiben. Bei `glatt`, `lilie` und `spindel` scheitert
+das naive Plateau-Verfahren komplett (es liefert 15 bis 216 px statt 500).
+
+⚠️ **`glatt` (E) sprengt den Rahmen:** Ringaußendurchmesser 30,0 → **28,0° Bogen**
+je Zeiger. Bei 45° Sektorbreite stehen damit nicht einmal zwei Zeiger
+nebeneinander, ohne sich zu überdecken. Schön anzusehen, im vollen Sektor
+unbrauchbar.
 
 **Befund zur Prompt-Vorgabe:** Bestellt war k = 0,130 (15,0° Bogen) bei
 Schildlänge 2,00 D. Geliefert wurden k = 0,144 bis 0,172 (16,5° bis 19,9°) und

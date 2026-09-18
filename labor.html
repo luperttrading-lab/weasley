@@ -345,14 +345,29 @@ const ZEIGERSATZ={
   hoch     : {t:'B  hohes Schild', datei:'zeiger/hoch.webp',
               W:1536,H:1024, ox:110.7,oy:503.5, rx:1188.2,ry:494.9, rl:151.2,ra:181.2,
               sx0:328,sx1:809,sy:500.5,sh:160, ende:1506},
-  perl     : {t:'D  Perlring gross', datei:'zeiger/perl.webp',
+  perl     : {t:'D  Perlring \u2014 aktuell in der App', datei:'zeiger/perl.webp',
               W:1536,H:1024, ox:110.7,oy:502.3, rx:1183.6,ry:495.1, rl:150.0,ra:184.8,
               sx0:326,sx1:802,sy:500.0,sh:163, ende:1503},
   perlklein: {t:'C  Perlring klein', datei:'zeiger/perlklein.webp',
               W:1536,H:1024, ox:103.7,oy:505.8, rx:1192.9,ry:503.2, rl:109.2,ra:157.2,
-              sx0:358,sx1:778,sy:504.0,sh:141, ende:1500}
+              sx0:358,sx1:778,sy:504.0,sh:141, ende:1500},
+  glatt    : {t:'E  glatt, grosser Ring', datei:'zeiger/glatt.webp',
+              W:1536,H:1024, ox:148.6,oy:489.1, rx:1191.6,ry:483.1, rl:218.0,ra:252.5,
+              sx0:378,sx1:846,sy:483,sh:99, ende:1500},
+  lilie    : {t:'F  Lilien', datei:'zeiger/lilie.webp',
+              W:1536,H:1024, ox:94.7,oy:513.6, rx:1191.7,ry:505.0, rl:123.8,ra:238.5,
+              sx0:332,sx1:863,sy:505,sh:107, ende:1511},
+  ranke    : {t:'G  Ranken', datei:'zeiger/ranke.webp',
+              W:1536,H:1024, ox:101.3,oy:501.9, rx:1186.0,ry:496.6, rl:148.0,ra:192.5,
+              sx0:323,sx1:840,sy:497,sh:130, ende:1511},
+  deko     : {t:'H  Stufen', datei:'zeiger/deko.webp',
+              W:1536,H:1024, ox:117.3,oy:497.5, rx:1193.7,ry:494.6, rl:127.2,ra:190.5,
+              sx0:416,sx1:799,sy:495,sh:158, ende:1500},
+  spindel  : {t:'I  Spindel', datei:'zeiger/spindel.webp',
+              W:1536,H:1024, ox:108.9,oy:498.3, rx:1189.4,ry:496.8, rl:142.0,ra:216.0,
+              sx0:380,sx1:838,sy:497,sh:114, ende:1522}
 };
-let ZB=ZEIGERSATZ.hoch, ZS=1, RINGR=1, RINGA=1;
+let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGA=1;
 function massstab(){
   ZS=ENDE_R/(ZB.ende-ZB.ox);           // Zeigerende genau auf ENDE_R
   RINGR=ZB.rl*ZS;                      // Portraitfenster
@@ -361,8 +376,8 @@ function massstab(){
 }
 massstab();
 // ---- LABOR: Einstellungen der Gravur ----
-const GRAV={fam:'Cinzel', gew:'700', faktor:1.00, sperr:0, schreib:'gross',
-            gleich:false, farbe:'#1b1409', deck:0.95, hoehe:0.37, seite:0};
+const GRAV={fam:'Forum', gew:'700', faktor:0.95, sperr:0, schreib:'normal',
+            gleich:true, farbe:'#1b1409', deck:1, hoehe:0.330, seite:0.065};
 // GRAV.seite verschiebt die Gravur laengs des Zeigers, in Anteilen der
 // Schildbreite: negativ zur Nabe, positiv zum Portraitring.
 function gravText(n){
@@ -1012,11 +1027,11 @@ setInterval(()=>{
   #lfwrap{position:relative;flex:1;min-width:190px;}
   #lfw{height:108px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
     -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:9px;
-    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);
-            mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);}
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);}
   #lfw::-webkit-scrollbar{display:none;}
   #lfw .wi{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;
-    color:#bfae8a;font-size:17px;white-space:nowrap;opacity:.45;transition:opacity .15s,color .15s;
+    color:#bfae8a;font-size:17px;white-space:nowrap;opacity:.16;transition:opacity .15s,color .15s;
     overflow:hidden;text-overflow:ellipsis;padding:0 8px;}
   #lfw .wi.an{opacity:1;color:#f7e6b8;}
   #lfw .pad{height:36px;}
@@ -1074,9 +1089,12 @@ setInterval(()=>{
   const SCHREIB=[['gross','LUTZ'],['normal','Lutz'],['kapitael','Kapitälchen'],['klein','lutz']];
   const FARBEN=['#1b1409','#000000','#3a2a10','#5a4318','#6e1a24','#f3e3b8'];
   const VERT={lv1:[0,2,4,1,3], lv2:[0,0,0,0,0], lv3:[0,0,0,1,3]};
-  const STD={fam:'Cinzel',gew:'700',faktor:1.00,sperr:0,schreib:'gross',gleich:false,
-             farbe:'#1b1409',deck:0.95,hoehe:0.37,seite:0,zeiger:'hoch'};
-  let zeigerKey='hoch';
+  // Voreinstellung = der Stand, der in index.html eingebaut ist (v0.71).
+  // 'zuruecksetzen' faehrt damit auf die echte App zurueck, nicht auf einen
+  // Laborwert, den es so nie gegeben hat.
+  const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
+             farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl'};
+  let zeigerKey=STD.zeiger;
   const $=id=>document.getElementById(id);
 
   Object.keys(L.ZEIGERSATZ).forEach(k=>{

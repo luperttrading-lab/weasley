@@ -89,12 +89,50 @@ aus dem Bild, nicht aus den Konstanten oben:
 ZB.ox=78, ZB.oy=168     Öse   = Drehpunkt im Bild (Bildmaß 1478×326)
 ZB.rx=1144, ZB.rr=110   Ring  = Portraitfenster
 ZB.sx0=325, ZB.sx1=715  Schild = Gravurfläche, am Höhenprofil gemessen
-ZB.rl=110, ZB.ra=144    Ring: Loch (Portraitfenster) und Außenkante, waagerecht
-ZB.cut=1288             Bildkante (seit v0.69), = rx + ra
-ZS = 160.5/(cut-ox)     Maßstab, Zeigerende auf r=160,5
-RINGR = rl*ZS = 14,59   Portraitfenster
-RINGA = ra*ZS = 19,10   Außenkante des Messingrings
+ZB.rl, ZB.ra            Ring: Loch (Portraitfenster) und Außenkante
+ZB.cut                  Bildkante, falls der Zeiger hinten zu weit hinausragt
+ZS = 160.5/(ende-ox)    Maßstab, Zeigerende auf r=160,5
+RINGR = rl*ZS           Portraitfenster
+RINGA = ra*ZS           Außenkante des Messingrings
 ```
+
+**Seit v0.70 ist `zeiger/perl.webp` im Einsatz** („D Perlring groß"), ausgesucht
+von Lutz im Labor am 18.09.2026, nicht am Rechner geraten:
+
+```
+ox=110.7  oy=502.3                 Öse = Drehpunkt (Bildmaß 1536×1024)
+rx=1183.6 ry=495.1 rl=150 ra=184.8 Ring
+sx0=326 sx1=802 sy=500 sh=163      Schild
+ende=1503                          Spitzenende, kein cut nötig
+ZS = 160.5/(1503-110.7) = 0,11527
+RINGR = 17,29   RINGA = 21,30   R_ZEIGER = 123,7
+```
+
+| | v0.67 | v0.69 | **v0.70** |
+|---|---|---|---|
+| Portraitfenster r | 12,49 | 14,59 | **17,29** |
+| Schild B × H | 53,1 × 12,9 | 51,7 × 12,6 | **54,9 × 18,8** |
+| Bogen je Zeiger | 11,9° | 15,5° | **19,8°** |
+
+Der Bogen ist der Preis: Im vollen Sektor (45°) stehen jetzt nur noch zwei
+Zeiger nebeneinander statt drei. Das Durchtippen des Stapels aus v0.61 fängt
+das auf.
+
+**Die Gravur steht seit v0.70 in einem eigenen Block `GRAV`**, ebenfalls im
+Labor eingestellt:
+
+```js
+const GRAV={fam:'Forum', gew:'700', faktor:0.95, hoehe:0.330,
+            sperr:0, seite:0.065, farbe:'#1b1409', deck:1, gleich:true};
+```
+
+- `faktor` skaliert den Grundschriftgrad (`sh*ZS*0.88`)
+- `hoehe` ist der Abstand Grundlinie → optische Mitte in Schriftgraden
+- `seite` verschiebt den Namen längs des Zeigers, in Anteilen der Schildbreite
+- **`gleich:true`** gibt allen fünf den Grad des längsten Namens. Ohne das stünde
+  LUTZ deutlich größer da als CLAUDIA und LEANDER, weil die beiden
+  *breiten*begrenzt sind. Gemessen mit Forum: alle fünf bei **15,71**.
+- Schreibweise ist jetzt **Groß-klein** („Claudia"), nicht mehr Versalien
 
 ⚠️ **Der Fehler in v0.68 — bitte als Muster merken.** Dort stand `cut:1256` und
 ein einziges `rr:110`. Die 110 ist der Radius des **Ringlochs**, nicht der

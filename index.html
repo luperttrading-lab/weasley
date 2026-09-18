@@ -13,7 +13,7 @@
      verlaessliche Weg. -->
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&family=Forum&display=swap');
 </style>
 <style>
   :root{--ink:#46330f;--ink2:#34250b;--bord:#6e1a24;--creme:#f3e9d2;--messing:#c79a3e;}
@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.69</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.70</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -312,7 +312,7 @@ svg.appendChild(gLab);
 // Klick-/Greif-Logik läuft über Pointer-Winkel (siehe unten) — keine Sektor-Pfade nötig
 
 // ================= ZEIGER (schlanke geschmiedete Nadeln) =================
-const R_ZEIGER=141.3, MED_R=24, R_NABE=20, RAHMEN=1.2;
+const R_ZEIGER=123.7, MED_R=24, R_NABE=20, RAHMEN=1.2;
 const KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42};   // wie weit das Portrait ueber das Medaillon hinausgeht
 const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen Nabe und Medaillon
 {const c=document.getElementById('medClipC');
@@ -326,21 +326,33 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 // geschoben, die Tinte der Ortsnamen beginnt aber bei r=163. Deshalb endet das
 // Bild jetzt an der Ringaussenkante (ZB.cut): der Ring IST die Spitze.
 // v0.69 — KORREKTUR: In v0.68 stand cut=1256. Das ist die rechte Kante des
-// RINGLOCHS, nicht die Aussenkante des Messingrings (1300). Das Medaillon war
-// dadurch rechts flach abgeschnitten. Seither sind Loch und Aussenkante getrennt
-// benannt: rl = Portraitfenster, ra = Aussenkante.
-// Der Ring ist leicht oval: 144 waagerecht, 155 senkrecht. Geschnitten wird an
-// der waagerechten Kante (1288), sonst bleibt ein abgesaegter Kugelstummel stehen.
-// Gemessen: Loch r=14,59 (v0.67: 12,49, +16,8 %), Ring aussen r=19,10 waagerecht,
-// Zeigerende r=160,5, Tinte der Ortsnamen ab r=163,2.
-const ZB={datei:'zeiger/schlicht.webp', W:1478, H:326,
-          ox:78, oy:168, or:24,        // Oese  (Drehpunkt)
-          rx:1144, ry:162, rl:110, ra:144,   // Ring: Loch (Portraitfenster) und Aussenkante
-          sx0:325, sx1:715, sy:162.5, sh:95,   // Schild, am Hoehenprofil gemessen
-          cut:1288};                   // Bildkante = Ringaussenkante (rx+ra), Spitze faellt weg
-const ZS=160.5/(ZB.cut-ZB.ox);         // Zeigerende auf r=160,5, 2,7 Einheiten vor der Tinte
+// RINGLOCHS, nicht die Aussenkante des Messingrings. Das Medaillon war dadurch
+// rechts flach abgeschnitten. Seither sind Loch und Aussenkante getrennt
+// benannt: rl = Portraitfenster, ra = Aussenkante. cut wird nur noch gebraucht,
+// wenn ein Zeiger hinter dem Ring zu weit hinausragt.
+//
+// v0.70: Zeiger und Gravur sind im Labor (labor.html) ausgesucht worden, nicht
+// am Rechner geraten. Uebernommen wurde 'D Perlring gross'. Alle Masse unten
+// sind am Alphakanal von zeiger/perl.webp gemessen.
+// Ergebnis: Portraitfenster r=17,29 (v0.69: 14,59, +18,5 %), Ring aussen 21,30,
+// Schild 54,9 x 18,8 (v0.69: 51,7 x 12,6), Zeigerende r=160,5.
+// Preis: Der Zeiger belegt 19,8 Grad Bogen statt 15,5 — im vollen Sektor wird
+// es also enger. Das Durchtippen des Stapels (v0.61) faengt das auf.
+const ZB={datei:'zeiger/perl.webp', W:1536, H:1024,
+          ox:110.7, oy:502.3,                  // Oese (Drehpunkt)
+          rx:1183.6, ry:495.1, rl:150.0, ra:184.8,   // Ring: Loch und Aussenkante
+          sx0:326, sx1:802, sy:500.0, sh:163,  // Schild, am Hoehenprofil gemessen
+          ende:1503};                          // Spitzenende im Bild
+const ZS=160.5/(ZB.ende-ZB.ox);        // Zeigerende auf r=160,5, Tinte der Ortsnamen ab 163,2
 const RINGR=ZB.rl*ZS;                  // Portraitfenster
 const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
+// ---- Gravur, im Labor eingestellt (18.09.2026) ----
+// seite verschiebt den Namen laengs des Zeigers, in Anteilen der Schildbreite.
+// gleich=true gibt allen fuenf den Schriftgrad des laengsten Namens; ohne das
+// stuende LUTZ deutlich groesser da als CLAUDIA und LEANDER, weil die beiden
+// breitenbegrenzt sind.
+const GRAV={fam:'Forum', gew:'700', faktor:0.95, hoehe:0.330,
+            sperr:0, seite:0.065, farbe:'#1b1409', deck:1, gleich:true};
 function buildNadel(p){
   const g=E('g',{});
   const inner=E('g',{transform:`rotate(-90 ${CX} ${CY})`});
@@ -375,14 +387,15 @@ function buildNadel(p){
     inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
   inner.appendChild(im);
   // Name auf das Schild gravieren
-  const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;
-  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88;
+  const nx=bx+((ZB.sx0+ZB.sx1)/2+(ZB.sx1-ZB.sx0)*GRAV.seite)*ZS, ny=by+ZB.sy*ZS;
+  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88*GRAV.faktor;
   // dominant-baseline wird von Safari nicht zuverlaessig umgesetzt; deshalb die
-  // Grundlinie selbst setzen: Mitte der Versalien liegt 0,37 Schriftgrad darueber
-  const nameTx=[E('text',{x:nx,y:(ny+hoehe*0.37).toFixed(2),'text-anchor':'middle',
-      'font-family':'Cinzel, serif','font-weight':'700','font-size':hoehe.toFixed(2),
-      fill:'#1b1409',stroke:'none',opacity:0.95})];
-  nameTx[0].textContent=p.name.toUpperCase();
+  // Grundlinie selbst setzen: die optische Mitte liegt GRAV.hoehe Schriftgrad darueber
+  const nameTx=[E('text',{x:nx,y:(ny+hoehe*GRAV.hoehe).toFixed(2),'text-anchor':'middle',
+      'font-family':"'"+GRAV.fam+"', serif",'font-weight':GRAV.gew,'font-size':hoehe.toFixed(2),
+      fill:GRAV.farbe,stroke:'none',opacity:GRAV.deck})];
+  if(GRAV.sperr) nameTx[0].setAttribute('letter-spacing',GRAV.sperr+'em');
+  nameTx[0].textContent=p.name;
   inner.appendChild(nameTx[0]);
   const hi=E('circle',{cx:rcx,cy:rcy,r:RINGA+2,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
   inner.appendChild(hi);
@@ -425,21 +438,29 @@ if(STAPEL_TAKT_MS>0) setInterval(()=>{
 // Wer jetzt misst, misst die Ersatzschrift und passt auf falsche Werte ein.
 // Deshalb laeuft die Einpassung ein zweites Mal, sobald die Schrift geladen ist.
 function passeNamenEin(){
+  // 1. Durchgang: was braeuchte jeder Name fuer sich?
+  const grade=[];
   zeiger.forEach(z=>{
-    if(!z.nameTx) return;
+    if(!z.nameTx){ grade.push(null); return; }
     const t=z.nameTx[0];
     t.removeAttribute('textLength'); t.removeAttribute('lengthAdjust');
     t.setAttribute('font-size',z.gradBasis.toFixed(2));
     const natur=t.getComputedTextLength();
-    let grad=z.gradBasis;
-    if(natur>z.zielB*0.94){
-      grad=z.gradBasis*z.zielB*0.94/natur;
-      t.setAttribute('font-size',grad.toFixed(2));
-    }else{
+    grade.push(natur>z.zielB*0.94 ? z.gradBasis*z.zielB*0.94/natur : z.gradBasis);
+  });
+  const gMin=Math.min.apply(null,grade.filter(g=>g!=null));
+  // 2. Durchgang: setzen. GRAV.gleich gibt allen den Grad des laengsten Namens.
+  zeiger.forEach((z,i)=>{
+    if(!z.nameTx) return;
+    const t=z.nameTx[0];
+    const grad = GRAV.gleich ? gMin : grade[i];
+    t.setAttribute('font-size',grad.toFixed(2));
+    if(!GRAV.gleich && grad>=z.gradBasis-0.001){
+      const natur=t.getComputedTextLength();
       const ziel=Math.min(z.zielB*0.88, natur*1.45);
       if(ziel>natur){t.setAttribute('textLength',ziel.toFixed(1)); t.setAttribute('lengthAdjust','spacing');}
     }
-    t.setAttribute('y',(z.nyBasis+grad*0.37).toFixed(2));   // Mitte der Versalien auf die Schildmitte
+    t.setAttribute('y',(z.nyBasis+grad*GRAV.hoehe).toFixed(2));   // optische Mitte auf die Schildmitte
   });
   if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));   // Kipplage neu setzen
 }
@@ -485,7 +506,7 @@ personen.forEach((p,i)=>setRot(i));
 // Aufbau meist noch nicht geladen, deshalb ein zweiter Lauf danach.
 passeNamenEin();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>passeNamenEin());
-try{ if(document.fonts && document.fonts.load) document.fonts.load('700 10px Cinzel').then(()=>passeNamenEin()); }catch(e){}
+try{ if(document.fonts && document.fonts.load) document.fonts.load(GRAV.gew+' 20px "'+GRAV.fam+'"').then(()=>passeNamenEin()); }catch(e){}
 
 let raf=null;
 function startAnim(){

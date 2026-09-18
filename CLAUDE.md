@@ -71,8 +71,8 @@ R_LAB_IN=150       innere Trennlinie des Ortsrings
 R_TICK=140         Skalenstriche
 R_NUM=124          Gradzahlen
 R_HOUR=108         Stundenzahlen
-R_ZEIGER=121       Zeigerlänge = Mittelpunkt des Medaillons
-MED_R=24           Medaillon-Grundradius
+R_ZEIGER=145.2     Zeigerlänge = Mittelpunkt des Portraitrings (bis v0.67: 121)
+MED_R=24           Medaillon-Grundradius (nur noch Restwert, siehe unten)
 R_NABE=20          Nabe
 RAHMEN=1.2         Messingring-Stärke
 KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42}
@@ -80,6 +80,36 @@ KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42}
 
 Daraus abgeleitet: Kopfradius = `MED_R × KOPF_K` = **34,1**, Medaillon-Außenrand bei **r≈155,9**.
 Gemessene Tinte der Ortsnamen beginnt bei **r≥163** → 7 Einheiten Luft, konfliktfrei.
+
+**Ab v0.62 zeichnet die App keine Nadeln mehr**, sondern legt ein freigestelltes
+Messingbild (`zeiger/schlicht.webp`) auf den Zeiger. Die Geometrie kommt seither
+aus dem Bild, nicht aus den Konstanten oben:
+
+```
+ZB.ox=78, ZB.oy=168     Öse   = Drehpunkt im Bild (Bildmaß 1478×326)
+ZB.rx=1144, ZB.rr=110   Ring  = Portraitfenster
+ZB.sx0=325, ZB.sx1=715  Schild = Gravurfläche, am Höhenprofil gemessen
+ZB.cut=1256             Bildkante (seit v0.68), = Ringaußenkante
+ZS = 160.5/(cut-ox)     Maßstab, Zeigerende auf r=160,5
+RINGR = rr*ZS = 14,99   Ringradius in Uhr-Einheiten
+```
+
+**Warum die Spitze seit v0.68 fehlt (Lutz' Wunsch: Portrait-Durchmesser +20 %).**
+Im Bild stehen Spitzenende und Ringmitte fest im Verhältnis 1400 : 1066 zur Öse,
+der Ring hat 110 von 1400. Ein Ring von r=15 zwingt den Maßstab auf 0,13625 und
+schiebt die Spitze damit auf r = 0,13625 × 1400 = **190,7**. Die Tinte der
+Ortsnamen beginnt gemessen bei **r=163,2** — auch der Ortsring nach außen gerückt
+(Probe: R_LAB_IN=158) kommt nur auf r≈171. Mit voller Spitze sind höchstens
+**+1,4 %** drin, mit nach außen gerücktem Ortsring **+7 %**. Beides gemessen.
+Deshalb endet das Bild jetzt an der Ringaußenkante: der Ring **ist** die Spitze.
+Ergebnis r_Ring 12,49 → 14,99 (+20,0 %), Zeigerende r=160,5, Luft zur Tinte
+2,7 Einheiten (vorher 7).
+
+**Kostenlos dabei:** Die Gravur wächst mit (Schriftgrad 9,49 → 11,39) — die
+Vorgabe „ohne dass die Schriftfläche kleiner wird" ist damit übererfüllt. Und das
+Gedränge wird *nicht* schlimmer: Ring und Zeigerlänge wachsen gemeinsam, der
+Winkel je Ring bleibt bei 2·asin(15/145,2) = 11,9° — genau wie vorher
+2·asin(12,49/121) = 11,9°.
 
 **Farben:**
 ```

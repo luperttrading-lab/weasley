@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.67</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.68</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -312,20 +312,26 @@ svg.appendChild(gLab);
 // Klick-/Greif-Logik läuft über Pointer-Winkel (siehe unten) — keine Sektor-Pfade nötig
 
 // ================= ZEIGER (schlanke geschmiedete Nadeln) =================
-const R_ZEIGER=121, MED_R=24, R_NABE=20, RAHMEN=1.2;
+const R_ZEIGER=145.2, MED_R=24, R_NABE=20, RAHMEN=1.2;
 const KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42};   // wie weit das Portrait ueber das Medaillon hinausgeht
 const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen Nabe und Medaillon
 {const c=document.getElementById('medClipC');
  c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
 // ---- Zeiger als Messingbild (v0.62) ----
 // Das Bild liegt waagerecht mit der Oese links; in der Uhr zeigt der Zeiger nach
-// oben, deshalb die Grunddrehung um -90 Grad. Massstab so, dass der Ring genau
-// auf R_ZEIGER landet, wo bisher das Medaillon sass.
+// oben, deshalb die Grunddrehung um -90 Grad.
+// v0.68: Das Portraitfenster ist 20 % groesser im Durchmesser. Mit voller Spitze
+// war das rechnerisch unmoeglich — Spitzenende und Ringmitte stehen im Bild fest
+// im Verhaeltnis 1400:1066, ein Ring von r=15 haette die Spitze auf r=191
+// geschoben, die Tinte der Ortsnamen beginnt aber bei r=163. Deshalb endet das
+// Bild jetzt an der Ringaussenkante (ZB.cut): der Ring IST die Spitze.
+// Gemessen: Ring r=14,99 (vorher 12,49), Zeigerende r=160,5, Tinte ab r=163,2.
 const ZB={datei:'zeiger/schlicht.webp', W:1478, H:326,
           ox:78, oy:168, or:24,        // Oese  (Drehpunkt)
           rx:1144, ry:163, rr:110,     // Ring  (Portraitfenster)
-          sx0:325, sx1:715, sy:162.5, sh:95};  // Schild, am Hoehenprofil gemessen
-const ZS=R_ZEIGER/(ZB.rx-ZB.ox);
+          sx0:325, sx1:715, sy:162.5, sh:95,   // Schild, am Hoehenprofil gemessen
+          cut:1256};                   // Bildkante = Ringaussenkante, Spitze faellt weg
+const ZS=160.5/(ZB.cut-ZB.ox);         // Zeigerende auf r=160,5, 2,7 Einheiten vor der Tinte
 const RINGR=ZB.rr*ZS;                  // Ringradius in Uhr-Einheiten
 function buildNadel(p){
   const g=E('g',{});
@@ -356,6 +362,9 @@ function buildNadel(p){
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
   im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
   im.setAttribute('href',ZB.datei);
+  if(ZB.cut){const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
+    ck.appendChild(E('rect',{x:bx-2,y:by-2,width:ZB.cut*ZS+2,height:ZB.H*ZS+4}));
+    inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
   inner.appendChild(im);
   // Name auf das Schild gravieren
   const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;

@@ -161,8 +161,8 @@
   <div class="geraet" id="geraet"></div>
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
-  <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.60</div>
+  <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen. Stehen mehrere am selben Ort: Stapel antippen, die n&auml;chste kommt nach vorn.</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.61</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -412,6 +412,30 @@ const zeiger=personen.map(p=>buildNadel(p));
 // Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
 [4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
 svg.appendChild(gZeiger);
+// ---- Stapel: mehrere Personen im selben Sektor ----
+// Die Medaillons ueberlappen dort zwangslaeufig (r~34 bei 45 Grad Sektor). Statt
+// die Geometrie zu verbiegen, wechselt die Zeichenreihenfolge: ein Tipp auf den
+// Stapel holt die naechste Person nach vorn, die bisherige rueckt ganz nach hinten.
+// Optional laeuft das auch von selbst (STAPEL_TAKT_MS > 0, z.B. 1000).
+const STAPEL_TAKT_MS=0;
+let letzterStapelTipp=0;
+function stapelVon(i){   // Mitglieder des Sektors in Zeichenreihenfolge (hinten -> vorn)
+  const sek=personen[i].sektor;
+  return Array.from(gZeiger.children).map(g=>zeiger.findIndex(z=>z.g===g)).filter(k=>personen[k].sektor===sek);
+}
+function naechsteNachVorn(i){
+  const st=stapelVon(i); if(st.length<2) return -1;
+  const vorn=st[st.length-1];
+  gZeiger.insertBefore(zeiger[vorn].g, zeiger[st[0]].g);   // Vorderste hinter alle anderen
+  return st[st.length-2];                                    // die naechste ist jetzt vorn
+}
+if(STAPEL_TAKT_MS>0) setInterval(()=>{
+  if(document.hidden || dragging || Date.now()-letzterStapelTipp<3*STAPEL_TAKT_MS) return;
+  const gesehen=new Set(); let neuAktiv=-1;
+  personen.forEach((p,i)=>{ if(gesehen.has(p.sektor)) return; gesehen.add(p.sektor);
+    const v=naechsteNachVorn(i); if(v>=0 && personen[aktiv].sektor===p.sektor) neuAktiv=v; });
+  if(neuAktiv>=0){aktiv=neuAktiv;buildChips();statusText();highlight();}
+},STAPEL_TAKT_MS);
 // Namen exakt auf die Strecke Nabe -> Medaillon sperren (Gravur-Satz)
 (function passeNamenEin(){
   const KR=MED_R*(KOPF_K[window.MEDSTIL||'rahmen']||1);
@@ -560,6 +584,10 @@ function onUp(e){
       // "IN GEFAHR" auf die Uhren der anderen.
       personen[grabbed].sektor=s; letzteMeldung[grabbed]=Date.now();
       quelle[grabbed]='hand'; meldeSync(grabbed,s,'hand');
+    } else {
+      // Tipp ohne Ziehen: im Stapel die naechste Person nach vorn holen
+      const v=naechsteNachVorn(grabbed);
+      if(v>=0){aktiv=v;letzterStapelTipp=Date.now();buildChips();highlight();}
     }
     dragging=false; grabbed=-1; statusText(); startAnim();
   } else if(pendingTap>=0){

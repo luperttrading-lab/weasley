@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.60 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.61 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -14,7 +14,7 @@ Das Projekt hat drei Ausbaustufen:
 
 | Stufe | Zustand | Was sie leistet |
 |---|---|---|
-| **A · Web-App** | fertig (v0.60) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
+| **A · Web-App** | fertig (v0.61) | Einzelne HTML-Datei, läuft auf jedem iPhone. |
 | **B · Firebase-Sync** | fertig und eingerichtet | Gemeinsame Datenbank → aus fünf Einzeluhren wird eine Familienuhr |
 | **C · Physische Uhr** | in Planung | Holz-Standuhr mit fünf Motoren, liest aus derselben Datenbank |
 
@@ -546,6 +546,22 @@ iPhone praktisch 1:1 dargestellt, die Lesbarkeitsgrenze liegt bei etwa
 r = 96. Nutzbarer Spielraum: 121 bis 96 = **25 px** bei 68 px
 Medaillondurchmesser — die Medaillons überlappen danach praktisch unverändert,
 die Namen sind aber hin. Preis bezahlt, Leistung nicht geliefert.
+
+**Seit v0.61: Stapel antippen (Lutz' Idee vom 18.9., zuerst als eigenes
+HTML-Demo „Zeigerwechsel" vorgeführt).** Ein Tipp auf den Stapel holt die
+nächste Person nach vorn, die bisherige Vorderste rutscht ganz nach hinten;
+Chip und Statuszeile folgen der Vordersten. Kostet keine Geometrie: nur die
+DOM-Reihenfolge in `#zeiger` wechselt (`naechsteNachVorn`, `stapelVon`).
+Tipp = `pointerdown`/`pointerup` ohne Bewegung (<4 px) — Ziehen bleibt
+unverändert, ein Tipp auf eine Einzelperson sortiert nichts um. Gemessen:
+vier Tipps drehen einen Vierer-Stapel einmal komplett durch, Sektoren
+bleiben dabei unverändert, Ziehen aus dem Stapel funktioniert weiter.
+Ein automatischer Wechsel im Takt (Demo: jede Sekunde) ist als Schalter
+vorbereitet, `STAPEL_TAKT_MS` (0 = aus); er pausiert beim Ziehen, bei
+verborgener Seite und 3 Takte nach einem Tipp. Bewusst aus, weil eine
+stille Uhr nicht von selbst zappeln soll — Lutz fand Tippen „reicht
+eventuell". Die feste Z-Ordnung `[4,1,2,0,3]` gilt nur noch als Startwert.
+Der Textklumpen der Gravur-Namen bleibt (Auswege 2–4 unten weiter offen).
 
 Verbleibende Auswege:
 1. ~~Radial staffeln~~ — siehe Rechnung oben, erledigt.

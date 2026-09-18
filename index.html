@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.66</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.67</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -455,8 +455,11 @@ function setRot(i){
   const cn=((ref%360)+360)%360;
   const kopf=(cn>180);                       // linke Haelfte: Schrift und Gesicht kippen
   if(z.nameTx) z.nameTx.forEach(t=>{
-    const x=+t.getAttribute('x'), y=+t.getAttribute('y');
-    t.setAttribute('transform', kopf?`rotate(180 ${x} ${y})`:'');
+    // Um die OPTISCHE Mitte drehen, nicht um die Grundlinie: die liegt 0,37
+    // Schriftgrad tiefer, und eine Drehung um sie verschiebt den Text um das
+    // Doppelte davon nach unten.
+    const x=+t.getAttribute('x');
+    t.setAttribute('transform', kopf?`rotate(180 ${x} ${z.nyBasis})`:'');
   });
   if(z.portraitG) z.portraitG.setAttribute('transform', kopf?`rotate(180 ${z.rcx} ${z.rcy})`:'');
 }

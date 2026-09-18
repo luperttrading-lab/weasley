@@ -605,6 +605,23 @@ Alle Render-Kontrollbilder waren über Tage hinweg **abgedunkelt**, weil das Ger
 
 Die Sitzung hat davor eine lange Fehlersuche am „dunklen Gradienten" betrieben — es gab nie einen Fehler in der App. Lehre: Wenn eine Messung unerklärlich ist, erst prüfen, ob das **Messverfahren** stimmt.
 
+### Attribute gemessen statt der gerenderten Lage (18.9.)
+Die Gravur saß in der rechten Uhrhälfte richtig, in der linken um gut 7 Einheiten
+verschoben. Der Fehler: Die Schrift wird auf `y = Mitte + 0,37 × Schriftgrad`
+gesetzt (SVG-`y` ist die **Grundlinie**, nicht die Mitte), und `setRot` drehte sie
+in der linken Hälfte um genau diesen Punkt. Eine 180°-Drehung um die Grundlinie
+verschiebt den Text um das Doppelte des Abstands zur optischen Mitte.
+
+Nicht aufgefallen ist es, weil die Prüfung die **Attributwerte** verglich
+(`y` minus `0,37 × font-size` gegen die Schildmitte) — und die stimmten. Die
+Drehung kommt erst danach. Gemessen werden muss die **gerenderte Lage**:
+`getScreenCTM()` auf Text und Schildmitte anwenden und den Abstand im
+Bildschirmraum bilden. Damit fiel der Fehler sofort auf und die Korrektur war
+nachweisbar (Abstand überall unter 0,4 px, in beiden Hälften).
+
+→ Dasselbe Muster wie beim Overlay-Schleier: Wenn eine Messung die Annahme des
+geprüften Codes teilt, bestätigt sie nur sich selbst.
+
 ### `getComputedTextLength()` ignoriert `textLength`
 Beim Sperren von Schrift auf eine feste Länge liefert `getComputedTextLength()` weiter die natürliche Länge. Echte visuelle Ausdehnung nur über `getStartPositionOfChar(0)` und `getEndPositionOfChar(n-1)` messbar.
 

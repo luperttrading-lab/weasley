@@ -1008,6 +1008,21 @@ setInterval(()=>{
     padding:6px 9px;font-size:12.5px;}
   #lab button.k.an{background:#7a5f2a;color:#fff3d2;border-color:#caa25e;}
   #lab select{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;padding:6px;font-size:13px;}
+  /* Schriftwalze: scrollen und dabei die Schrift auf der Uhr sehen */
+  #lfwrap{position:relative;flex:1;min-width:190px;}
+  #lfw{height:108px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:9px;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,#000 26%,#000 74%,transparent 100%);}
+  #lfw::-webkit-scrollbar{display:none;}
+  #lfw .wi{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;
+    color:#bfae8a;font-size:17px;white-space:nowrap;opacity:.45;transition:opacity .15s,color .15s;
+    overflow:hidden;text-overflow:ellipsis;padding:0 8px;}
+  #lfw .wi.an{opacity:1;color:#f7e6b8;}
+  #lfw .pad{height:36px;}
+  #lfband{position:absolute;left:0;right:0;top:50%;height:36px;margin-top:-18px;
+    border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
+    background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
   #lab input[type=range]{flex:1;min-width:110px;accent-color:#c8a155;}
   #lab label.sl{display:flex;gap:8px;align-items:center;width:100%;}
   #lab label.sl span{width:124px;flex:none;color:#bfae8a;font-size:12px;}
@@ -1023,7 +1038,7 @@ setInterval(()=>{
   <div class="row" id="lz"></div>
   <h4>Schriftart</h4>
   <div class="row">
-    <select id="lf"></select>
+    <div id="lfwrap"><div id="lfw"></div><div id="lfband"></div></div>
     <select id="lg"><option value="400">mager</option><option value="600">halbfett</option><option value="700">fett</option></select>
   </div>
   <h4>Schreibweise</h4>
@@ -1070,9 +1085,40 @@ setInterval(()=>{
     b.onclick=()=>{ zeigerKey=k; L.waehle(k); anwenden(); };
     $('lz').appendChild(b);
   });
-  SCHRIFTEN.forEach(f=>{ const o=document.createElement('option'); o.value=f;
-    o.textContent=f+(SCHMAL[f]?'  (schmal)':''); $('lf').appendChild(o); });
-  $('lf').onchange=()=>{ G.fam=$('lf').value; anwenden(); };
+  // Schriftwalze. Jede Zeile steht in ihrer eigenen Schrift, die mittlere gilt.
+  const IH=36, wal=$('lfw');
+  { const p1=document.createElement('div'); p1.className='pad'; wal.appendChild(p1);
+    SCHRIFTEN.forEach((f,i)=>{
+      const d=document.createElement('div'); d.className='wi'; d.dataset.f=f;
+      d.style.fontFamily="'"+f+"', serif";
+      d.textContent=f+(SCHMAL[f]?' \u00b7 schmal':'');
+      d.onclick=()=>zuSchrift(i,true);
+      wal.appendChild(d); });
+    const p2=document.createElement('div'); p2.className='pad'; wal.appendChild(p2); }
+  function walIdx(){ return Math.max(0,Math.min(SCHRIFTEN.length-1,Math.round(wal.scrollTop/IH))); }
+  function walMark(i){ wal.querySelectorAll('.wi').forEach((d,k)=>d.classList.toggle('an',k===i)); }
+  let walTimer=null, walStumm=false;
+  // Ein verstecktes Element laesst sich nicht scrollen: solange das Panel zu ist,
+  // bleibt scrollTop auf 0 und die Walze wuerde beim Oeffnen faelschlich die
+  // erste Schrift melden. Deshalb beides stumm schalten.
+  function walSetzen(){
+    const i=SCHRIFTEN.indexOf(G.fam); if(i<0) return;
+    walStumm=true; wal.scrollTop=i*IH; walMark(i);
+    setTimeout(()=>{ walStumm=false; },150);
+  }
+  wal.addEventListener('scroll',()=>{
+    if(walStumm || $('lab').hidden) return;
+    const i=walIdx(); walMark(i);
+    // Erst nach kurzer Ruhe uebernehmen: sonst wuerde bei jedem Scrollschritt
+    // die ganze Uhr neu gezeichnet und das Scrollen ruckelt.
+    clearTimeout(walTimer);
+    walTimer=setTimeout(()=>{ if(G.fam!==SCHRIFTEN[i]){ G.fam=SCHRIFTEN[i]; anwenden(); } },90);
+  },{passive:true});
+  function zuSchrift(i,glatt){
+    try{ wal.scrollTo({top:i*IH,behavior:glatt?'smooth':'auto'}); }catch(e){ wal.scrollTop=i*IH; }
+    walMark(i);
+    if(G.fam!==SCHRIFTEN[i]){ G.fam=SCHRIFTEN[i]; anwenden(); }
+  }
   $('lg').onchange=()=>{ G.gew=$('lg').value; anwenden(); };
   SCHREIB.forEach(function(e){ const k=e[0];
     const b=document.createElement('button'); b.className='k'; b.dataset.s=k;
@@ -1108,7 +1154,9 @@ setInterval(()=>{
                              visualViewport.addEventListener('scroll',panelPlatz); }
   $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
     $('labbtn').textContent=l.hidden?'Einstellungen':'schließen';
-    panelPlatz(); };
+    panelPlatz();
+    if(!l.hidden) walSetzen();   // jetzt erst ist die Walze scrollbar
+  };
 
   function text(){
     const m=L.masse();
@@ -1128,7 +1176,12 @@ setInterval(()=>{
     $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
     $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
     $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));
-    $('lf').value=G.fam; $('lg').value=G.gew;
+    { const i=SCHRIFTEN.indexOf(G.fam);
+      if(i>=0){ walMark(i);
+                // nur nachfuehren, wenn die Walze nicht ohnehin schon dort steht —
+                // sonst kaempft das Setzen gegen den scrollenden Finger
+                if(!$('lab').hidden && walIdx()!==i) walSetzen(); } }
+    $('lg').value=G.gew;
     $('lgl').classList.toggle('an',G.gleich);
     R.forEach(function(r){ $(r[0]).value=G[r[2]]; $(r[1]).textContent=r[3](G[r[2]]); });
   }

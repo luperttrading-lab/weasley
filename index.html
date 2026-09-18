@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen. Stehen mehrere am selben Ort: Stapel antippen, die n&auml;chste kommt nach vorn.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.63</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.64</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -324,7 +324,7 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 const ZB={datei:'zeiger/schlicht.webp', W:1478, H:326,
           ox:78, oy:168, or:24,        // Oese  (Drehpunkt)
           rx:1144, ry:163, rr:110,     // Ring  (Portraitfenster)
-          sx0:151, sx1:996, sy:165, sh:86};   // Schild (Namensflaeche)
+          sx0:325, sx1:715, sy:162.5, sh:95};  // Schild, am Hoehenprofil gemessen
 const ZS=R_ZEIGER/(ZB.rx-ZB.ox);
 const RINGR=ZB.rr*ZS;                  // Ringradius in Uhr-Einheiten
 function buildNadel(p){
@@ -360,7 +360,9 @@ function buildNadel(p){
   // Name auf das Schild gravieren
   const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;
   const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88;
-  const nameTx=[E('text',{x:nx,y:ny,'text-anchor':'middle','dominant-baseline':'central',
+  // dominant-baseline wird von Safari nicht zuverlaessig umgesetzt; deshalb die
+  // Grundlinie selbst setzen: Mitte der Versalien liegt 0,37 Schriftgrad darueber
+  const nameTx=[E('text',{x:nx,y:(ny+hoehe*0.37).toFixed(2),'text-anchor':'middle',
       'font-family':'Cinzel, serif','font-weight':'700','font-size':hoehe.toFixed(2),
       fill:'#1b1409',stroke:'none',opacity:0.95})];
   nameTx[0].textContent=p.name.toUpperCase();

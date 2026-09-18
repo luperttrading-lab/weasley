@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen. Stehen mehrere am selben Ort: Stapel antippen, die n&auml;chste kommt nach vorn.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.61</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.62</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -317,95 +317,57 @@ const KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42};   // wie weit das Po
 const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen Nabe und Medaillon
 {const c=document.getElementById('medClipC');
  c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
-// Nadel-Form bei Winkel 0 (zeigt nach oben), gemeinsame g wird rotiert
+// ---- Zeiger als Messingbild (v0.62) ----
+// Das Bild liegt waagerecht mit der Oese links; in der Uhr zeigt der Zeiger nach
+// oben, deshalb die Grunddrehung um -90 Grad. Massstab so, dass der Ring genau
+// auf R_ZEIGER landet, wo bisher das Medaillon sass.
+const ZB={datei:'zeiger/schlicht.webp', W:1478, H:326,
+          ox:78, oy:168, or:24,        // Oese  (Drehpunkt)
+          rx:1144, ry:163, rr:110,     // Ring  (Portraitfenster)
+          sx0:151, sx1:996, sy:165, sh:86};   // Schild (Namensflaeche)
+const ZS=R_ZEIGER/(ZB.rx-ZB.ox);
+const RINGR=ZB.rr*ZS;                  // Ringradius in Uhr-Einheiten
 function buildNadel(p){
   const g=E('g',{});
-  const len=R_ZEIGER;
-  const my=CY-len;
-  const NSTIL=window.NADELSTIL||'schale';   // 'schale' | 'spitze' | 'ohne'
-  const MSTIL=window.MEDSTIL||'rahmen';
-  const KR=MED_R*(KOPF_K[MSTIL]||1);   // tatsächlicher Kopfradius
-  const y0=CY-R_NABE-1;
-  let nameTx=null;
-  if(MSTIL==='rahmen'){
-    // Name als Gravur-Zeiger: fuellt die Strecke Nabe -> Medaillon (kein Schaft)
-    const NM=p.name.toUpperCase();
-    nameTx=[];
-    [['#1b1e23','#1b1e23',1.7],['url(#silvTxt)','#2b3036',0.35]].forEach(([f,st,sw])=>{
-      const tx=E('text',{x:CX,y:NY,'text-anchor':'middle','dominant-baseline':'central','font-family':'Cinzel, serif','font-weight':'700','font-size':15.5,'letter-spacing':'-0.2',fill:f,stroke:st,'stroke-width':sw,'stroke-linejoin':'round',transform:`rotate(90 ${CX} ${NY})`});
-      tx.textContent=NM; g.appendChild(tx); nameTx.push(tx);
-    });
-  }else if(NSTIL==='schale'){
-    // Nadel bis hinter den Kopf, dort eine Silber-Sichel, die ihn von hinten fasst
-    const shaft=`M${CX} ${y0} C ${CX-3.1} ${y0-22}, ${CX-2.4} ${my+KR+16}, ${CX} ${my+KR-6} C ${CX+2.4} ${my+KR+16}, ${CX+3.1} ${y0-22}, ${CX} ${y0} Z`;
-    g.appendChild(E('path',{d:shaft,fill:'url(#silv)',stroke:'#23282d','stroke-width':0.8}));
-    g.appendChild(E('path',{d:`M${CX-0.7} ${y0-8} L${CX-0.5} ${my+KR+8}`,stroke:'#fff','stroke-opacity':.35,'stroke-width':0.6,fill:'none'}));
-    const S=(r,w)=>({x:CX+r*Math.sin(w*Math.PI/180), y:my-r*Math.cos(w*Math.PI/180)});
-    const r1=KR-6, r2=KR+2.5, a0=128, a1=232;
-    const q1=S(r2,a0),q2=S(r2,a1),q3=S(r1,a1),q4=S(r1,a0);
-    g.appendChild(E('path',{d:`M${q1.x.toFixed(1)} ${q1.y.toFixed(1)} A${r2} ${r2} 0 0 1 ${q2.x.toFixed(1)} ${q2.y.toFixed(1)} L${q3.x.toFixed(1)} ${q3.y.toFixed(1)} A${r1} ${r1} 0 0 0 ${q4.x.toFixed(1)} ${q4.y.toFixed(1)} Z`,
-      fill:'url(#silv)',stroke:'#23282d','stroke-width':0.8}));
-  }else if(NSTIL==='spitze'){
-    // Lanzett-Nadel deutet auf den Kopf, endet mit Abstand davor
-    const yTip=my+KR+9;
-    const shaft=`M${CX} ${y0} C ${CX-3.1} ${y0-22}, ${CX-2.1} ${yTip+26}, ${CX} ${yTip} C ${CX+2.1} ${yTip+26}, ${CX+3.1} ${y0-22}, ${CX} ${y0} Z`;
-    g.appendChild(E('path',{d:shaft,fill:'url(#silv)',stroke:'#23282d','stroke-width':0.8}));
-    g.appendChild(E('path',{d:`M${CX} ${yTip-7} L${CX+3.4} ${yTip-1.2} L${CX} ${yTip+4.6} L${CX-3.4} ${yTip-1.2} Z`,
-      fill:'url(#silv)',stroke:'#23282d','stroke-width':0.8}));
+  const inner=E('g',{transform:`rotate(-90 ${CX} ${CY})`});
+  const bx=CX-ZB.ox*ZS, by=CY-ZB.oy*ZS;
+  // Portrait zuerst, es liegt hinter dem Messing und schaut durch den Ring
+  const rcx=bx+ZB.rx*ZS, rcy=by+ZB.ry*ZS;
+  if(p.bildFrei){
+    const cid='ring'+p.name;
+    const cp=E('clipPath',{id:cid});
+    cp.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96}));
+    inner.appendChild(cp);
+    inner.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:'#eadcb6'}));
+    inner.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:p.ton,opacity:0.30}));
+    const R=RINGR*0.94;
+    const pi=E('image',{x:rcx-R,y:rcy-R,width:R*2,height:R*2,
+                        preserveAspectRatio:'xMidYMid meet','clip-path':'url(#'+cid+')'});
+    pi.setAttributeNS('http://www.w3.org/1999/xlink','href',p.bildFrei);
+    pi.setAttribute('href',p.bildFrei);
+    inner.appendChild(pi);
   }
-  // 'ohne': keine Nadel — nur Kopf und Aura
-  // kleines Medaillon am Ende (außen)
-  const STIL=MSTIL;
-  const hatFoto = !!((STIL==='kreis') ? p.bild : p.bildFrei);
-  if(STIL==='rahmen'){
-    // gerahmtes Porträt-Medaillon: ruhiger Grund, Kopf darauf, hauchdünner Messingring
-    const bgFarbe = (window.MEDBG!=='pergament');
-    g.appendChild(E('circle',{cx:CX,cy:my,r:KR,fill:'#eadcb6'}));
-    if(bgFarbe) g.appendChild(E('circle',{cx:CX,cy:my,r:KR,fill:p.ton,opacity:0.34}));
-    if(p.bildFrei){
-      const RB=KR*0.94;
-      const im=E('image',{x:CX-RB,y:my-RB,width:RB*2,height:RB*2,preserveAspectRatio:'xMidYMid meet'});
-      im.setAttributeNS('http://www.w3.org/1999/xlink','href',p.bildFrei);
-      im.setAttribute('href',p.bildFrei);
-      g.appendChild(im);
-    }
-    g.appendChild(E('circle',{cx:CX,cy:my,r:KR+0.8,fill:'none',stroke:'#8a6a2e','stroke-width':1.6}));
-    g.appendChild(E('circle',{cx:CX,cy:my,r:KR-0.6,fill:'none',stroke:'rgba(40,32,18,.35)','stroke-width':0.7}));
-    const hi=E('circle',{cx:CX,cy:my,r:KR+3.4,fill:'none',stroke:'#f0d98a','stroke-width':2,opacity:0});
-    g.appendChild(hi);
-    return {g,hi,nameTx,ny:NY};
-  }
-  if(!(STIL==='frei' && hatFoto)){
-    g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R+RAHMEN,fill:'url(#silvD)',stroke:'#1c1f22','stroke-width':0.9}));
-    g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R+0.4,fill:'none',stroke:'#3a4046','stroke-width':0.6}));
-    g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R,fill:p.ton}));
-  }
-  const freiFoto = (STIL==='frei' && hatFoto);
-  let hi;
-  if(freiFoto){   // weicher Schein hinter dem Kopf statt Ring im Gesicht
-    hi=E('circle',{cx:CX,cy:my,r:MED_R*1.62,fill:'url(#aura)',opacity:0});
-    g.appendChild(hi);
-  }
-  const quelle = (STIL==='kreis') ? p.bild : p.bildFrei;
-  if(quelle){
-    // Portrait sitzt FEST im Zeiger (dreht voll mit, darf unten kopfstehen)
-    const k = KOPF_K[STIL]||1;
-    const R = MED_R*k;
-    const at = {x:CX-R, y:my-R, width:R*2, height:R*2, preserveAspectRatio:'xMidYMid meet'};
-    if(STIL==='kreis'){at['clip-path']='url(#medClip)'; at.preserveAspectRatio='xMidYMid slice';}
-    const im=E('image',at);
-    im.setAttributeNS('http://www.w3.org/1999/xlink','href',quelle);
-    im.setAttribute('href',quelle);
-    g.appendChild(im);
-  }
-  if(STIL==='kreis') g.appendChild(E('circle',{cx:CX,cy:my,r:MED_R,fill:'url(#shine)',opacity:p.bild?0.28:1}));
-  // Highlight-Ring (aktiv)
-  if(!freiFoto){
-    const hiR=(STIL==='kamee'&&hatFoto)?MED_R*1.30+2:MED_R+3.2;
-    hi=E('circle',{cx:CX,cy:my,r:hiR,fill:'none',stroke:'#f0d98a','stroke-width':2,opacity:0});
-    g.appendChild(hi);
-  }
-  return {g,hi};
+  // Messingzeiger darueber
+  const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
+  im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
+  im.setAttribute('href',ZB.datei);
+  inner.appendChild(im);
+  // Name auf das Schild gravieren
+  const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;
+  const breite=(ZB.sx1-ZB.sx0)*ZS*0.90, hoehe=ZB.sh*ZS*0.80;
+  const nameTx=[];
+  // dunkle Gravur mit einem hellen Lichtrand darunter, wie eingeschlagen
+  [['#6b5526','#6b5526',1.0],['#241a0c','none',0]].forEach(([f,st,sw])=>{
+    const tx=E('text',{x:nx,y:ny,'text-anchor':'middle','dominant-baseline':'central',
+      'font-family':'Cinzel, serif','font-weight':'700','font-size':hoehe.toFixed(2),
+      'letter-spacing':'0.4',fill:f,stroke:st,'stroke-width':sw,'paint-order':'stroke',
+      opacity:(sw?0.55:0.92)});
+    tx.textContent=p.name.toUpperCase(); inner.appendChild(tx); nameTx.push(tx);
+  });
+  const hi=E('circle',{cx:rcx,cy:rcy,r:RINGR+3,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
+  inner.appendChild(hi);
+  g.appendChild(inner);
+  return {g,hi,nameTx,zielB:breite};
 }
 const gZeiger=E('g',{'pointer-events':'none',id:'zeiger',opacity:'0'});
 const zeiger=personen.map(p=>buildNadel(p));
@@ -436,19 +398,13 @@ if(STAPEL_TAKT_MS>0) setInterval(()=>{
     const v=naechsteNachVorn(i); if(v>=0 && personen[aktiv].sektor===p.sektor) neuAktiv=v; });
   if(neuAktiv>=0){aktiv=neuAktiv;buildChips();statusText();highlight();}
 },STAPEL_TAKT_MS);
-// Namen exakt auf die Strecke Nabe -> Medaillon sperren (Gravur-Satz)
+// Namen auf die Breite des Schildes einpassen
 (function passeNamenEin(){
-  const KR=MED_R*(KOPF_K[window.MEDSTIL||'rahmen']||1);
-  const zielL=(R_ZEIGER-KR)-R_NABE-8;
   zeiger.forEach(z=>{
     if(!z.nameTx) return;
-    let tl=z.nameTx[0].getComputedTextLength();
-    if(tl>zielL*0.985){const f=(zielL*0.985)/tl;
+    const tl=z.nameTx[0].getComputedTextLength();
+    if(tl>z.zielB){const f=z.zielB/tl;
       z.nameTx.forEach(t=>t.setAttribute('font-size',(+t.getAttribute('font-size')*f).toFixed(2)));}
-    z.nameTx.forEach(t=>{t.setAttribute('textLength',zielL.toFixed(1));t.setAttribute('lengthAdjust','spacing');});
-    const ny=CY-(R_NABE+4+zielL/2);
-    z.ny=ny;
-    z.nameTx.forEach(t=>t.setAttribute('y',ny));
   });
 })();
 
@@ -478,9 +434,11 @@ function setRot(i){
   if(!zeiger[i].nameTx) return;
   const ref=(i===grabbed)?cur[i]:personen[i].sektor*STEP;
   const cn=((ref%360)+360)%360;
-  const rot=cn<180?270:90;
-  const ny=zeiger[i].ny!==undefined?zeiger[i].ny:NY;
-  zeiger[i].nameTx.forEach(t=>t.setAttribute('transform',`rotate(${rot} ${CX} ${ny})`));
+  const kopf=(cn>180);                       // Zeiger zeigt nach links -> Schrift kippen
+  zeiger[i].nameTx.forEach(t=>{
+    const x=+t.getAttribute('x'), y=+t.getAttribute('y');
+    t.setAttribute('transform', kopf?`rotate(180 ${x} ${y})`:'');
+  });
 }
 personen.forEach((p,i)=>setRot(i));
 
@@ -554,7 +512,7 @@ function winkelVon(x,y){return (Math.atan2(x-CX,-(y-CY))*180/Math.PI+360)%360;}
 function radiusVon(x,y){return Math.hypot(x-CX,y-CY);}
 function sektorVon(w){return ((Math.round(w/STEP)%N)+N)%N;}
 function hitMedaillon(cx,cy){
-  const p=svgPt(cx,cy); let best=-1,bd=28;
+  const p=svgPt(cx,cy); let best=-1,bd=Math.max(RINGR+6,16);
   personen.forEach((pe,i)=>{const m=polar(R_ZEIGER,cur[i]);const d=Math.hypot(p.x-m.x,p.y-m.y);if(d<bd){bd=d;best=i;}});
   return best;
 }

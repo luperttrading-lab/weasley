@@ -46,7 +46,7 @@
   .chip:active{transform:scale(.94);}
   .chip.on{border-color:var(--messing);box-shadow:0 0 0 1px var(--messing),0 0 12px rgba(199,154,62,.4);}
   .dot{width:30px;height:30px;border-radius:50%;flex:none;border:1.5px solid rgba(244,233,210,.55);}
-  .hint{margin-top:12px;font-size:13px;font-style:italic;color:#bca987;opacity:.8;text-align:center;max-width:300px;line-height:1.45;}
+  .hint{margin-top:10px;font-size:13px;font-style:italic;color:#bca987;opacity:.8;text-align:center;max-width:330px;line-height:1.35;}
   .gpsbtn{margin-top:16px;font-family:'Cinzel',serif;font-weight:600;font-size:15px;letter-spacing:.06em;
     color:#efd79a;background:linear-gradient(#3d2e1d,#241a10);border:1.5px solid #7d5f30;border-radius:999px;
     padding:11px 24px;cursor:pointer;-webkit-tap-highlight-color:transparent;
@@ -57,16 +57,16 @@
     text-align:center;max-width:320px;line-height:1.45;display:flex;align-items:center;justify-content:center;}
   .gpsmsg .ok{color:#9ecf9e;font-style:normal;}
   .gpsmsg .warn{color:#e8b48a;}
-  .ver{margin-top:14px;margin-bottom:6px;font-size:12px;letter-spacing:.14em;color:#a5947a;cursor:pointer;-webkit-tap-highlight-color:transparent;text-decoration:underline dotted;text-underline-offset:3px;}
+  .ver{margin-top:10px;margin-bottom:10px;font-size:12px;letter-spacing:.14em;color:#a5947a;cursor:pointer;-webkit-tap-highlight-color:transparent;text-decoration:underline dotted;text-underline-offset:3px;}
 
   /* Textumgebung schrumpft, die Uhr bleibt gross */
-  @media (max-height:850px){
+  @media (max-height:900px){
     body{padding-top:8px;}
     .status{min-height:52px;margin:9px 0 2px;font-size:clamp(18px,5.2vw,23px);}
     .gpsbtn{margin-top:10px;padding:9px 22px;}
     .gpsmsg{min-height:34px;margin-top:6px;font-size:12.5px;}
-    .hint{margin-top:7px;font-size:12px;}
-    .ver{margin-top:7px;}
+    .hint{margin-top:6px;font-size:12px;line-height:1.3;}
+    .ver{margin-top:6px;margin-bottom:8px;}
   }
   @media (max-height:780px){
     .sub{display:none;}
@@ -84,7 +84,7 @@
     .status{min-height:38px;margin:4px 0 0;font-size:17px;}
     .gpsbtn{margin-top:7px;padding:7px 18px;font-size:14px;}
     .gpsmsg{min-height:24px;margin-top:4px;font-size:11.5px;}
-    .ver{display:none;}
+    .ver{margin-top:4px;margin-bottom:6px;font-size:11px;}
   }
 
   .geraet{margin-top:9px;min-height:20px;font-size:12.5px;color:#a5947a;text-align:center;cursor:pointer;
@@ -161,8 +161,8 @@
   <div class="geraet" id="geraet"></div>
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
-  <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen. Stehen mehrere am selben Ort: Stapel antippen, die n&auml;chste kommt nach vorn.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.65</div>
+  <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.66</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">

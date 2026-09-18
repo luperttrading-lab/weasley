@@ -89,10 +89,26 @@ aus dem Bild, nicht aus den Konstanten oben:
 ZB.ox=78, ZB.oy=168     Öse   = Drehpunkt im Bild (Bildmaß 1478×326)
 ZB.rx=1144, ZB.rr=110   Ring  = Portraitfenster
 ZB.sx0=325, ZB.sx1=715  Schild = Gravurfläche, am Höhenprofil gemessen
-ZB.cut=1256             Bildkante (seit v0.68), = Ringaußenkante
+ZB.rl=110, ZB.ra=144    Ring: Loch (Portraitfenster) und Außenkante, waagerecht
+ZB.cut=1288             Bildkante (seit v0.69), = rx + ra
 ZS = 160.5/(cut-ox)     Maßstab, Zeigerende auf r=160,5
-RINGR = rr*ZS = 14,99   Ringradius in Uhr-Einheiten
+RINGR = rl*ZS = 14,59   Portraitfenster
+RINGA = ra*ZS = 19,10   Außenkante des Messingrings
 ```
+
+⚠️ **Der Fehler in v0.68 — bitte als Muster merken.** Dort stand `cut:1256` und
+ein einziges `rr:110`. Die 110 ist der Radius des **Ringlochs**, nicht der
+Außenkante; die liegt waagerecht bei 144. Der Schnitt lag also mitten im
+Messingring, und das Medaillon war auf allen fünf Zeigern rechts flach
+abgeschnitten — zwei Tage lang live auf den Familiengeräten. Gemerkt habe ich es
+erst, als beim Einbau der neuen Zeiger auffiel, dass Loch und Außenkante zwei
+verschiedene Maße sind.
+Ursache derselbe Typ wie bei der Gravur am 18.9.: **gemessen wurde die Zahl, die
+der Code schon benutzte** (der Lochradius), nicht das, was auf dem Schirm steht.
+Gegenprobe seither: Medaillon in fünffacher Auflösung rendern und ansehen.
+Nebenbefund: Der Ring in `schlicht.webp` ist leicht **oval** (144 × 155). Der
+Schnitt muss an der waagerechten Kante liegen, sonst bleibt der Kugelansatz
+dahinter als abgesägter Stummel stehen.
 
 **Warum die Spitze seit v0.68 fehlt (Lutz' Wunsch: Portrait-Durchmesser +20 %).**
 Im Bild stehen Spitzenende und Ringmitte fest im Verhältnis 1400 : 1066 zur Öse,
@@ -104,6 +120,9 @@ Ortsnamen beginnt gemessen bei **r=163,2** — auch der Ortsring nach außen ger
 Deshalb endet das Bild jetzt an der Ringaußenkante: der Ring **ist** die Spitze.
 Ergebnis r_Ring 12,49 → 14,99 (+20,0 %), Zeigerende r=160,5, Luft zur Tinte
 2,7 Einheiten (vorher 7).
+
+**Stand v0.69:** Portraitradius 14,59 (v0.67: 12,49, **+16,8 %**), Ring außen
+19,10, Schild 51,7 × 12,6, Bogen je Zeiger 15,5°.
 
 **Kostenlos dabei:** Die Gravur wächst mit (Schriftgrad 9,49 → 11,39) — die
 Vorgabe „ohne dass die Schriftfläche kleiner wird" ist damit übererfüllt. Und das
@@ -118,6 +137,66 @@ INK2 = #34250b   Ortsnamen normal
 BORD = #6e1a24   IN GEFAHR
 NEBEL= #2f3a4a   VERSCHOLLEN
 ```
+
+
+### 2.2b Das Zeiger-Labor (`labor.html`, seit 18.09.2026)
+
+Eine **zweite Seite im Repo**, die `index.html` nicht anfasst — deshalb kein
+Risiko für die Familienuhr. Sie wird aus `index.html` erzeugt (Firebase-Modul
+entfernt, Zeigersatz und Gravur veränderbar gemacht) und dient dazu, Zeigerform
+und Beschriftung auszuprobieren, statt jedes Mal eine neue Version zu bauen.
+
+Adresse: `https://luperttrading-lab.github.io/weasley/labor.html`
+
+Einstellbar über den Knopf unten rechts, alles in `localStorage` unter
+`labor_einst` gemerkt:
+Zeiger (5), Schriftart (16), Stärke, Schreibweise (GROSS / Groß-klein /
+Kapitälchen / klein), Größe, Höhe auf dem Schild, Sperrung, Deckkraft, Farbe,
+„alle Namen gleich groß", Verteilung der fünf Personen. Unten stehen die
+gemessenen Werte (Portraitradius, Ringaußenkante, Schild, Bogen je Zeiger,
+Schriftgrade je Person).
+
+**Die fünf Zeiger, gemessen (Zeigerende überall auf r=160,5):**
+
+| Schlüssel | Portrait r | Ring außen | Ringmitte | Bogen | Schild B × H |
+|---|---|---|---|---|---|
+| `schlicht` (v0.69) | 14,59 | 19,10 | 141,3 | 15,5° | 51,7 × 12,6 |
+| `flach` (A) | 17,40 | 20,99 | 124,0 | 19,5° | 55,6 × 13,3 |
+| `hoch` (B) | 17,39 | 20,84 | 123,9 | 19,4° | 55,3 × 18,4 |
+| `perl` (D) | 17,29 | 21,30 | 123,7 | 19,8° | 54,9 × 18,8 |
+| `perlklein` (C) | 12,55 | 18,07 | 125,2 | 16,6° | 48,3 × 16,2 |
+
+**Befund zur Prompt-Vorgabe:** Bestellt war k = 0,130 (15,0° Bogen) bei
+Schildlänge 2,00 D. Geliefert wurden k = 0,144 bis 0,172 (16,5° bis 19,9°) und
+eine Schildlänge von nur 1,29 bis 1,34 D — der Generator hat den zusätzlichen
+Platz dem **Ring** gegeben statt dem Schild. Die Höhe hat er umgesetzt.
+
+**Wichtigster Befund zur Schrift:** CLAUDIA und LEANDER sind
+*breiten*begrenzt, nicht höhenbegrenzt. Mehr Schildhöhe hilft ihnen nicht, eine
+**schmale Schrift** dagegen sofort. Gemessen auf Zeiger `hoch`, Grundgrad 16,2:
+
+| Schrift | CLAUDIA | LUTZ | ANTON | EMILIA | LEANDER |
+|---|---|---|---|---|---|
+| Cinzel (heute) | 10,9 | 16,2 | 13,1 | 14,1 | 10,4 |
+| Playfair Display | 11,6 | 16,2 | 14,7 | 14,5 | 11,1 |
+| Marcellus | 12,4 | 16,2 | 14,7 | 16,2 | 12,5 |
+| Archivo Narrow | 14,1 | 16,2 | 16,2 | 16,2 | 13,1 |
+| Oswald | 14,6 | 16,2 | 16,2 | 16,2 | 14,3 |
+| **Fjalla One** | **16,2** | **16,2** | **16,2** | **16,2** | **16,2** |
+
+Fjalla One ist so schmal, dass **kein** Name mehr geschrumpft werden muss — alle
+fünf stehen im vollen Grad. Das löst den Textklumpen ohne jede Geometrieänderung.
+Ob der Charakter zum Messing passt, ist eine Geschmacksfrage und deshalb im
+Labor zu entscheiden, nicht am Rechner.
+
+Der Schalter **„alle Namen gleich groß"** (`GRAV.gleich`) setzt alle fünf auf den
+Grad des längsten Namens — ruhigeres Bild, kostet die kurzen Namen Größe.
+
+⚠️ **Falle im Container:** Der Testbrowser kommt nicht an `fonts.googleapis.com`
+(`ERR_CERT_AUTHORITY_INVALID` am Proxy). Ohne Gegenmaßnahme misst man für **jede**
+Schrift dieselben Werte — die Ersatzschrift. Lösung: CSS und woff2 per `curl` in
+den Scratchpad holen, die gstatic-Adressen auf `localhost` umbiegen und die
+Anfrage in Playwright per `route` bedienen. Genau wie beim Firebase-SDK.
 
 ### 2.3 Die acht Sektoren
 

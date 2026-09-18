@@ -13,7 +13,7 @@
      verlaessliche Weg. -->
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Marcellus&family=Cormorant+Garamond:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=Spectral:wght@400;600;700&family=Forum&family=Gilda+Display&family=Italiana&family=Oswald:wght@400;600;700&family=Fjalla+One&family=Archivo+Narrow:wght@400;600;700&family=Josefin+Sans:wght@400;600;700&family=Julius+Sans+One&display=swap');
 </style>
 <style>
   :root{--ink:#46330f;--ink2:#34250b;--bord:#6e1a24;--creme:#f3e9d2;--messing:#c79a3e;}
@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.69</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -312,7 +312,7 @@ svg.appendChild(gLab);
 // Klick-/Greif-Logik läuft über Pointer-Winkel (siehe unten) — keine Sektor-Pfade nötig
 
 // ================= ZEIGER (schlanke geschmiedete Nadeln) =================
-const R_ZEIGER=141.3, MED_R=24, R_NABE=20, RAHMEN=1.2;
+let R_ZEIGER=140.0; const MED_R=24, R_NABE=20, RAHMEN=1.2;
 const KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42};   // wie weit das Portrait ueber das Medaillon hinausgeht
 const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen Nabe und Medaillon
 {const c=document.getElementById('medClipC');
@@ -329,18 +329,45 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 // RINGLOCHS, nicht die Aussenkante des Messingrings (1300). Das Medaillon war
 // dadurch rechts flach abgeschnitten. Seither sind Loch und Aussenkante getrennt
 // benannt: rl = Portraitfenster, ra = Aussenkante.
-// Der Ring ist leicht oval: 144 waagerecht, 155 senkrecht. Geschnitten wird an
-// der waagerechten Kante (1288), sonst bleibt ein abgesaegter Kugelstummel stehen.
-// Gemessen: Loch r=14,59 (v0.67: 12,49, +16,8 %), Ring aussen r=19,10 waagerecht,
+// Gemessen: Loch r=14,45 (v0.67: 12,49, +15,7 %), Ring aussen r=20,49,
 // Zeigerende r=160,5, Tinte der Ortsnamen ab r=163,2.
-const ZB={datei:'zeiger/schlicht.webp', W:1478, H:326,
-          ox:78, oy:168, or:24,        // Oese  (Drehpunkt)
-          rx:1144, ry:162, rl:110, ra:144,   // Ring: Loch (Portraitfenster) und Aussenkante
-          sx0:325, sx1:715, sy:162.5, sh:95,   // Schild, am Hoehenprofil gemessen
-          cut:1288};                   // Bildkante = Ringaussenkante (rx+ra), Spitze faellt weg
-const ZS=160.5/(ZB.cut-ZB.ox);         // Zeigerende auf r=160,5, 2,7 Einheiten vor der Tinte
-const RINGR=ZB.rl*ZS;                  // Portraitfenster
-const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
+// ---- LABOR: mehrere Zeiger zur Auswahl ----
+// Alle Masse am Alphakanal der Bilder gemessen. rl = Ringloch (Portraitfenster),
+// ra = Aussenkante des Messingrings, ende = x, an dem der Zeiger aufhoert.
+const ENDE_R=160.5;                    // weiter darf kein Zeiger nach aussen, Tinte ab r=163,2
+const ZEIGERSATZ={
+  schlicht : {t:'schlicht (v0.69)', datei:'zeiger/schlicht.webp',
+              W:1478,H:326, ox:78,oy:168, rx:1144,ry:162, rl:110,ra:144,
+              sx0:325,sx1:715,sy:162.5,sh:95, ende:1288, cut:1288},
+  flach    : {t:'A  flaches Schild', datei:'zeiger/flach.webp',
+              W:1536,H:1024, ox:111.2,oy:503.8, rx:1188.6,ry:495.2, rl:151.2,ra:182.4,
+              sx0:342,sx1:825,sy:500.5,sh:116, ende:1506},
+  hoch     : {t:'B  hohes Schild', datei:'zeiger/hoch.webp',
+              W:1536,H:1024, ox:110.7,oy:503.5, rx:1188.2,ry:494.9, rl:151.2,ra:181.2,
+              sx0:328,sx1:809,sy:500.5,sh:160, ende:1506},
+  perl     : {t:'D  Perlring gross', datei:'zeiger/perl.webp',
+              W:1536,H:1024, ox:110.7,oy:502.3, rx:1183.6,ry:495.1, rl:150.0,ra:184.8,
+              sx0:326,sx1:802,sy:500.0,sh:163, ende:1503},
+  perlklein: {t:'C  Perlring klein', datei:'zeiger/perlklein.webp',
+              W:1536,H:1024, ox:103.7,oy:505.8, rx:1192.9,ry:503.2, rl:109.2,ra:157.2,
+              sx0:358,sx1:778,sy:504.0,sh:141, ende:1500}
+};
+let ZB=ZEIGERSATZ.hoch, ZS=1, RINGR=1, RINGA=1;
+function massstab(){
+  ZS=ENDE_R/(ZB.ende-ZB.ox);           // Zeigerende genau auf ENDE_R
+  RINGR=ZB.rl*ZS;                      // Portraitfenster
+  RINGA=ZB.ra*ZS;                      // Aussenkante des Messingrings
+  R_ZEIGER=(ZB.rx-ZB.ox)*ZS;           // Ringmitte = Zeigerlaenge
+}
+massstab();
+// ---- LABOR: Einstellungen der Gravur ----
+const GRAV={fam:'Cinzel', gew:'700', faktor:1.00, sperr:0, schreib:'gross',
+            gleich:false, farbe:'#1b1409', deck:0.95, hoehe:0.37};
+function gravText(n){
+  if(GRAV.schreib==='gross') return n.toUpperCase();
+  if(GRAV.schreib==='klein') return n.toLowerCase();
+  return n;                            // 'normal'/'kapitael': Name, wie er geschrieben wird
+}
 function buildNadel(p){
   const g=E('g',{});
   const inner=E('g',{transform:`rotate(-90 ${CX} ${CY})`});
@@ -376,13 +403,14 @@ function buildNadel(p){
   inner.appendChild(im);
   // Name auf das Schild gravieren
   const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;
-  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88;
-  // dominant-baseline wird von Safari nicht zuverlaessig umgesetzt; deshalb die
-  // Grundlinie selbst setzen: Mitte der Versalien liegt 0,37 Schriftgrad darueber
-  const nameTx=[E('text',{x:nx,y:(ny+hoehe*0.37).toFixed(2),'text-anchor':'middle',
-      'font-family':'Cinzel, serif','font-weight':'700','font-size':hoehe.toFixed(2),
-      fill:'#1b1409',stroke:'none',opacity:0.95})];
-  nameTx[0].textContent=p.name.toUpperCase();
+  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88*GRAV.faktor;
+  const nameTx=[E('text',{x:nx,y:(ny+hoehe*GRAV.hoehe).toFixed(2),'text-anchor':'middle',
+      'font-family':"'"+GRAV.fam+"', serif",'font-weight':GRAV.gew,'font-size':hoehe.toFixed(2),
+      fill:GRAV.farbe,stroke:'none',opacity:GRAV.deck})];
+  if(GRAV.sperr) nameTx[0].setAttribute('letter-spacing',GRAV.sperr+'em');
+  if(GRAV.schreib==='kapitael'){ nameTx[0].style.fontVariantCaps='small-caps';
+                                 nameTx[0].style.fontVariant='small-caps'; }
+  nameTx[0].textContent=gravText(p.name);
   inner.appendChild(nameTx[0]);
   const hi=E('circle',{cx:rcx,cy:rcy,r:RINGA+2,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
   inner.appendChild(hi);
@@ -425,24 +453,48 @@ if(STAPEL_TAKT_MS>0) setInterval(()=>{
 // Wer jetzt misst, misst die Ersatzschrift und passt auf falsche Werte ein.
 // Deshalb laeuft die Einpassung ein zweites Mal, sobald die Schrift geladen ist.
 function passeNamenEin(){
+  const grade=[];
   zeiger.forEach(z=>{
-    if(!z.nameTx) return;
+    if(!z.nameTx){ grade.push(null); return; }
     const t=z.nameTx[0];
     t.removeAttribute('textLength'); t.removeAttribute('lengthAdjust');
     t.setAttribute('font-size',z.gradBasis.toFixed(2));
     const natur=t.getComputedTextLength();
-    let grad=z.gradBasis;
-    if(natur>z.zielB*0.94){
-      grad=z.gradBasis*z.zielB*0.94/natur;
-      t.setAttribute('font-size',grad.toFixed(2));
-    }else{
+    grade.push(natur>z.zielB*0.94 ? z.gradBasis*z.zielB*0.94/natur : z.gradBasis);
+  });
+  const gMin=Math.min.apply(null,grade.filter(g=>g!=null));
+  zeiger.forEach((z,i)=>{
+    if(!z.nameTx) return;
+    const t=z.nameTx[0];
+    const grad = GRAV.gleich ? gMin : grade[i];
+    t.setAttribute('font-size',grad.toFixed(2));
+    if(!GRAV.gleich && grad>=z.gradBasis-0.001){
+      const natur=t.getComputedTextLength();
       const ziel=Math.min(z.zielB*0.88, natur*1.45);
       if(ziel>natur){t.setAttribute('textLength',ziel.toFixed(1)); t.setAttribute('lengthAdjust','spacing');}
     }
-    t.setAttribute('y',(z.nyBasis+grad*0.37).toFixed(2));   // Mitte der Versalien auf die Schildmitte
+    t.setAttribute('y',(z.nyBasis+grad*GRAV.hoehe).toFixed(2));
   });
-  if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));   // Kipplage neu setzen
+  if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));
 }
+// ---- LABOR: Zeiger komplett neu aufbauen (nach jeder Aenderung) ----
+function neuZeichnen(){
+  massstab();
+  {const c=document.getElementById('medClipC'); c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
+  while(gZeiger.firstChild) gZeiger.removeChild(gZeiger.firstChild);
+  zeiger.length=0;
+  personen.forEach(p=>zeiger.push(buildNadel(p)));
+  [4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
+  personen.forEach((p,i)=>setRot(i));
+  passeNamenEin();
+  if(typeof highlight==='function') highlight();
+  gZeiger.setAttribute('opacity','1');
+}
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, waehle(k){ ZB=ZEIGERSATZ[k]; },
+  masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
+                   schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
+                   grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
+  personen, setSektoren(a){ personen.forEach((p,i)=>p.sektor=a[i]); buildChips(); startAnim(); highlight(); statusText(); }};
 
 // Nabe (über Zeiger-Ursprung)
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:22,fill:'url(#nabe)',stroke:INK,'stroke-width':1,filter:'url(#sh)'}));
@@ -933,130 +985,162 @@ setInterval(()=>{
 },30000);
 </script>
 
-<script type="module">
-// ================= FIREBASE-SYNC =================
-// Aus fuenf Einzeluhren wird eine Familienuhr: jedes Geraet schreibt nur die
-// eigene Person, liest aber den Stand aller. Die GPS-Zonen liegen ebenfalls in
-// der Datenbank, damit die Wohnadresse nicht im oeffentlichen Repo steht.
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged,
-         setPersistence, browserLocalPersistence }
-  from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-import { getDatabase, ref, set, onValue, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
+<!-- Firebase-Modul im Labor entfernt -->
 
-// Der apiKey ist bei Web-Apps zur Veroeffentlichung vorgesehen. Der Schutz kommt
-// ueber die Sicherheitsregeln: angemeldet sein reicht nicht, die eigene uid muss
-// unter /erlaubt stehen. Siehe firebase-rules.json im Repo.
-const firebaseConfig = {
-  apiKey: "AIzaSyCCXlRi_YF9wlS0_T3_fs4AMXn0ieukk28",
-  authDomain: "standort-uhr.firebaseapp.com",
-  databaseURL: "https://standort-uhr-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "standort-uhr",
-  storageBucket: "standort-uhr.firebasestorage.app",
-  messagingSenderId: "915931145381",
-  appId: "1:915931145381:web:04ffa7914c6f20429ad94c"
-};
+<style>
+  #labbtn{position:fixed;right:10px;z-index:90;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
+    background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
+    border-radius:9px;padding:9px 14px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
+  #lab{position:fixed;left:0;right:0;bottom:0;z-index:89;max-height:56vh;overflow:auto;
+    background:#1b1309f2;border-top:1px solid #6b5124;color:#e6d8b8;
+    font:13px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    padding:12px 12px calc(58px + env(safe-area-inset-bottom,0px));
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  #lab[hidden]{display:none;}
+  #lab h4{margin:12px 0 5px;font:700 11px/1.2 'Cinzel',serif;letter-spacing:.12em;
+    color:#c9a95f;text-transform:uppercase;}
+  #lab h4:first-child{margin-top:0;}
+  #lab .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  #lab button.k{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;
+    padding:6px 9px;font-size:12.5px;}
+  #lab button.k.an{background:#7a5f2a;color:#fff3d2;border-color:#caa25e;}
+  #lab select{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;padding:6px;font-size:13px;}
+  #lab input[type=range]{flex:1;min-width:110px;accent-color:#c8a155;}
+  #lab label.sl{display:flex;gap:8px;align-items:center;width:100%;}
+  #lab label.sl span{width:124px;flex:none;color:#bfae8a;font-size:12px;}
+  #lab label.sl b{width:48px;flex:none;text-align:right;color:#f0dca6;font-variant-numeric:tabular-nums;}
+  #lab .mess{margin-top:10px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a89670;
+    white-space:pre-wrap;border-top:1px dashed #5a4620;padding-top:8px;}
+  #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
+  #lab .sw.an{outline:2px solid #caa25e;outline-offset:1px;}
+</style>
+<button id="labbtn">Einstellungen</button>
+<div id="lab" hidden>
+  <h4>Zeiger</h4>
+  <div class="row" id="lz"></div>
+  <h4>Schriftart</h4>
+  <div class="row">
+    <select id="lf"></select>
+    <select id="lg"><option value="400">mager</option><option value="600">halbfett</option><option value="700">fett</option></select>
+  </div>
+  <h4>Schreibweise</h4>
+  <div class="row" id="ls"></div>
+  <h4>Feinjustage</h4>
+  <label class="sl"><span>Gr&ouml;&szlig;e</span><input type="range" id="lsz" min="0.55" max="1.45" step="0.02"><b id="vsz"></b></label>
+  <label class="sl"><span>H&ouml;he auf dem Schild</span><input type="range" id="lhh" min="0.20" max="0.50" step="0.005"><b id="vhh"></b></label>
+  <label class="sl"><span>Sperrung</span><input type="range" id="lsp" min="0" max="0.22" step="0.005"><b id="vsp"></b></label>
+  <label class="sl"><span>Deckkraft</span><input type="range" id="ldk" min="0.5" max="1" step="0.01"><b id="vdk"></b></label>
+  <h4>Farbe der Gravur</h4>
+  <div class="row" id="lc"></div>
+  <h4>Anzeige</h4>
+  <div class="row">
+    <button class="k" id="lgl">alle Namen gleich gro&szlig;</button>
+    <button class="k" id="lv1">verteilt</button>
+    <button class="k" id="lv2">alle zu Hause</button>
+    <button class="k" id="lv3">drei zu Hause</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button class="k" id="lkop">Einstellungen kopieren</button>
+    <button class="k" id="lres">zur&uuml;cksetzen</button>
+  </div>
+  <div class="mess" id="lm"></div>
+</div>
+<script>
+(function(){
+  const L=window.LABOR, G=L.GRAV;
+  const SCHRIFTEN=['Cinzel','Cinzel Decorative','Marcellus','Forum','Gilda Display','Italiana',
+    'Cormorant Garamond','EB Garamond','Playfair Display','Libre Baskerville','Spectral',
+    'Oswald','Fjalla One','Archivo Narrow','Josefin Sans','Julius Sans One'];
+  const SCHMAL={'Oswald':1,'Fjalla One':1,'Archivo Narrow':1};
+  const SCHREIB=[['gross','LUTZ'],['normal','Lutz'],['kapitael','Kapitälchen'],['klein','lutz']];
+  const FARBEN=['#1b1409','#000000','#3a2a10','#5a4318','#6e1a24','#f3e3b8'];
+  const VERT={lv1:[0,2,4,1,3], lv2:[0,0,0,0,0], lv3:[0,0,0,1,3]};
+  const STD={fam:'Cinzel',gew:'700',faktor:1.00,sperr:0,schreib:'gross',gleich:false,
+             farbe:'#1b1409',deck:0.95,hoehe:0.37,zeiger:'hoch'};
+  let zeigerKey='hoch';
+  const $=id=>document.getElementById(id);
 
-const app  = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db   = getDatabase(app);
-const U    = window.UHR;
-U.lebt();   // SDK ist geladen — der Waechter im Hauptskript darf schweigen
-
-const lgovl =document.getElementById('lgovl'),
-      lgmail=document.getElementById('lgmail'),
-      lgpass=document.getElementById('lgpass'),
-      lgbtn =document.getElementById('lgbtn'),
-      lgmsg =document.getElementById('lgmsg'),
-      syncz =document.getElementById('syncz');
-
-function sag(txt,stoerung){
-  syncz.innerHTML = stoerung ? '<span class="weg">'+txt+'</span>' : txt;
-}
-function fehlerText(e){
-  const c=(e&&e.code)||'';
-  if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found'))
-    return 'E-Mail oder Passwort stimmt nicht.';
-  if(c.includes('invalid-email'))     return 'Diese E-Mail-Adresse ist nicht gültig.';
-  if(c.includes('too-many-requests')) return 'Zu viele Versuche — ein paar Minuten warten.';
-  if(c.includes('network'))           return 'Keine Verbindung zum Server.';
-  return 'Anmeldung fehlgeschlagen ('+(c||'unbekannt')+').';
-}
-
-// Einmal anmelden, dann bleibt das Geraet angemeldet — kein Passwort bei jedem Start.
-setPersistence(auth, browserLocalPersistence).catch(()=>{});
-
-async function anmelden(){
-  const mail=lgmail.value.trim(), pw=lgpass.value;
-  if(!mail||!pw){ lgmsg.textContent='Bitte E-Mail und Passwort eingeben.'; return; }
-  lgbtn.disabled=true; lgmsg.textContent='Anmelden …';
-  try{
-    await signInWithEmailAndPassword(auth,mail,pw);
-    lgmsg.textContent=''; lgpass.value='';
-  }catch(e){
-    lgmsg.textContent=fehlerText(e);
-  }finally{
-    lgbtn.disabled=false;
-  }
-}
-lgbtn.addEventListener('click',anmelden);
-lgpass.addEventListener('keydown',e=>{ if(e.key==='Enter') anmelden(); });
-
-let abStand=null, abZonen=null, ersteMessung=false;
-
-onAuthStateChanged(auth, user=>{
-  if(!user){
-    if(abStand){abStand();abStand=null;}
-    if(abZonen){abZonen();abZonen=null;}
-    lgovl.hidden=false;
-    sag('nicht angemeldet',true);
-    return;
-  }
-  lgovl.hidden=true;
-  sag('verbunden …');
-  starte();
-});
-
-function leserFehler(e,was){
-  // Angemeldet, aber nicht freigeschaltet: haeufigster Fall beim Einrichten
-  if(e && e.code==='PERMISSION_DENIED'){
-    sag('Dieses Konto ist nicht freigeschaltet — uid fehlt unter /erlaubt',true);
-  }else{
-    sag(was+' nicht lesbar ('+((e&&e.code)||'Fehler')+')',true);
-  }
-}
-
-function starte(){
-  if(abStand||abZonen) return;   // nur einmal einhaengen
-
-  // Zonen: enthalten die Koordinaten, stehen bewusst nur in der Datenbank
-  abZonen = onValue(ref(db,'zonen'),
-    snap=>{
-      U.setzeZonen(snap.val()||{});
-      // Erst messen, wenn die Zonen wirklich da sind. Eine feste Wartezeit waere
-      // ein Rennen gegen das Netz — bei langsamer Verbindung haette die Messung
-      // ohne Zonen stattgefunden und jeden Ort als "unterwegs" gewertet.
-      if(!ersteMessung){ ersteMessung=true; setTimeout(()=>U.messen(true),300); }
-    },
-    err =>{ leserFehler(err,'Zonen'); });
-
-  // Gemeinsamer Stand aller fuenf, live
-  abStand = onValue(ref(db,'status'),
-    snap=>{ U.setzeStand(snap.val()||{}); sag('verbunden'); },
-    err =>{ leserFehler(err,'Stand'); });
-
-  // Eigene Position in die Datenbank schreiben. 'quelle' unterscheidet eine
-  // echte Messung von einer Position, die jemand auf dem Zifferblatt gesetzt hat.
-  U.setMelder((idx,sektor,q)=>{
-    set(ref(db,'status/'+idx),{ sektor:sektor, ts:serverTimestamp(), quelle:(q==='hand'?'hand':'gps') })
-      .catch(e=>sag('Melden fehlgeschlagen ('+(e.code||'Fehler')+')',true));
+  Object.keys(L.ZEIGERSATZ).forEach(k=>{
+    const b=document.createElement('button'); b.className='k'; b.dataset.k=k;
+    b.textContent=L.ZEIGERSATZ[k].t;
+    b.onclick=()=>{ zeigerKey=k; L.waehle(k); anwenden(); };
+    $('lz').appendChild(b);
   });
+  SCHRIFTEN.forEach(f=>{ const o=document.createElement('option'); o.value=f;
+    o.textContent=f+(SCHMAL[f]?'  (schmal)':''); $('lf').appendChild(o); });
+  $('lf').onchange=()=>{ G.fam=$('lf').value; anwenden(); };
+  $('lg').onchange=()=>{ G.gew=$('lg').value; anwenden(); };
+  SCHREIB.forEach(function(e){ const k=e[0];
+    const b=document.createElement('button'); b.className='k'; b.dataset.s=k;
+    b.textContent=e[1];
+    b.onclick=()=>{ G.schreib=k; G.hoehe=(k==='gross')?0.37:0.33; anwenden(); };
+    $('ls').appendChild(b); });
+  FARBEN.forEach(c=>{ const b=document.createElement('button'); b.className='sw'; b.dataset.c=c;
+    b.style.background=c; b.onclick=()=>{ G.farbe=c; anwenden(); }; $('lc').appendChild(b); });
+  const R=[['lsz','vsz','faktor',v=>v.toFixed(2)],['lhh','vhh','hoehe',v=>v.toFixed(3)],
+           ['lsp','vsp','sperr',v=>v.toFixed(3)],['ldk','vdk','deck',v=>v.toFixed(2)]];
+  R.forEach(function(r){ $(r[0]).oninput=()=>{ G[r[2]]=+$(r[0]).value; anwenden(); }; });
+  $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
+  ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
+  $('lres').onclick=()=>{ uebernehmen(STD); anwenden(); };
+  $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
+    $('lkop').textContent='kopiert'; setTimeout(()=>$('lkop').textContent='Einstellungen kopieren',1400); };
+  $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
+    $('labbtn').textContent=l.hidden?'Einstellungen':'schließen'; };
 
-  // Geraetezuordnung erfragen. Die erste Messung haengt am Zonen-Listener
-  // oben, nicht an einer Wartezeit.
-  U.fragGeraet();
-}
+  function text(){
+    const m=L.masse();
+    return 'Zeiger: '+zeigerKey+'\nSchrift: '+G.fam+' '+G.gew+'\nSchreibweise: '+G.schreib+
+      '\nGroesse: '+G.faktor.toFixed(2)+'\nHoehe: '+G.hoehe.toFixed(3)+
+      '\nSperrung: '+G.sperr.toFixed(3)+'\nFarbe: '+G.farbe+'\nDeckkraft: '+G.deck.toFixed(2)+
+      '\nAlle gleich gross: '+(G.gleich?'ja':'nein')+
+      '\n-- gemessen: Portrait r='+m.RINGR.toFixed(2)+', Ring aussen r='+m.RINGA.toFixed(2);
+  }
+  function uebernehmen(o){ Object.keys(o).forEach(k=>{
+      if(k==='zeiger'){ zeigerKey=o[k]; L.waehle(o[k]); } else G[k]=o[k]; }); }
+  function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
+      {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
+       farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,zeiger:zeigerKey})); }catch(e){} }
+  function spiegeln(){
+    $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
+    $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
+    $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));
+    $('lf').value=G.fam; $('lg').value=G.gew;
+    $('lgl').classList.toggle('an',G.gleich);
+    R.forEach(function(r){ $(r[0]).value=G[r[2]]; $(r[1]).textContent=r[3](G[r[2]]); });
+  }
+  function messen(){
+    const m=L.masse(), n=L.personen.map(p=>p.name);
+    const gr=m.grade.map((g,i)=>n[i].slice(0,3)+' '+(g?g.toFixed(1):'-')).join('  ');
+    $('lm').textContent =
+      'Portrait r '+m.RINGR.toFixed(2)+'      (v0.69: 14,59)\n'+
+      'Ring aussen r '+m.RINGA.toFixed(2)+'   Ringmitte r '+m.R_ZEIGER.toFixed(1)+'\n'+
+      'Zeigerende r '+m.ende.toFixed(1)+'   (Tinte der Ortsnamen ab 163,2)\n'+
+      'Schild '+m.schildB.toFixed(1)+' x '+m.schildH.toFixed(1)+'   (v0.69: 51,7 x 12,6)\n'+
+      'Bogen je Zeiger '+(2*Math.asin(m.RINGA/m.R_ZEIGER)*180/Math.PI).toFixed(1)+'°   (Sektor 45°)\n'+
+      'Schriftgrade  '+gr;
+  }
+  // Eine frisch gewaehlte Schrift ist beim ersten Zeichnen noch nicht da; wer jetzt
+  // misst, passt auf die Ersatzschrift ein. Deshalb nach dem Laden ein zweiter Lauf.
+  let lauf=0;
+  function anwenden(){
+    L.neuZeichnen(); spiegeln(); messen(); speichern();
+    const n=++lauf, wunsch=G.fam;
+    if(document.fonts && document.fonts.load){
+      document.fonts.load(G.gew+' 20px "'+wunsch+'"').then(()=>{
+        if(n!==lauf || wunsch!==G.fam) return;      // inzwischen wurde etwas anderes gewaehlt
+        L.neuZeichnen(); messen();
+      }).catch(()=>{});
+    }
+  }
+
+  let s=null; try{ s=localStorage.getItem('labor_einst'); }catch(e){}
+  uebernehmen(s?JSON.parse(s):STD);
+  L.setSektoren(VERT.lv1);
+  anwenden();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(anwenden);
+})();
 </script>
 </body>
 </html>

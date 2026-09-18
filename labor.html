@@ -429,7 +429,12 @@ function buildNadel(p){
                                  nameTx[0].style.fontVariant='small-caps'; }
   nameTx[0].textContent=gravText(p.name);
   inner.appendChild(nameTx[0]);
-  const hi=E('circle',{cx:rcx,cy:rcy,r:RINGA+2,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
+  // Markierung der aktiven Person — wie in index.html seit v0.71 aus (HI_DECK=0).
+  // Der alte Ring lag AUSSERHALB der Messingkante und las sich auf dem hellen
+  // Zifferblatt als Freistellungsfehler. Falls wieder eingeschaltet, faerbt er
+  // jetzt das Messingband ein, statt einen Heiligenschein davorzulegen.
+  const hi=E('circle',{cx:rcx,cy:rcy,r:(RINGR+RINGA)/2,fill:'none',
+      stroke:'#ffe4a0','stroke-width':((RINGA-RINGR)*0.92).toFixed(2),opacity:0});
   inner.appendChild(hi);
   g.appendChild(inner);
   return {g,hi,nameTx,portraitG,rcx,rcy,zielB:breite,gradBasis:hoehe,nyBasis:ny};
@@ -610,7 +615,8 @@ function statusText(){
   }
   document.getElementById('status').innerHTML=`<span><span class="nm">${p.name}</span> ist <span class="${cls}">${ortName[p.sektor]}</span>${zeit}</span>`;
 }
-function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?1:0));}
+const HI_DECK=0;   // 0 = aus, wie in der App
+function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?HI_DECK:0));}
 function buildChips(){
   const box=document.getElementById('people');box.innerHTML='';
   personen.forEach((p,i)=>{

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.70</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.71</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -397,7 +397,14 @@ function buildNadel(p){
   if(GRAV.sperr) nameTx[0].setAttribute('letter-spacing',GRAV.sperr+'em');
   nameTx[0].textContent=p.name;
   inner.appendChild(nameTx[0]);
-  const hi=E('circle',{cx:rcx,cy:rcy,r:RINGA+2,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
+  // Markierung der aktiven Person. Seit v0.71 standardmaessig AUS (HI_DECK=0).
+  // Bis v0.70 lag ein heller Ring AUSSERHALB der Messingkante — auf dem hellen
+  // Zifferblatt liest sich das wie ein Freistellungsfehler, nicht wie eine
+  // Markierung (von Lutz am 18.9. gemeldet). Der Ring liegt jetzt AUF dem
+  // Messingband: wer ihn wieder einschaltet, bekommt ein aufgehelltes Band
+  // statt eines Heiligenscheins.
+  const hi=E('circle',{cx:rcx,cy:rcy,r:(RINGR+RINGA)/2,fill:'none',
+      stroke:'#ffe4a0','stroke-width':((RINGA-RINGR)*0.92).toFixed(2),opacity:0});
   inner.appendChild(hi);
   g.appendChild(inner);
   return {g,hi,nameTx,portraitG,rcx,rcy,zielB:breite,gradBasis:hoehe,nyBasis:ny};
@@ -562,7 +569,10 @@ function statusText(){
   }
   document.getElementById('status').innerHTML=`<span><span class="nm">${p.name}</span> ist <span class="${cls}">${ortName[p.sektor]}</span>${zeit}</span>`;
 }
-function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?1:0));}
+// 0 = aus. Welche Person gemeint ist, sagen der hervorgehobene Chip und die
+// Statuszeile bereits; auf dem Zifferblatt war die Markierung Zugabe.
+const HI_DECK=0;
+function highlight(){zeiger.forEach((z,i)=>z.hi.setAttribute('opacity',i===aktiv?HI_DECK:0));}
 function buildChips(){
   const box=document.getElementById('people');box.innerHTML='';
   personen.forEach((p,i)=>{

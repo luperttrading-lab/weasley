@@ -384,6 +384,7 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 | **Ortsnamen nach außen** (r=164/171) | Löst die Kollision mit den großen Medaillons |
 | **Kein Schaft-Stummel** | Wenn Namen unterschiedlich lang sind, entstehen unterschiedlich lange Reststriche — sieht uneinheitlich aus |
 | **IN GEFAHR rötlich hinterlegt**, VERSCHOLLEN nebelblau | Verschollen ist ungewiss, nicht alarmierend — soll nicht mit dem Rot konkurrieren |
+| **Keine Markierung der aktiven Person auf dem Zifferblatt** (seit v0.71, `HI_DECK=0`) | Bis v0.70 lag ein heller Ring **außerhalb** der Messingkante. Auf dem hellen Zifferblatt liest sich das wie ein Freistellungsfehler, nicht wie eine Markierung — Lutz am 18.9.: „sieht aus wie schlecht freigestellt". Welche Person gemeint ist, sagen der hervorgehobene Chip und die Statuszeile ohnehin. Das Element bleibt im Code, liegt jetzt aber **auf** dem Messingband; `HI_DECK` > 0 schaltet es wieder ein. |
 
 **Nicht genommene Varianten** stecken teilweise noch als Schalter in der Datei: `window.MEDSTIL` kennt `kreis` / `kamee` / `frei` / `rahmen` (Standard), `window.NADELSTIL` kennt `schale` / `spitze` / `ohne`.
 

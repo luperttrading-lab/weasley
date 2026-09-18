@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Ein Medaillon greifen und herumziehen &mdash; oder eine Person antippen und dann ihren Ort auf dem Zifferblatt w&auml;hlen. Stehen mehrere am selben Ort: Stapel antippen, die n&auml;chste kommt nach vorn.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.62</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.63</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -333,19 +333,24 @@ function buildNadel(p){
   const bx=CX-ZB.ox*ZS, by=CY-ZB.oy*ZS;
   // Portrait zuerst, es liegt hinter dem Messing und schaut durch den Ring
   const rcx=bx+ZB.rx*ZS, rcy=by+ZB.ry*ZS;
+  let portraitG=null;
   if(p.bildFrei){
     const cid='ring'+p.name;
     const cp=E('clipPath',{id:cid});
     cp.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96}));
     inner.appendChild(cp);
-    inner.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:'#eadcb6'}));
-    inner.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:p.ton,opacity:0.30}));
+    // eigene Gruppe: sie kippt spaeter zusammen mit der Schrift, damit das
+    // Gesicht nie auf dem Kopf steht
+    portraitG=E('g',{});
+    portraitG.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:'#eadcb6'}));
+    portraitG.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:p.ton,opacity:0.30}));
     const R=RINGR*0.94;
     const pi=E('image',{x:rcx-R,y:rcy-R,width:R*2,height:R*2,
                         preserveAspectRatio:'xMidYMid meet','clip-path':'url(#'+cid+')'});
     pi.setAttributeNS('http://www.w3.org/1999/xlink','href',p.bildFrei);
     pi.setAttribute('href',p.bildFrei);
-    inner.appendChild(pi);
+    portraitG.appendChild(pi);
+    inner.appendChild(portraitG);
   }
   // Messingzeiger darueber
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
@@ -354,20 +359,16 @@ function buildNadel(p){
   inner.appendChild(im);
   // Name auf das Schild gravieren
   const nx=bx+(ZB.sx0+ZB.sx1)/2*ZS, ny=by+ZB.sy*ZS;
-  const breite=(ZB.sx1-ZB.sx0)*ZS*0.90, hoehe=ZB.sh*ZS*0.80;
-  const nameTx=[];
-  // dunkle Gravur mit einem hellen Lichtrand darunter, wie eingeschlagen
-  [['#6b5526','#6b5526',1.0],['#241a0c','none',0]].forEach(([f,st,sw])=>{
-    const tx=E('text',{x:nx,y:ny,'text-anchor':'middle','dominant-baseline':'central',
+  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88;
+  const nameTx=[E('text',{x:nx,y:ny,'text-anchor':'middle','dominant-baseline':'central',
       'font-family':'Cinzel, serif','font-weight':'700','font-size':hoehe.toFixed(2),
-      'letter-spacing':'0.4',fill:f,stroke:st,'stroke-width':sw,'paint-order':'stroke',
-      opacity:(sw?0.55:0.92)});
-    tx.textContent=p.name.toUpperCase(); inner.appendChild(tx); nameTx.push(tx);
-  });
+      fill:'#1b1409',stroke:'none',opacity:0.95})];
+  nameTx[0].textContent=p.name.toUpperCase();
+  inner.appendChild(nameTx[0]);
   const hi=E('circle',{cx:rcx,cy:rcy,r:RINGR+3,fill:'none',stroke:'#f0d98a','stroke-width':2.2,opacity:0});
   inner.appendChild(hi);
   g.appendChild(inner);
-  return {g,hi,nameTx,zielB:breite};
+  return {g,hi,nameTx,portraitG,rcx,rcy,zielB:breite};
 }
 const gZeiger=E('g',{'pointer-events':'none',id:'zeiger',opacity:'0'});
 const zeiger=personen.map(p=>buildNadel(p));
@@ -398,13 +399,18 @@ if(STAPEL_TAKT_MS>0) setInterval(()=>{
     const v=naechsteNachVorn(i); if(v>=0 && personen[aktiv].sektor===p.sektor) neuAktiv=v; });
   if(neuAktiv>=0){aktiv=neuAktiv;buildChips();statusText();highlight();}
 },STAPEL_TAKT_MS);
-// Namen auf die Breite des Schildes einpassen
+// Namen auf dem Schild einpassen: Hoehe ist die harte Grenze, die Breite wird
+// durch Sperren gefuellt — aber hoechstens auf das 1,45-fache, sonst zerfaellt das Wort.
 (function passeNamenEin(){
   zeiger.forEach(z=>{
     if(!z.nameTx) return;
-    const tl=z.nameTx[0].getComputedTextLength();
-    if(tl>z.zielB){const f=z.zielB/tl;
-      z.nameTx.forEach(t=>t.setAttribute('font-size',(+t.getAttribute('font-size')*f).toFixed(2)));}
+    const t=z.nameTx[0], natur=t.getComputedTextLength();
+    const ziel=Math.min(z.zielB*0.78, natur*1.45);
+    if(natur>z.zielB*0.92){
+      t.setAttribute('font-size',(+t.getAttribute('font-size')*z.zielB*0.92/natur).toFixed(2));
+    }else if(ziel>natur){
+      t.setAttribute('textLength',ziel.toFixed(1)); t.setAttribute('lengthAdjust','spacing');
+    }
   });
 })();
 
@@ -430,15 +436,16 @@ function angDiff(a,b){let d=(b-a)%360;if(d>180)d-=360;if(d<-180)d+=360;return d;
 
 let grabbed=-1;
 function setRot(i){
-  zeiger[i].g.setAttribute('transform',`rotate(${cur[i]} ${CX} ${CY})`);
-  if(!zeiger[i].nameTx) return;
+  const z=zeiger[i];
+  z.g.setAttribute('transform',`rotate(${cur[i]} ${CX} ${CY})`);
   const ref=(i===grabbed)?cur[i]:personen[i].sektor*STEP;
   const cn=((ref%360)+360)%360;
-  const kopf=(cn>180);                       // Zeiger zeigt nach links -> Schrift kippen
-  zeiger[i].nameTx.forEach(t=>{
+  const kopf=(cn>180);                       // linke Haelfte: Schrift und Gesicht kippen
+  if(z.nameTx) z.nameTx.forEach(t=>{
     const x=+t.getAttribute('x'), y=+t.getAttribute('y');
     t.setAttribute('transform', kopf?`rotate(180 ${x} ${y})`:'');
   });
+  if(z.portraitG) z.portraitG.setAttribute('transform', kopf?`rotate(180 ${z.rcx} ${z.rcy})`:'');
 }
 personen.forEach((p,i)=>setRot(i));
 

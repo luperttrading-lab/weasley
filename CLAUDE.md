@@ -217,7 +217,22 @@ Nachbarzeilen fast unsichtbar (Deckkraft 0,16). Nicht versehentlich angleichen.
 Schieber konnten 0,005. Ein gespeicherter Zwischenwert wie `seite: 0,065` wird
 deshalb als `+0,06` angezeigt und springt beim ersten Anfassen auf 0,06 oder 0,07.
 
-**Lupe** (zweiter fester Knopf unten rechts) — drei benannte Stufen statt Zahlen:
+**Bedienung der Walzen (19.9., zweite Runde):**
+- **Wert folgt sofort**, nicht erst nach einer Pause. Vorher lag ein
+  `setTimeout` von 80 bzw. 90 ms dazwischen — Lutz: „die Verzögerung ist zu
+  lange". Jetzt wird beim Rastwechsel direkt gesetzt, der Schutz gegen
+  Dauerzeichnen ist ein `requestAnimationFrame`: höchstens ein Neuzeichnen je
+  Bild, nie eines je Rastschritt. Gemessen: Wert steht 16 ms nach dem
+  Scrollereignis (vorher 80–90 ms).
+- **`overscroll-behavior: contain`** auf allen Walzen. Ohne das schiebt ein
+  Wisch am Ende der Walze das ganze Panel mit (Scroll-Verkettung).
+- **Die beiden Knöpfe** („Lupe", „Einstellungen") liegen in `#leiste`. Bei
+  geschlossenem Panel `position:fixed` unten rechts, bei offenem Panel wandern
+  sie per DOM an dessen Anfang und kleben dort `position:sticky` oben. Vorher
+  verdeckten sie mitten im Panel eine Zeile. Gemessen: 0 Elemente unter der
+  Leiste.
+
+**Lupe** (Knopf in der Leiste) — drei benannte Stufen statt Zahlen:
 
 | Stufe | viewBox | sichtbar bis | wofür |
 |---|---|---|---|

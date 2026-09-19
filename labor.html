@@ -1028,18 +1028,20 @@ setInterval(()=>{
 <!-- Firebase-Modul im Labor entfernt -->
 
 <style>
-  #zoombtn{position:fixed;right:132px;z-index:90;bottom:calc(10px + env(safe-area-inset-bottom,0px));
-    font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
+  /* Die beiden Knoepfe liegen bei geschlossenem Panel fest unten rechts.
+     Sobald das Panel offen ist, wandern sie per DOM an dessen Anfang und
+     kleben dort oben — sonst verdecken sie mitten im Panel eine Zeile. */
+  #leiste{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    z-index:90;display:flex;gap:8px;}
+  #leiste.oben{position:sticky;top:0;right:auto;bottom:auto;z-index:5;
+    justify-content:flex-end;background:#1b1309;padding:2px 0 7px;margin:-2px 0 0;}
+  #leiste button{font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
     background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
-    border-radius:9px;padding:9px 12px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
-  #labbtn{position:fixed;right:10px;z-index:90;bottom:calc(10px + env(safe-area-inset-bottom,0px));
-    font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
-    background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
-    border-radius:9px;padding:9px 14px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
+    border-radius:9px;padding:9px 13px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
   #lab{position:fixed;left:0;right:0;bottom:0;top:60vh;z-index:89;overflow:auto;
     background:#1b1309f2;border-top:1px solid #6b5124;color:#e6d8b8;
     font:13px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-    padding:12px 12px calc(58px + env(safe-area-inset-bottom,0px));
+    padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px));
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   #lab[hidden]{display:none;}
   #lab h4{margin:9px 0 4px;font:700 10.5px/1.2 'Cinzel',serif;letter-spacing:.12em;
@@ -1055,6 +1057,7 @@ setInterval(()=>{
      Die Nachbarn bleiben sichtbar, nur kleiner und blasser — daran erkennt man,
      dass es eine Walze ist und keine Eingabezeile. */
   #lab .fein .rad{height:56px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    overscroll-behavior:contain;touch-action:pan-y;
     -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:8px;
     -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.78) 0,#000 24%,#000 76%,rgba(0,0,0,.78) 100%);
             mask-image:linear-gradient(180deg,rgba(0,0,0,.78) 0,#000 24%,#000 76%,rgba(0,0,0,.78) 100%);}
@@ -1076,6 +1079,7 @@ setInterval(()=>{
   /* Schriftwalze: scrollen und dabei die Schrift auf der Uhr sehen */
   #lfwrap{position:relative;flex:1;min-width:190px;}
   #lfw{height:96px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    overscroll-behavior:contain;touch-action:pan-y;
     -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:9px;
     -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);
             mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);}
@@ -1093,8 +1097,7 @@ setInterval(()=>{
   #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
   #lab .sw.an{outline:2px solid #caa25e;outline-offset:1px;}
 </style>
-<button id="zoombtn">Lupe 1&times;</button>
-<button id="labbtn">Einstellungen</button>
+<div id="leiste"><button id="zoombtn">Lupe 1&times;</button><button id="labbtn">Einstellungen</button></div>
 <div id="lab" hidden>
   <h4>Schriftart</h4>
   <div class="row">
@@ -1169,10 +1172,12 @@ setInterval(()=>{
   wal.addEventListener('scroll',()=>{
     if(walStumm || $('lab').hidden) return;
     const i=walIdx(); walMark(i);
-    // Erst nach kurzer Ruhe uebernehmen: sonst wuerde bei jedem Scrollschritt
-    // die ganze Uhr neu gezeichnet und das Scrollen ruckelt.
-    clearTimeout(walTimer);
-    walTimer=setTimeout(()=>{ if(G.fam!==SCHRIFTEN[i]){ G.fam=SCHRIFTEN[i]; anwenden(); } },90);
+    // Sofort uebernehmen; das requestAnimationFrame begrenzt auf ein Neuzeichnen
+    // je Bild, damit ein schnelles Drehen nicht ruckelt.
+    if(G.fam!==SCHRIFTEN[i]){
+      G.fam=SCHRIFTEN[i];
+      if(!walTimer){ walTimer=requestAnimationFrame(()=>{ walTimer=null; anwenden(); }); }
+    }
   },{passive:true});
   function zuSchrift(i,glatt){
     try{ wal.scrollTo({top:i*IH,behavior:glatt?'smooth':'auto'}); }catch(e){ wal.scrollTop=i*IH; }
@@ -1202,10 +1207,20 @@ setInterval(()=>{
     box.appendChild(rad);
     const bd=document.createElement('div'); bd.className='bd'; box.appendChild(bd);
     const felder=()=>rad.querySelectorAll('div:not(.pad)');
-    let stumm=false, t=null;
+    let stumm=false;
     function idx(){ return Math.max(0,Math.min(werte.length-1,Math.round(rad.scrollTop/IH))); }
     function mark(i){ felder().forEach((d,k)=>d.classList.toggle('an',k===i)); }
-    function uebernehmen(i){ if(G[schluessel]!==werte[i]){ G[schluessel]=werte[i]; anwenden(); } }
+    // Sofort uebernehmen, nicht erst nach einer Pause. Der Schutz ist ein
+    // requestAnimationFrame: waehrend eines schnellen Drehens wird hoechstens
+    // einmal je Bild neu gezeichnet, nie einmal je Rastschritt.
+    let warte=false;
+    function uebernehmen(i){
+      if(G[schluessel]===werte[i]) return;
+      G[schluessel]=werte[i];
+      if(warte) return;
+      warte=true;
+      requestAnimationFrame(()=>{ warte=false; anwenden(); });
+    }
     function zu(i,glatt){
       stumm=true;
       try{ rad.scrollTo({top:i*IH,behavior:glatt?'smooth':'auto'}); }catch(e){ rad.scrollTop=i*IH; }
@@ -1213,8 +1228,7 @@ setInterval(()=>{
     }
     rad.addEventListener('scroll',()=>{
       if(stumm || $('lab').hidden) return;
-      const i=idx(); mark(i);
-      clearTimeout(t); t=setTimeout(()=>uebernehmen(i),80);
+      const i=idx(); mark(i); uebernehmen(i);
     },{passive:true});
     return { setzen(){
       const v=G[schluessel]; let bi=0, bd2=Infinity;
@@ -1275,8 +1289,11 @@ setInterval(()=>{
   }
   $('zoombtn').onclick=()=>{ zi=(zi+1)%ZOOM.length; zoomSetzen(); };
   zoomSetzen();
+  const leiste=$('leiste');
   $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
     $('labbtn').textContent=l.hidden?'Einstellungen':'schließen';
+    if(l.hidden){ document.body.appendChild(leiste); leiste.className=''; }
+    else { l.insertBefore(leiste, l.firstChild); leiste.className='oben'; }
     panelPlatz();
     if(!l.hidden){ walSetzen(); WALZEN.forEach(w=>w.setzen()); }   // jetzt erst scrollbar
   };

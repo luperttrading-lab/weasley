@@ -33,6 +33,9 @@ self.addEventListener('fetch', e => {
     fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(res => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}); }
       return res;
-    }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+    // ignoreSearch: nach einem Update laeuft die Seite unter "?v=1234" — ohne das
+    // faende sie ihren eigenen Cache-Eintrag nicht und fiele auf index.html zurueck
+    // (aus dem Labor waere damit offline die Uhr geworden).
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html')))
   );
 });

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.10</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -771,7 +771,13 @@ let meldeSync=function(){};   // (idx, sektor, quelle)
 // steht an GENAU EINER Stelle: im .ver-Div. Von dort liest sie dieses Skript,
 // der Workflow version.yml und die Live-Kontrolle per curl.
 function verNum(v){const m=String(v).match(/(\d+)\.(\d+)/);return m?(+m[1])*1000+(+m[2]):0;}
-function eigeneVersion(){const t=document.getElementById('verzeile');return t?String(t.textContent||'').replace(/^v/,''):'';}
+// Die Zeile traegt im Labor auch den Namen ("Zeiger-Labor v0.10"), deshalb wird
+// die Nummer herausgezogen statt nur ein fuehrendes v abgeschnitten.
+function eigeneVersion(){const t=document.getElementById('verzeile');
+  const m=t?String(t.textContent||'').match(/(\d+\.\d+)/):null; return m?m[1]:'';}
+// Das Labor hat eine eigene Nummer und deshalb eine eigene Standdatei. Sonst
+// wuerde es sich an version.json der App messen und bei jedem App-Update neu laden.
+const VER_DATEI='labor.json';
 let versionGeprueft=0;
 const VER_MINDEST_MS=15*1000;       // Sichtbarkeitswechsel: nur Doppelzuendung mit pageshow abfangen
 const VER_TAKT_MS=60*1000;          // waehrend die App offen liegt: jede Minute (Zettel-Takt, 20 Bytes je Abfrage)
@@ -862,13 +868,13 @@ async function pruefeVersion(erzwingen,vonHand,ausloeser){
     let ok=false;
     // Weg 1: version.json, rund 20 Bytes. Cache-Buster UND no-store —
     // sonst beantwortet der Cache die Frage nach dem Cache.
-    try{ const r=await fetch('version.json?v='+Date.now(),{cache:'no-store'});
+    try{ const r=await fetch(VER_DATEI+'?v='+Date.now(),{cache:'no-store'});
          if(r.ok){ const j=await r.json(); ok=!!(j&&j.version&&bewerten(String(j.version))); } }catch(e){}
     // Weg 2: die eigene Seite lesen und die Nummer herausziehen. Greift, wenn
     // version.json fehlt oder der Workflow noch nicht gelaufen ist.
     if(!ok){
       try{ const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'});
-           if(r.ok){ const m=(await r.text()).match(/class="ver">v([\d.]+)</); ok=!!(m&&bewerten(m[1])); } }catch(e){}
+           if(r.ok){ const m=(await r.text()).match(/class="ver">[^<]*?v([\d.]+)</); ok=!!(m&&bewerten(m[1])); } }catch(e){}
     }
     if(!ok && vonHand) zeigeKurz('Pr&uuml;fung fehlgeschlagen');
   }finally{ pruefungLaeuft=false; }
@@ -1063,6 +1069,7 @@ setInterval(()=>{
   #leiste button{font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
     background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
     border-radius:9px;padding:9px 13px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
+  #lupd{font-size:17px;line-height:1;padding:8px 12px;}
   #lab{position:fixed;left:0;right:0;bottom:0;top:60vh;z-index:89;overflow:auto;
     background:#1b1309f2;border-top:1px solid #6b5124;color:#e6d8b8;
     font:13px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
@@ -1122,7 +1129,7 @@ setInterval(()=>{
   #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
   #lab .sw.an{outline:2px solid #caa25e;outline-offset:1px;}
 </style>
-<div id="leiste"><button id="zoombtn">Lupe 1&times;</button><button id="labbtn">Einstellungen</button></div>
+<div id="leiste"><button id="lupd" hidden>&#8635;</button><button id="zoombtn">Lupe 1&times;</button><button id="labbtn">Einstellungen</button></div>
 <div id="lab" hidden>
   <h4>Schriftart</h4>
   <div class="row">
@@ -1280,6 +1287,10 @@ setInterval(()=>{
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
+  // Von Hand nach einer neuen Fassung sehen. Die Versionszeile unter der Uhr
+  // kann das auch, liegt aber bei offenem Panel ausserhalb des Blickfelds.
+  $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
+  $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
     $('lkop').textContent='kopiert'; setTimeout(()=>$('lkop').textContent='Einstellungen kopieren',1400); };
   // Das Panel beginnt dort, wo die Uhr aufhoert — gemessen, nicht geschaetzt.
@@ -1317,6 +1328,7 @@ setInterval(()=>{
   const leiste=$('leiste');
   $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
     $('labbtn').textContent=l.hidden?'Einstellungen':'schließen';
+    $('lupd').hidden=l.hidden;
     if(l.hidden){ document.body.appendChild(leiste); leiste.className=''; }
     else { l.insertBefore(leiste, l.firstChild); leiste.className='oben'; }
     panelPlatz();

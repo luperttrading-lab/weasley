@@ -191,6 +191,30 @@ und Beschriftung auszuprobieren, statt jedes Mal eine neue Version zu bauen.
 
 Adresse: `https://luperttrading-lab.github.io/weasley/labor.html`
 
+**Das Labor hat seit 19.09. eine eigene Versionszaehlung** (`Zeiger-Labor v0.10`
+in der `.ver`-Zeile) und eine eigene Standdatei **`labor.json`**. Der Mechanismus
+ist derselbe wie in der App — nur bei HOEHERER Nummer laden, Zweischritt
+(`fetch(cache:'reload')`, dann `?v=`), Schleifenschutz, Takt 60 s bei sichtbarer
+Seite. Zwei Anpassungen gegenueber `index.html`:
+
+- `eigeneVersion()` zieht die Zahl per `/(\d+\.\d+)/` heraus, weil die Zeile hier
+  zusaetzlich den Namen traegt. Sonst stuende im Banner „Du hast vZeiger-Labor v0.10".
+- `VER_DATEI='labor.json'`. Ohne eigene Datei wuerde sich das Labor an der
+  App-Nummer messen und bei jedem App-Update ins Leere laden.
+
+Der Workflow `version.yml` haengt jetzt an `index.html` **und** `labor.html` und
+schreibt beide Standdateien in einem Lauf.
+
+⚠️ **Bei jeder Lieferung, die `labor.html` anfasst, die Laborzahl um 1 erhoehen**
+(`v0.10` → `v0.11`), zweistellig wie bei der App — `v0.9` waere numerisch 9 und
+laege unter 10.
+
+**Knopf `↻`** (`#lupd`) in der Knopfleiste, **nur bei offenem Panel sichtbar**.
+Die Leiste klebt dann oben im Panel, der Knopf ist also ohne Scrollen erreichbar;
+bei geschlossenem Panel liegt sie ueber der Uhr, wo ein dritter Knopf im Weg
+waere. Gemessen (390×844): Panel zu → verborgen, Panel auf → y=472, Antwort
+erscheint an seiner Kante.
+
 **Die Voreinstellung ist seit 18.09. der Stand der App** (v0.71: Zeiger `perl`,
 Forum fett, Faktor 0,95, Höhe 0,330, längs +0,065, Groß-klein, alle gleich groß).
 „Zurücksetzen" fährt damit auf die echte Uhr zurück, nicht auf einen Laborwert,
@@ -244,6 +268,13 @@ Die Lupe verkleinert die **viewBox** um die Uhrmitte — rein vektoriell, also
 verlustfrei. ⚠️ `svgPt()` rechnete bis dahin fest mit 400; beim Zoomen wäre das
 Ziehen unbrauchbar geworden. Die Funktion liest jetzt `svg.viewBox.baseVal`.
 Gemessen: Ziehen funktioniert in der Lupe weiter.
+
+**Wertaenderungen bauen die Zeiger nicht mehr neu auf** (19.09.). `anwenden()`
+rief bis dahin bei jeder Aenderung `neuZeichnen()`, das alle fuenf Zeigergruppen
+samt `<image>` wegwarf — die Zeiger blitzten sichtbar auf. `gravurNeu()` fasst
+jetzt nur die fuenf Textknoten an; komplett neu aufgebaut wird nur beim
+Zeigerwechsel, beim Zuruecksetzen und beim Erstaufruf. Gemessen: die
+Zeigergruppen sind nach vier Wertaenderungen identisch dieselben Knoten.
 
 Einstellbar über den Knopf unten rechts, alles in `localStorage` unter
 `labor_einst` gemerkt:
@@ -997,6 +1028,9 @@ beigesteuert. Übernommen:
    gecachter Datenbank-Abruf wäre fatal. Unser Worker fasst **nur eigene
    Dateien** an (`origin`-Prüfung), alles andere läuft unberührt durch.
    `sw.js` gehört ins Repo-Root neben `index.html`.
+   Seit 19.09. faellt der Offline-Rueckfall mit `ignoreSearch:true` zurueck: nach
+   einem Update laeuft die Seite unter `?v=1234` und faende ihren eigenen
+   Cache-Eintrag sonst nicht — aus dem Labor waere offline die Uhr geworden.
 2. **Kein Neuladen, während jemand tippt oder zieht** (`beschaeftigt()`):
    Anmeldemaske mit halbem Passwort, Zeiger in der Hand. Die Leiste sagt dann
    „wird geladen, sobald du fertig bist"; der Schleifenschutz wird dabei

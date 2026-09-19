@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.76</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.77</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -262,7 +262,13 @@ svg.appendChild(defs);
 const INK='#46330f',INK2='#34250b',BORD='#6e1a24',NEBEL='#2f3a4a';
 
 // ================= ZIFFERBLATT =================
-const R_OUT=176,R_LAB_UP=164,R_LAB_LOW=171,R_LAB_IN=150,R_TICK=140,R_NUM=124,R_HOUR=108;
+// Der Ortsring ist in v0.77 um den Faktor 154/150 nach aussen gerueckt: das
+// Medaillon endet jetzt bei r=160,5 (vorher 145) und braeuchte sonst Platz, den
+// der Ring belegt. Mehr geht nicht — bei 156 stuende der Rahmenkreis (183,0) nur
+// noch 1 Einheit vor der Pergamentkante (184); bei 154 sind es 3,3.
+const ORTS_F=154/150;
+const R_OUT=176*ORTS_F, R_LAB_UP=164*ORTS_F, R_LAB_LOW=171*ORTS_F, R_LAB_IN=150*ORTS_F,
+      R_TICK=140, R_NUM=124, R_HOUR=108;
 
 // Pergament-Panel + Rand + Eck-Schnörkel
 svg.appendChild(E('rect',{x:5,y:5,width:390,height:390,rx:8,fill:'url(#perg)'}));
@@ -297,8 +303,8 @@ const gLab=E('g',{});
 [['danger','rgba(138,22,40,.26)'],['lost','rgba(47,58,74,.20)']].forEach(([flag,farbe])=>{
   const i=orte.findIndex(o=>o[flag]); if(i<0) return;
   const mid=i*STEP, half=STEP/2, a0=mid-half, a1=mid+half;
-  const p1=polar(176,a0), p2=polar(176,a1), p3=polar(150,a1), p4=polar(150,a0);
-  svg.appendChild(E('path',{d:`M${p1.x} ${p1.y} A176 176 0 0 1 ${p2.x} ${p2.y} L${p3.x} ${p3.y} A150 150 0 0 0 ${p4.x} ${p4.y} Z`,
+  const p1=polar(R_OUT,a0), p2=polar(R_OUT,a1), p3=polar(R_LAB_IN,a1), p4=polar(R_LAB_IN,a0);
+  svg.appendChild(E('path',{d:`M${p1.x} ${p1.y} A${R_OUT} ${R_OUT} 0 0 1 ${p2.x} ${p2.y} L${p3.x} ${p3.y} A${R_LAB_IN} ${R_LAB_IN} 0 0 0 ${p4.x} ${p4.y} Z`,
     fill:farbe}));});
 orte.forEach((o,i)=>{
   const mid=i*STEP,half=STEP/2-2,upper=(mid>=270||mid<90);
@@ -312,7 +318,7 @@ svg.appendChild(gLab);
 // Klick-/Greif-Logik läuft über Pointer-Winkel (siehe unten) — keine Sektor-Pfade nötig
 
 // ================= ZEIGER (schlanke geschmiedete Nadeln) =================
-const R_ZEIGER=123.7, MED_R=24, R_NABE=20, RAHMEN=1.2;
+let R_ZEIGER=123.7; const MED_R=24, R_NABE=20, RAHMEN=1.2;   // R_ZEIGER folgt unten dem Bild
 const KOPF_K={kreis:1, kamee:1.30, frei:1.42, rahmen:1.42};   // wie weit das Portrait ueber das Medaillon hinausgeht
 const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen Nabe und Medaillon
 {const c=document.getElementById('medClipC');
@@ -343,7 +349,12 @@ const ZB={datei:'zeiger/perl.webp', W:1536, H:1024,
           rx:1183.6, ry:495.1, rl:150.0, ra:184.8,   // Ring: Loch und Aussenkante
           sx0:326, sx1:802, sy:500.0, sh:163,  // Schild, am Hoehenprofil gemessen
           ende:1503};                          // Spitzenende im Bild
-const ZS=160.5/(ZB.ende-ZB.ox);        // Zeigerende auf r=160,5, Tinte der Ortsnamen ab 163,2
+// Seit v0.77 endet das Bild an der Ringaussenkante, nicht an der Spitze: das
+// Schriftband macht das von sich aus, alle anderen verschenkten 15,5 Einheiten
+// an einen Dorn (Lutz, 19.9.: "alle anderen Zeiger muessen auch einen Ring
+// weiter nach aussen"). Medaillon-Aussenkante 145,0 -> 160,5, Portrait +10,7 %.
+const ZB_ENDE=ZB.rx+ZB.ra;             // Ringaussenkante im Bild
+const ZS=160.5/(ZB_ENDE-ZB.ox);        // Zeigerende auf r=160,5
 // Verkantung: kein Zeigerbild ist exakt waagerecht gezeichnet. Bei perl liegen
 // Oese und Ringmitte 7,2 px in der Hoehe auseinander (0,384°), das Medaillon
 // saesse 0,83 Einheiten neben der Radiallinie. Wird als zusaetzliche Drehung um
@@ -351,6 +362,7 @@ const ZS=160.5/(ZB.ende-ZB.ox);        // Zeigerende auf r=160,5, Tinte der Orts
 const KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
 const RINGR=ZB.rl*ZS;                  // Portraitfenster
 const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
+R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
 // ---- Gravur, im Labor eingestellt (18.09.2026) ----
 // seite verschiebt den Namen laengs des Zeigers, in Anteilen der Schildbreite.
 // gleich=true gibt allen fuenf den Schriftgrad des laengsten Namens; ohne das
@@ -387,9 +399,9 @@ function buildNadel(p){
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
   im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
   im.setAttribute('href',ZB.datei);
-  if(ZB.cut){const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
-    ck.appendChild(E('rect',{x:bx-2,y:by-2,width:ZB.cut*ZS+2,height:ZB.H*ZS+4}));
-    inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
+  {const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
+   ck.appendChild(E('rect',{x:bx-2,y:by-2,width:ZB_ENDE*ZS+2,height:ZB.H*ZS+4}));
+   inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
   inner.appendChild(im);
   // Name auf das Schild gravieren
   const nx=bx+((ZB.sx0+ZB.sx1)/2+(ZB.sx1-ZB.sx0)*GRAV.seite)*ZS, ny=by+ZB.sy*ZS;
@@ -484,7 +496,7 @@ function passeNamenEin(){
 // r=131..146 (die Scheibe sitzt im Bild 9 px ueber dem Loch, deshalb die
 // Ellipsenmaske beim Freistellen).
 // NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
-const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
+const NABE_BILD=29.3;                  // -> Scheibe r≈26,0 (v0.76: 22,2; Lutz, 19.9.)
 // NABE_OBEN=false: die Scheibe liegt UNTER den Zeigern, die Oesen sitzen sichtbar
 // darauf — wie bei einer echten Uhr und wie auf Lutz' Vorlage vom 19.9. Die
 // Befuerchtung, fuenf uebereinanderliegende Oesen ergaeben einen Haufen, hat sich

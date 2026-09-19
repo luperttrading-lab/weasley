@@ -139,6 +139,32 @@ const GRAV={fam:'Forum', gew:'700', faktor:0.95, hoehe:0.330,
   *breiten*begrenzt sind. Gemessen mit Forum: alle fünf bei **15,71**.
 - Schreibweise ist jetzt **Groß-klein** („Claudia"), nicht mehr Versalien
 
+**Der Ring IST die Spitze — seit v0.77.** Bis v0.76 wurde jedes Bild so
+skaliert, dass sein **Spitzenende** auf r=160,5 lag. Das Schriftband hat gar
+keine Spitze hinter dem Ring und kam deshalb mit dem Medaillon bis r=160,5; alle
+anderen verschenkten 15,5 Einheiten an einen Dorn und endeten bei r≈145. Lutz am
+19.9.: „alle anderen Zeiger müssen auch einen Ring weiter nach außen." Gemessen:
+
+| Zeiger | Medaillon bis r (alt) | Portrait alt → neu |
+|---|---|---|
+| flach, hoch, **perl** | 145,0 | 17,3 → **19,1 (+10,7 %)** |
+| ranke | 145,4 | 16,85 → 18,60 |
+| deko, spindel | 147,1 / 147,3 | +9 % |
+| perlklein | 143,3 | +12,0 % |
+| glatt, lilie | 153,9 / 151,3 | +4 bis +6 % |
+| **band** | **160,5** | ±0 — war schon dort |
+
+Jetzt gilt `ZS = 160.5/(rx+ra−ox)` und das Bild wird an `rx+ra` beschnitten.
+Der alte `ZB.cut` entfällt damit; die Beschneidung ist keine Ausnahme mehr,
+sondern die Regel.
+
+**Der Ortsring musste mit** (`ORTS_F = 154/150`, v0.77): R_LAB_IN 150 → **154**,
+R_LAB_UP 164 → 168,4, R_LAB_LOW 171 → 175,6, R_OUT 176 → **180,7**.
+⚠️ **Das ist fast das Maximum.** Die innere Pergament-Umrandung liegt bei
+x=384, also 184 von der Mitte. Bei `ORTS_F = 156/150` stünde der Rahmenkreis bei
+183,0 — nur noch 1,0 Einheit davor. Bei 154 sind es 3,3. Wer weiter will, muss
+die Pergament-Rechtecke mitwachsen lassen.
+
 **Verkantung der Zeigerbilder — seit v0.75 ausgeglichen (`KIPP`).** Kein
 Zeigerbild ist exakt waagerecht gezeichnet: Öse und Ringmitte liegen in der Höhe
 auseinander. Gemessen (Bildpixel bzw. Einheiten auf dem Zifferblatt):
@@ -249,10 +275,19 @@ Kappenknopf ist gesperrt, wenn der Zustand keine Kappe hat.
 
 | | Nabe | Kappe | Lage |
 |---|---|---|---|
-| 1 | r=22,2 | r=10,5 | unter den Zeigern — Stand der App |
+| 1 | r=22,2 | r=10,5 | unter den Zeigern — Stand der App (dort seit v0.77 mit Nabe **26**) |
 | 2 | aus | r=13,5 | eine einzige Schicht |
 | 3 | r=22,2 | aus | Ösen-Rosette sichtbar |
 | 4 | r=26 | aus | **über** den Zeigern, Schäfte setzen am Rand an |
+
+**Knöpfe „Ende" und „Ortsring"** (`#lend`, `#lort`, seit v0.15). „Ende"
+schaltet zwischen **Spitze** (Stand bis v0.76) und **Ring** (der Ring ist die
+Spitze, Stand der App) und baut die Zeiger dabei neu auf. „Ortsring" schiebt den
+ganzen Ortsring in vier Stufen nach außen — 150 / 152 / **154** / 156 — als
+reine Skalierung um die Uhrmitte. Dafür tragen die beteiligten Elemente die
+Klasse `ortsr` (beide Rahmenkreise, die innere Trennlinie, die acht
+Sektorlinien, die zwei Sektorflächen, `gLab`); Skalen, Gradzahlen und
+Stundenkranz bleiben stehen. Voreinstellung 154 = Stand der App.
 
 **Knopf „Nabe"** (`#lnr`, seit v0.14) schaltet den Scheibenradius durch
 22,2 / 26 / 30 / 34 / 38 (`NABGR`), gemerkt unter `nabgr`, gesperrt bei

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.14</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.15</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -276,10 +276,10 @@ svg.appendChild(E('rect',{x:16,y:16,width:368,height:368,rx:4,fill:'none',stroke
 })();
 
 // Ringe
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_OUT,fill:'none',stroke:INK,'stroke-width':2}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_OUT-3,fill:'none',stroke:INK,'stroke-width':0.6,opacity:.6}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_LAB_IN,fill:'none',stroke:INK,'stroke-width':1.4}));
-for(let i=0;i<N;i++){const a=i*STEP-STEP/2;const p0=polar(R_LAB_IN,a),p1=polar(R_OUT,a);svg.appendChild(E('line',{x1:p0.x,y1:p0.y,x2:p1.x,y2:p1.y,stroke:INK,'stroke-width':1,opacity:.8}));}
+svg.appendChild(E('circle',{class:'ortsr',cx:CX,cy:CY,r:R_OUT,fill:'none',stroke:INK,'stroke-width':2}));
+svg.appendChild(E('circle',{class:'ortsr',cx:CX,cy:CY,r:R_OUT-3,fill:'none',stroke:INK,'stroke-width':0.6,opacity:.6}));
+svg.appendChild(E('circle',{class:'ortsr',cx:CX,cy:CY,r:R_LAB_IN,fill:'none',stroke:INK,'stroke-width':1.4}));
+for(let i=0;i<N;i++){const a=i*STEP-STEP/2;const p0=polar(R_LAB_IN,a),p1=polar(R_OUT,a);svg.appendChild(E('line',{class:'ortsr',x1:p0.x,y1:p0.y,x2:p1.x,y2:p1.y,stroke:INK,'stroke-width':1,opacity:.8}));}
 // Ticks + Gradzahlen
 for(let d=0;d<360;d+=3){const lng=(d%15===0);const p0=polar(R_TICK,d),p1=polar(R_TICK-(lng?7:3.5),d);svg.appendChild(E('line',{x1:p0.x,y1:p0.y,x2:p1.x,y2:p1.y,stroke:INK,'stroke-width':lng?0.9:0.5,opacity:.6}));}
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:R_TICK,fill:'none',stroke:INK,'stroke-width':0.7,opacity:.5}));
@@ -292,13 +292,13 @@ for(let h=1;h<=12;h++){const p=polar(R_HOUR-9,h*30);const t=E('text',{x:p.x,y:p.
 
 // Gebogene Orts-Labels
 const dpaths=E('defs',{}); svg.appendChild(dpaths);
-const gLab=E('g',{});
+const gLab=E('g',{class:'ortsr'});
 // IN GEFAHR: Sektor-Hintergrund dezent rötlich (Ringsegment hinter dem Label)
 [['danger','rgba(138,22,40,.26)'],['lost','rgba(47,58,74,.20)']].forEach(([flag,farbe])=>{
   const i=orte.findIndex(o=>o[flag]); if(i<0) return;
   const mid=i*STEP, half=STEP/2, a0=mid-half, a1=mid+half;
-  const p1=polar(176,a0), p2=polar(176,a1), p3=polar(150,a1), p4=polar(150,a0);
-  svg.appendChild(E('path',{d:`M${p1.x} ${p1.y} A176 176 0 0 1 ${p2.x} ${p2.y} L${p3.x} ${p3.y} A150 150 0 0 0 ${p4.x} ${p4.y} Z`,
+  const p1=polar(R_OUT,a0), p2=polar(R_OUT,a1), p3=polar(R_LAB_IN,a1), p4=polar(R_LAB_IN,a0);
+  svg.appendChild(E('path',{class:'ortsr',d:`M${p1.x} ${p1.y} A${R_OUT} ${R_OUT} 0 0 1 ${p2.x} ${p2.y} L${p3.x} ${p3.y} A${R_LAB_IN} ${R_LAB_IN} 0 0 0 ${p4.x} ${p4.y} Z`,
     fill:farbe}));});
 orte.forEach((o,i)=>{
   const mid=i*STEP,half=STEP/2-2,upper=(mid>=270||mid<90);
@@ -374,8 +374,15 @@ const ZEIGERSATZ={
               sx0:590,sx1:930,sy:520,sh:100, ende:1510}
 };
 let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGA=1, KIPP=0;
+// ENDEART 0: das Bild endet an seiner Spitze (Stand der App).
+// ENDEART 1: das Bild endet an der Ringaussenkante — der Ring IST die Spitze,
+//   so wie es das Schriftband von sich aus tut. Dadurch ruecken Medaillon und
+//   Portrait um bis zu 15,5 Einheiten nach aussen (Lutz, 19.9.: "alle anderen
+//   Zeiger muessen auch einen Ring weiter nach aussen").
+let ENDEART=0;
+function endeX(){ return ENDEART ? (ZB.rx+ZB.ra) : ZB.ende; }
 function massstab(){
-  ZS=ENDE_R/(ZB.ende-ZB.ox);           // Zeigerende genau auf ENDE_R
+  ZS=ENDE_R/(endeX()-ZB.ox);           // Zeigerende genau auf ENDE_R
   RINGR=ZB.rl*ZS;                      // Portraitfenster
   RINGA=ZB.ra*ZS;                      // Aussenkante des Messingrings
   // Verkantung des Bildes: kein Zeiger ist exakt waagerecht gezeichnet, Oese und
@@ -425,8 +432,9 @@ function buildNadel(p){
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
   im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
   im.setAttribute('href',ZB.datei);
-  if(ZB.cut){const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
-    ck.appendChild(E('rect',{x:bx-2,y:by-2,width:ZB.cut*ZS+2,height:ZB.H*ZS+4}));
+  const schnitt = ENDEART ? (ZB.rx+ZB.ra) : ZB.cut;
+  if(schnitt){const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
+    ck.appendChild(E('rect',{x:bx-2,y:by-2,width:schnitt*ZS+2,height:ZB.H*ZS+4}));
     inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
   inner.appendChild(im);
   // Name auf das Schild gravieren
@@ -566,6 +574,16 @@ const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
 // sichtbarer Scheibenradius -> halbe Bildkante (Scheibe fuellt 135 von 152)
 const NAB_F=152/135;
 function nabeGroesse(stufe){ nabPlus=stufe; }
+// Der Ortsring rueckt als Ganzes nach aussen. Reine Skalierung um die Uhrmitte,
+// damit Trennlinien, Sektorflaechen und Textpfade zusammenbleiben. Mehr als
+// R_OUT=180 geht nicht: bei 184 stiesse der Rahmenkreis an die Pergamentkante.
+const ORTSR=[150, 152, 154, 156];
+function ortsringSetzen(stufe){
+  const f=(ORTSR[stufe]||ORTSR[0])/R_LAB_IN;
+  const t = f===1 ? '' : `translate(${(CX*(1-f)).toFixed(3)} ${(CY*(1-f)).toFixed(3)}) scale(${f.toFixed(5)})`;
+  document.querySelectorAll('.ortsr').forEach(e=>e.setAttribute('transform',t));
+}
+function endeArt(a){ ENDEART=a?1:0; }
 function mitteSetzen(i,kapKey){
   const v=MITTE[i]||MITTE[0];
   const t=window.NABE_TEIL; const kp=document.getElementById('kappe');
@@ -591,7 +609,7 @@ function nabeLage(oben){
   if(kp) svg.insertBefore(kp, v||null);
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, KAPPEN, MITTE, NABGR, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, ortsringSetzen, endeArt, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1238,6 +1256,8 @@ setInterval(()=>{
     <button class="k" id="lnb">Mitte</button>
     <button class="k" id="lkap">Kappe</button>
     <button class="k" id="lnr">Nabe</button>
+    <button class="k" id="lend">Ende</button>
+    <button class="k" id="lort">Ortsring</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1256,8 +1276,9 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:0, nabgr:0};
-  let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr;
+             kappe:'kern', mitte:0, nabgr:1, ende:1, ortsr:2};
+  let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
+      endeArt=STD.ende, ortsStufe=STD.ortsr;
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
@@ -1380,6 +1401,9 @@ setInterval(()=>{
   $('lkap').onclick=()=>{ kappeKey=KAPFOLGE[(KAPFOLGE.indexOf(kappeKey)+1)%KAPFOLGE.length];
                           spiegeln(); speichern(); };
   $('lnr').onclick=()=>{ nabGr=(nabGr+1)%L.NABGR.length; spiegeln(); speichern(); };
+  // Ende und Ortsring aendern die Geometrie -> die Zeiger muessen neu gebaut werden
+  $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
+  $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1444,12 +1468,19 @@ setInterval(()=>{
       else if(k==='mitte'){ mitteIdx = L.MITTE[o[k]] ? +o[k] : STD.mitte; }
       else if(k==='kappe'){ kappeKey = L.KAPPEN[o[k]] ? o[k] : STD.kappe; }
       else if(k==='nabgr'){ nabGr = L.NABGR[o[k]]!==undefined ? +o[k] : STD.nabgr; }
+      else if(k==='ende'){ endeArt = o[k]?1:0; }
+      else if(k==='ortsr'){ ortsStufe = L.ORTSR[o[k]]!==undefined ? +o[k] : STD.ortsr; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
-       mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr})); }catch(e){} }
+       mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe})); }catch(e){} }
   function spiegeln(){
+    L.ortsringSetzen(ortsStufe);
+    $('lend').textContent = 'Ende: ' + (endeArt ? 'Ring' : 'Spitze');
+    $('lend').classList.toggle('an', !!endeArt);
+    $('lort').textContent = 'Ortsring: ' + L.ORTSR[ortsStufe];
+    $('lort').classList.toggle('an', ortsStufe>0);
     L.nabeGroesse(nabGr);
     L.mitteSetzen(mitteIdx, kappeKey);
     const mitNabe = L.MITTE[mitteIdx].nr > 0;
@@ -1489,6 +1520,7 @@ setInterval(()=>{
   // neu=true nur beim Zeigerwechsel; sonst reicht die Gravur, und die Zeiger
   // bleiben stehen statt aufzublitzen.
   function anwenden(neu){
+    L.endeArt(endeArt);
     if(neu) L.neuZeichnen(); else L.gravurNeu();
     spiegeln(); messen(); speichern();
     const n=++lauf, wunsch=G.fam;

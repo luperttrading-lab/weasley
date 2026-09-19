@@ -336,9 +336,6 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 // ra = Aussenkante des Messingrings, ende = x, an dem der Zeiger aufhoert.
 const ENDE_R=160.5;                    // weiter darf kein Zeiger nach aussen, Tinte ab r=163,2
 const ZEIGERSATZ={
-  schlicht : {t:'schlicht (v0.69)', datei:'zeiger/schlicht.webp',
-              W:1478,H:326, ox:78,oy:168, rx:1144,ry:162, rl:110,ra:144,
-              sx0:325,sx1:715,sy:162.5,sh:95, ende:1288, cut:1288},
   flach    : {t:'A  flaches Schild', datei:'zeiger/flach.webp',
               W:1536,H:1024, ox:111.2,oy:503.8, rx:1188.6,ry:495.2, rl:151.2,ra:182.4,
               sx0:342,sx1:825,sy:500.5,sh:116, ende:1506},
@@ -365,7 +362,14 @@ const ZEIGERSATZ={
               sx0:416,sx1:799,sy:495,sh:158, ende:1500},
   spindel  : {t:'I  Spindel', datei:'zeiger/spindel.webp',
               W:1536,H:1024, ox:108.9,oy:498.3, rx:1189.4,ry:496.8, rl:142.0,ra:216.0,
-              sx0:380,sx1:838,sy:497,sh:114, ende:1522}
+              sx0:380,sx1:838,sy:497,sh:114, ende:1522},
+  // oy steht bewusst auf 489 statt auf der gemessenen Oesenmitte 521: das Bild
+  // ist um 32 px verkantet gezeichnet, sonst saesse das Medaillon 3,8 Einheiten
+  // neben der Radiallinie. Die Oese liegt dadurch leicht neben dem Drehpunkt —
+  // sie verschwindet ohnehin unter der Nabe (Scheibe r=16,1 gegen Nabe r=22).
+  band     : {t:'J  Schriftband', datei:'zeiger/band.webp',
+              W:1536,H:1024, ox:165,oy:489, rx:1291,ry:489, rl:190,ra:218.5,
+              sx0:590,sx1:930,sy:520,sh:100, ende:1510}
 };
 let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGA=1;
 function massstab(){
@@ -1192,7 +1196,11 @@ setInterval(()=>{
       '\n-- gemessen: Portrait r='+m.RINGR.toFixed(2)+', Ring aussen r='+m.RINGA.toFixed(2);
   }
   function uebernehmen(o){ Object.keys(o).forEach(k=>{
-      if(k==='zeiger'){ zeigerKey=o[k]; L.waehle(o[k]); } else G[k]=o[k]; }); }
+      if(k==='zeiger'){
+        // Ein gespeicherter Schluessel kann inzwischen geloescht sein
+        zeigerKey = L.ZEIGERSATZ[o[k]] ? o[k] : STD.zeiger;
+        L.waehle(zeigerKey);
+      } else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey})); }catch(e){} }

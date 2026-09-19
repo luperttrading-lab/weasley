@@ -199,11 +199,14 @@ Kapitälchen / klein), Größe, Höhe auf dem Schild, Sperrung, Deckkraft, Farbe
 gemessenen Werte (Portraitradius, Ringaußenkante, Schild, Bogen je Zeiger,
 Schriftgrade je Person).
 
-**Die fünf Zeiger, gemessen (Zeigerende überall auf r=160,5):**
+**Die Zeiger, gemessen (Zeigerende überall auf r=160,5).** `schlicht` (v0.69)
+ist am 19.09. aus der Auswahl geflogen — er war der Stand vor dem Perlring
+und wurde nicht mehr gebraucht. Ein in `localStorage` gespeicherter Schlüssel,
+den es nicht mehr gibt, fällt seither auf die Voreinstellung zurück statt die
+Seite abstürzen zu lassen.
 
 | Schlüssel | Portrait r | Ring außen | Bogen | Schild B × H | Schriftgrad |
 |---|---|---|---|---|---|
-| `schlicht` (v0.69) | 14,59 | 19,10 | 15,5° | 51,7 × 12,6 | |
 | `flach` (A) | 17,40 | 20,99 | 19,5° | 55,6 × 13,3 | |
 | `hoch` (B) | 17,39 | 20,84 | 19,4° | 55,3 × 18,4 | |
 | **`perl` (D) — in der App** | **17,29** | **21,30** | **19,8°** | **54,9 × 18,8** | **15,71** |
@@ -213,6 +216,7 @@ Schriftgrade je Person).
 | `ranke` (G) | 16,85 | 21,92 | 20,4° | 58,9 × 14,8 | 12,37 |
 | `deko` (H) | 14,77 | 22,11 | 20,4° | 44,5 × 18,3 | 12,89 |
 | `spindel` (I) | 16,13 | 24,53 | 23,1° | 52,0 × 12,9 | 10,82 |
+| `band` (J) Schriftband | 22,67 | 26,07 | 22,4° | 40,6 × 11,9 | 9,98 |
 
 Schriftgrad = mit der Voreinstellung (Forum fett, Faktor 0,95, alle gleich groß).
 
@@ -223,6 +227,15 @@ gesucht (Stapel-Verfahren, je Spalte der Messinglauf durch die Mittellinie) und
 anschließend um 10 % in der Breite und 20 % in der Höhe eingezogen — der
 gravierte Rahmen soll frei bleiben. Bei `glatt`, `lilie` und `spindel` scheitert
 das naive Plateau-Verfahren komplett (es liefert 15 bis 216 px statt 500).
+
+⚠️ **`band` (J) ist schief gezeichnet.** Öse und Ring liegen im Bild 32 px
+auseinander in der Höhe (Ösenmitte y=521, Ringmitte y=489). Ungefiltert säße das
+Medaillon damit **3,8 Einheiten neben der Radiallinie** — der Zeiger sähe verbogen
+aus. Deshalb steht `oy` auf 489 statt auf dem gemessenen Wert. Die Öse sitzt
+dadurch leicht neben dem Drehpunkt, verschwindet aber unter der Nabe (Scheibe
+r=16,1 gegen Nabe r=22). Gemessen nach der Korrektur: Abweichung 0,00 px.
+→ **Bei jedem neuen Zeiger `oy` und `ry` vergleichen.** Weichen sie um mehr als
+etwa 10 px ab, ist das Bild verkantet und muss so ausgeglichen werden.
 
 ⚠️ **`glatt` (E) sprengt den Rahmen:** Ringaußendurchmesser 30,0 → **28,0° Bogen**
 je Zeiger. Bei 45° Sektorbreite stehen damit nicht einmal zwei Zeiger

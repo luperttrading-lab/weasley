@@ -441,7 +441,7 @@ function buildNadel(p){
       stroke:'#ffe4a0','stroke-width':((RINGA-RINGR)*0.92).toFixed(2),opacity:0});
   inner.appendChild(hi);
   g.appendChild(inner);
-  return {g,hi,nameTx,portraitG,rcx,rcy,zielB:breite,gradBasis:hoehe,nyBasis:ny};
+  return {g,hi,nameTx,portraitG,rcx,rcy,bx,zielB:breite,gradBasis:hoehe,nyBasis:ny};
 }
 const gZeiger=E('g',{'pointer-events':'none',id:'zeiger',opacity:'0'});
 const zeiger=personen.map(p=>buildNadel(p));
@@ -503,7 +503,32 @@ function passeNamenEin(){
   });
   if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));
 }
-// ---- LABOR: Zeiger komplett neu aufbauen (nach jeder Aenderung) ----
+// ---- LABOR: nur die Gravur erneuern ----
+// Ein Wechsel an Schriftgrad, Lage, Farbe oder Schreibweise aendert nichts am
+// Messingbild und nichts am Portrait. Die bis 19.9. bei JEDER Aenderung
+// gerufene neuZeichnen() warf alle fuenf Zeigergruppen weg und baute sie samt
+// <image> neu auf — dabei blitzten die Zeiger sichtbar auf. Jetzt werden nur
+// die fuenf Textknoten angefasst.
+function gravurNeu(){
+  const breite=(ZB.sx1-ZB.sx0)*ZS, hoehe=ZB.sh*ZS*0.88*GRAV.faktor;
+  zeiger.forEach((z,i)=>{
+    if(!z.nameTx) return;
+    const t=z.nameTx[0];
+    t.setAttribute('x',(z.bx+((ZB.sx0+ZB.sx1)/2+(ZB.sx1-ZB.sx0)*GRAV.seite)*ZS).toFixed(2));
+    t.setAttribute('font-family',"'"+GRAV.fam+"', serif");
+    t.setAttribute('font-weight',GRAV.gew);
+    t.setAttribute('fill',GRAV.farbe);
+    t.setAttribute('opacity',GRAV.deck);
+    if(GRAV.sperr) t.setAttribute('letter-spacing',GRAV.sperr+'em');
+    else t.removeAttribute('letter-spacing');
+    const kap = GRAV.schreib==='kapitael' ? 'small-caps' : '';
+    t.style.fontVariantCaps=kap; t.style.fontVariant=kap;
+    t.textContent=gravText(personen[i].name);
+    z.zielB=breite; z.gradBasis=hoehe;
+  });
+  passeNamenEin();
+}
+// ---- LABOR: Zeiger komplett neu aufbauen (nur beim Zeigerwechsel) ----
 function neuZeichnen(){
   massstab();
   {const c=document.getElementById('medClipC'); c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
@@ -516,7 +541,7 @@ function neuZeichnen(){
   if(typeof highlight==='function') highlight();
   gZeiger.setAttribute('opacity','1');
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1145,7 +1170,7 @@ setInterval(()=>{
   Object.keys(L.ZEIGERSATZ).forEach(k=>{
     const b=document.createElement('button'); b.className='k'; b.dataset.k=k;
     b.textContent=L.ZEIGERSATZ[k].t;
-    b.onclick=()=>{ zeigerKey=k; L.waehle(k); anwenden(); };
+    b.onclick=()=>{ zeigerKey=k; L.waehle(k); anwenden(true); };
     $('lz').appendChild(b);
   });
   // Schriftwalze. Jede Zeile steht in ihrer eigenen Schrift, die mittlere gilt.
@@ -1254,7 +1279,7 @@ setInterval(()=>{
   });
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
-  $('lres').onclick=()=>{ uebernehmen(STD); anwenden(); };
+  $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
     $('lkop').textContent='kopiert'; setTimeout(()=>$('lkop').textContent='Einstellungen kopieren',1400); };
   // Das Panel beginnt dort, wo die Uhr aufhoert — gemessen, nicht geschaetzt.
@@ -1343,13 +1368,16 @@ setInterval(()=>{
   // Eine frisch gewaehlte Schrift ist beim ersten Zeichnen noch nicht da; wer jetzt
   // misst, passt auf die Ersatzschrift ein. Deshalb nach dem Laden ein zweiter Lauf.
   let lauf=0;
-  function anwenden(){
-    L.neuZeichnen(); spiegeln(); messen(); speichern();
+  // neu=true nur beim Zeigerwechsel; sonst reicht die Gravur, und die Zeiger
+  // bleiben stehen statt aufzublitzen.
+  function anwenden(neu){
+    if(neu) L.neuZeichnen(); else L.gravurNeu();
+    spiegeln(); messen(); speichern();
     const n=++lauf, wunsch=G.fam;
     if(document.fonts && document.fonts.load){
       document.fonts.load(G.gew+' 20px "'+wunsch+'"').then(()=>{
         if(n!==lauf || wunsch!==G.fam) return;      // inzwischen wurde etwas anderes gewaehlt
-        L.neuZeichnen(); messen();
+        L.gravurNeu(); messen();
       }).catch(()=>{});
     }
   }
@@ -1357,7 +1385,7 @@ setInterval(()=>{
   let s=null; try{ s=localStorage.getItem('labor_einst'); }catch(e){}
   uebernehmen(s?JSON.parse(s):STD);
   L.setSektoren(VERT.lv1);
-  anwenden();
+  anwenden(true);
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(anwenden);
 })();
 </script>

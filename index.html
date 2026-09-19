@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.71</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.72</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -472,10 +472,20 @@ function passeNamenEin(){
   if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));   // Kipplage neu setzen
 }
 
-// Nabe (über Zeiger-Ursprung)
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:22,fill:'url(#nabe)',stroke:INK,'stroke-width':1,filter:'url(#sh)'}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:15,fill:'none',stroke:'#5a431c','stroke-width':1}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:5.5,fill:'#4a380f'}));
+// Nabe (über Zeiger-Ursprung).
+// Bis v0.71 war sie gezeichnet: Farbverlauf plus zwei Kreise. Seit v0.72 ist es
+// die freigestellte Oesenscheibe aus zeiger/band.webp — echtes gerendertes
+// Messing statt Verlauf. Zuschnitt 304 px, Loch in der Mitte, Scheibenrand bei
+// r=131..146 (die Scheibe sitzt im Bild 9 px ueber dem Loch, deshalb die
+// Ellipsenmaske beim Freistellen).
+// NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
+const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));   // fuellt das Loch
+{const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
+                     preserveAspectRatio:'none',filter:'url(#sh)'});
+ nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe.webp');
+ nb.setAttribute('href','zeiger/nabe.webp');
+ svg.appendChild(nb);}
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 

@@ -522,10 +522,20 @@ window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, waehle(k){ ZB=ZEIGERSATZ[k]; },
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
   personen, setSektoren(a){ personen.forEach((p,i)=>p.sektor=a[i]); buildChips(); startAnim(); highlight(); statusText(); }};
 
-// Nabe (über Zeiger-Ursprung)
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:22,fill:'url(#nabe)',stroke:INK,'stroke-width':1,filter:'url(#sh)'}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:15,fill:'none',stroke:'#5a431c','stroke-width':1}));
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:5.5,fill:'#4a380f'}));
+// Nabe (über Zeiger-Ursprung).
+// Bis v0.71 war sie gezeichnet: Farbverlauf plus zwei Kreise. Seit v0.72 ist es
+// die freigestellte Oesenscheibe aus zeiger/band.webp — echtes gerendertes
+// Messing statt Verlauf. Zuschnitt 304 px, Loch in der Mitte, Scheibenrand bei
+// r=131..146 (die Scheibe sitzt im Bild 9 px ueber dem Loch, deshalb die
+// Ellipsenmaske beim Freistellen).
+// NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
+const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
+svg.appendChild(E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));   // fuellt das Loch
+{const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
+                     preserveAspectRatio:'none',filter:'url(#sh)'});
+ nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe.webp');
+ nb.setAttribute('href','zeiger/nabe.webp');
+ svg.appendChild(nb);}
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 
@@ -1034,8 +1044,26 @@ setInterval(()=>{
   #lab[hidden]{display:none;}
   #lab h4{margin:9px 0 4px;font:700 10.5px/1.2 'Cinzel',serif;letter-spacing:.12em;
     color:#c9a95f;text-transform:uppercase;}
-  /* Feinjustage zweispaltig: fuenf Regler brauchen so drei statt fuenf Zeilen */
-  #lab .fein{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;}
+  /* Feinjustage als fuenf Zahlenwalzen nebeneinander. Lutz am 19.9.: mit einer
+     Walze trifft man den Wert besser als mit einem feinen Schieber. */
+  #lab .fein{display:flex;gap:5px;}
+  #lab .fein .sp{flex:1;min-width:0;}
+  #lab .fein .sp>i{display:block;font-style:normal;font-size:10px;color:#bfae8a;
+    text-align:center;margin:0 0 2px;letter-spacing:.02em;}
+  #lab .fein .box{position:relative;}
+  #lab .fein .rad{height:84px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:8px;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 32%,#000 68%,transparent 82%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 32%,#000 68%,transparent 82%,transparent 100%);}
+  #lab .fein .rad::-webkit-scrollbar{display:none;}
+  #lab .fein .rad>div{height:28px;line-height:28px;text-align:center;scroll-snap-align:center;
+    font-size:13px;color:#bfae8a;opacity:.16;font-variant-numeric:tabular-nums;
+    transition:opacity .15s,color .15s;}
+  #lab .fein .rad>div.an{opacity:1;color:#f7e6b8;}
+  #lab .fein .rad>div.pad{height:28px;}
+  #lab .fein .bd{position:absolute;left:0;right:0;top:50%;height:28px;margin-top:-14px;
+    border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
+    background:rgba(122,95,42,.18);pointer-events:none;border-radius:4px;}
   #lab h4:first-child{margin-top:0;}
   #lab .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   #lab button.k{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;
@@ -1057,12 +1085,6 @@ setInterval(()=>{
   #lfband{position:absolute;left:0;right:0;top:50%;height:32px;margin-top:-16px;
     border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
     background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
-  #lab input[type=range]{flex:1;min-width:110px;accent-color:#c8a155;}
-  #lab label.sl{display:flex;gap:6px;align-items:center;min-width:0;}
-  #lab label.sl span{width:46px;flex:none;color:#bfae8a;font-size:11px;}
-  #lab label.sl b{width:42px;flex:none;text-align:right;color:#f0dca6;font-size:11px;
-    font-variant-numeric:tabular-nums;}
-  #lab input[type=range]{min-width:60px;}
   #lab .mess{margin-top:10px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a89670;
     white-space:pre-wrap;border-top:1px dashed #5a4620;padding-top:8px;}
   #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
@@ -1077,13 +1099,7 @@ setInterval(()=>{
     <select id="lg"><option value="400">mager</option><option value="600">halbfett</option><option value="700">fett</option></select>
   </div>
   <h4>Feinjustage</h4>
-  <div class="fein">
-    <label class="sl"><span>Gr&ouml;&szlig;e</span><input type="range" id="lsz" min="0.55" max="1.45" step="0.02"><b id="vsz"></b></label>
-    <label class="sl"><span>H&ouml;he</span><input type="range" id="lhh" min="0.20" max="0.50" step="0.005"><b id="vhh"></b></label>
-    <label class="sl"><span>l&auml;ngs</span><input type="range" id="lst" min="-0.35" max="0.35" step="0.005"><b id="vst"></b></label>
-    <label class="sl"><span>Sperrung</span><input type="range" id="lsp" min="0" max="0.22" step="0.005"><b id="vsp"></b></label>
-    <label class="sl"><span>Deckkraft</span><input type="range" id="ldk" min="0.5" max="1" step="0.01"><b id="vdk"></b></label>
-  </div>
+  <div class="fein" id="lfein"></div>
   <h4>Schreibweise &middot; Farbe</h4>
   <div class="row" id="ls"></div>
   <div class="row" id="lc" style="margin-top:5px"></div>
@@ -1168,10 +1184,57 @@ setInterval(()=>{
     $('ls').appendChild(b); });
   FARBEN.forEach(c=>{ const b=document.createElement('button'); b.className='sw'; b.dataset.c=c;
     b.style.background=c; b.onclick=()=>{ G.farbe=c; anwenden(); }; $('lc').appendChild(b); });
-  const R=[['lsz','vsz','faktor',v=>v.toFixed(2)],['lhh','vhh','hoehe',v=>v.toFixed(3)],
-           ['lsp','vsp','sperr',v=>v.toFixed(3)],['lst','vst','seite',v=>(v>0?'+':'')+v.toFixed(3)],
-           ['ldk','vdk','deck',v=>v.toFixed(2)]];
-  R.forEach(function(r){ $(r[0]).oninput=()=>{ G[r[2]]=+$(r[0]).value; anwenden(); }; });
+  // ---- Zahlenwalzen der Feinjustage ----
+  // Baut eine Walze wie die Schriftwalze, nur mit Zahlen. Gibt ein Objekt mit
+  // setzen() zurueck: das muss von aussen gerufen werden, wenn sich der Wert
+  // anderswo aendert — und beim Oeffnen des Panels, weil ein verstecktes
+  // Element sich nicht scrollen laesst.
+  function zahlWalze(box, werte, fmt, schluessel){
+    const IH=28;
+    const rad=document.createElement('div'); rad.className='rad';
+    const p1=document.createElement('div'); p1.className='pad'; rad.appendChild(p1);
+    werte.forEach((v,i)=>{ const d=document.createElement('div'); d.textContent=fmt(v);
+      d.onclick=()=>zu(i,true); rad.appendChild(d); });
+    const p2=document.createElement('div'); p2.className='pad'; rad.appendChild(p2);
+    box.appendChild(rad);
+    const bd=document.createElement('div'); bd.className='bd'; box.appendChild(bd);
+    const felder=()=>rad.querySelectorAll('div:not(.pad)');
+    let stumm=false, t=null;
+    function idx(){ return Math.max(0,Math.min(werte.length-1,Math.round(rad.scrollTop/IH))); }
+    function mark(i){ felder().forEach((d,k)=>d.classList.toggle('an',k===i)); }
+    function uebernehmen(i){ if(G[schluessel]!==werte[i]){ G[schluessel]=werte[i]; anwenden(); } }
+    function zu(i,glatt){
+      stumm=true;
+      try{ rad.scrollTo({top:i*IH,behavior:glatt?'smooth':'auto'}); }catch(e){ rad.scrollTop=i*IH; }
+      mark(i); setTimeout(()=>{stumm=false;}, glatt?450:150); uebernehmen(i);
+    }
+    rad.addEventListener('scroll',()=>{
+      if(stumm || $('lab').hidden) return;
+      const i=idx(); mark(i);
+      clearTimeout(t); t=setTimeout(()=>uebernehmen(i),80);
+    },{passive:true});
+    return { setzen(){
+      const v=G[schluessel]; let bi=0, bd2=Infinity;
+      werte.forEach((w,i)=>{ const d=Math.abs(w-v); if(d<bd2){bd2=d;bi=i;} });
+      mark(bi);
+      if($('lab').hidden || idx()===bi) return;
+      stumm=true; rad.scrollTop=bi*IH; setTimeout(()=>{stumm=false;},150);
+    } };
+  }
+  function reihe(a,b,s){ const r=[]; for(let v=a; v<=b+1e-9; v+=s) r.push(+v.toFixed(3)); return r; }
+  const WALZEN=[];
+  [['Gr\u00f6\u00dfe',  reihe(0.55,1.45,0.05), v=>v.toFixed(2),            'faktor'],
+   ['H\u00f6he',    reihe(0.20,0.50,0.01), v=>v.toFixed(2),            'hoehe'],
+   ['l\u00e4ngs',   reihe(-0.35,0.35,0.01),v=>(v>0?'+':'')+v.toFixed(2),'seite'],
+   ['Sperr.',        reihe(0,0.22,0.01),    v=>v.toFixed(2),            'sperr'],
+   ['Deck.',         reihe(0.50,1.00,0.05), v=>v.toFixed(2),            'deck']
+  ].forEach(function(w){
+    const sp=document.createElement('div'); sp.className='sp';
+    const i=document.createElement('i'); i.textContent=w[0]; sp.appendChild(i);
+    const box=document.createElement('div'); box.className='box'; sp.appendChild(box);
+    $('lfein').appendChild(sp);
+    WALZEN.push(zahlWalze(box,w[1],w[2],w[3]));
+  });
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(); };
@@ -1212,7 +1275,7 @@ setInterval(()=>{
   $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
     $('labbtn').textContent=l.hidden?'Einstellungen':'schließen';
     panelPlatz();
-    if(!l.hidden) walSetzen();   // jetzt erst ist die Walze scrollbar
+    if(!l.hidden){ walSetzen(); WALZEN.forEach(w=>w.setzen()); }   // jetzt erst scrollbar
   };
 
   function text(){
@@ -1244,7 +1307,7 @@ setInterval(()=>{
                 if(!$('lab').hidden && walIdx()!==i) walSetzen(); } }
     $('lg').value=G.gew;
     $('lgl').classList.toggle('an',G.gleich);
-    R.forEach(function(r){ $(r[0]).value=G[r[2]]; $(r[1]).textContent=r[3](G[r[2]]); });
+    WALZEN.forEach(w=>w.setzen());
   }
   function messen(){
     const m=L.masse(), n=L.personen.map(p=>p.name);

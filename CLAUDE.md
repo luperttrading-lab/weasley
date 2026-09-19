@@ -196,9 +196,18 @@ Forum fett, Faktor 0,95, Höhe 0,330, längs +0,065, Groß-klein, alle gleich gr
 „Zurücksetzen" fährt damit auf die echte Uhr zurück, nicht auf einen Laborwert,
 den es so nie gegeben hat.
 
-**Aufbau des Einstellfensters (19.09. gestrafft):** Schriftwalze ganz oben, dann
-die fünf Regler **zweispaltig** (drei Zeilen statt fünf), Schreibweise und Farbe
-unter einer gemeinsamen Überschrift, Zeigerwahl unten. Panelinhalt 863 → **770 px**.
+**Aufbau des Einstellfensters (19.09.):** Schriftwalze ganz oben, darunter die
+Feinjustage als **fünf Zahlenwalzen nebeneinander**, Schreibweise und Farbe unter
+einer gemeinsamen Überschrift, Zeigerwahl unten.
+
+Die Schieberegler sind am 19.9. komplett rausgeflogen — Lutz: mit einer Walze
+trifft man den Wert besser als mit einem feinen Schieber. Zwischenschritt war
+eine zweispaltige Regleranordnung (863 → 770 px), die Walzen kosten davon 42 px
+zurück: **812 px**. Das ist der bewusst bezahlte Preis.
+
+⚠️ Die Walzen rasten in **0,01er-Schritten** (Größe und Deckkraft 0,05), die
+Schieber konnten 0,005. Ein gespeicherter Zwischenwert wie `seite: 0,065` wird
+deshalb als `+0,06` angezeigt und springt beim ersten Anfassen auf 0,06 oder 0,07.
 
 **Lupe** (zweiter fester Knopf unten rechts) — drei benannte Stufen statt Zahlen:
 
@@ -444,6 +453,7 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 | **Ortsnamen nach außen** (r=164/171) | Löst die Kollision mit den großen Medaillons |
 | **Kein Schaft-Stummel** | Wenn Namen unterschiedlich lang sind, entstehen unterschiedlich lange Reststriche — sieht uneinheitlich aus |
 | **IN GEFAHR rötlich hinterlegt**, VERSCHOLLEN nebelblau | Verschollen ist ungewiss, nicht alarmierend — soll nicht mit dem Rot konkurrieren |
+| **Nabe als freigestellte Messingscheibe** (seit v0.72) | Bis v0.71 war sie gezeichnet: `url(#nabe)`-Verlauf plus zwei Kreise. Lutz am 19.9.: „das ist nicht so schön plastisch und strukturiert" — die Ösen der gelieferten Zeiger sind echtes gerendertes Messing. Übernommen ist die Ösenscheibe aus `band.webp` als `zeiger/nabe.webp`. Freistellung: Zuschnitt 304 px um das Loch, Ellipsenmaske 136 × 140 um einen Punkt **9 px über** dem Loch (die Scheibe sitzt im Bild versetzt). Der Steg nach rechts ließ sich nicht sauber wegschneiden, ohne den Rand anzuknabbern — gelöst durch **Spiegeln der linken Hälfte auf die rechte**; die gedrehte Rosette ist symmetrisch, man sieht es nicht. `NABE_BILD=25` ist die halbe Bildkante, sichtbarer Scheibenradius = 25 × 135/152 ≈ 22,2 — genau die alte Nabe. Darunter liegt ein dunkler Kreis r=6, der das Loch füllt. |
 | **Keine Markierung der aktiven Person auf dem Zifferblatt** (seit v0.71, `HI_DECK=0`) | Bis v0.70 lag ein heller Ring **außerhalb** der Messingkante. Auf dem hellen Zifferblatt liest sich das wie ein Freistellungsfehler, nicht wie eine Markierung — Lutz am 18.9.: „sieht aus wie schlecht freigestellt". Welche Person gemeint ist, sagen der hervorgehobene Chip und die Statuszeile ohnehin. Das Element bleibt im Code, liegt jetzt aber **auf** dem Messingband; `HI_DECK` > 0 schaltet es wieder ein. |
 
 **Nicht genommene Varianten** stecken teilweise noch als Schalter in der Datei: `window.MEDSTIL` kennt `kreis` / `kamee` / `frei` / `rahmen` (Standard), `window.NADELSTIL` kennt `schale` / `spitze` / `ohne`.

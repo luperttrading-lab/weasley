@@ -209,6 +209,11 @@ schreibt beide Standdateien in einem Lauf.
 (`v0.10` → `v0.11`), zweistellig wie bei der App — `v0.9` waere numerisch 9 und
 laege unter 10.
 
+**Knopf „Nabe unter/über den Zeigern"** (`#lnb`, seit v0.11) in der Fußzeile des
+Panels, in `labor_einst` unter `nabeOben` gemerkt. Reine DOM-Reihenfolge, kein
+Neuaufbau — `L.nabeLage(oben)` hängt die zwei Elemente um und schiebt die
+Vignette danach wieder nach oben. Voreinstellung `false` = Stand der App.
+
 **Knopf `↻`** (`#lupd`) in der Knopfleiste, **nur bei offenem Panel sichtbar**.
 Die Leiste klebt dann oben im Panel, der Knopf ist also ohne Scrollen erreichbar;
 bei geschlossenem Panel liegt sie ueber der Uhr, wo ein dritter Knopf im Weg
@@ -507,6 +512,7 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 | **Ortsnamen nach außen** (r=164/171) | Löst die Kollision mit den großen Medaillons |
 | **Kein Schaft-Stummel** | Wenn Namen unterschiedlich lang sind, entstehen unterschiedlich lange Reststriche — sieht uneinheitlich aus |
 | **IN GEFAHR rötlich hinterlegt**, VERSCHOLLEN nebelblau | Verschollen ist ungewiss, nicht alarmierend — soll nicht mit dem Rot konkurrieren |
+| **Nabe UNTER den Zeigern** (seit v0.73, `NABE_OBEN=false`) | Bis v0.72 lag die Scheibe über den Zeigern und deckte deren Ösen zu; die Schäfte hörten am Nabenrand flach auf. Lutz am 19.9. mit einer Vorlage: „die Zeiger so zur Befestigung, nicht unten drunter". Der naheliegende Einwand — fünf übereinanderliegende Ösen ergäben einen Haufen — **hat sich beim Rendern nicht bestätigt**: verteilt bilden die Ösen eine Rosette um den Stift, im Stapel decken sie einander vollständig. Geprüft wurde auch eine Variante C (Nabe unten **plus** aufgesetzte gezeichnete Kappe) — die sieht wieder nach Plastik aus, genau der Vorwurf gegen die alte gezeichnete Nabe. `NABE_OBEN=true` stellt den Stand bis v0.72 wieder her. ⚠️ Die Vignette muss beim Umhängen ganz oben bleiben, sonst liegt sie unter der Nabe. |
 | **Nabe als freigestellte Messingscheibe** (seit v0.72) | Bis v0.71 war sie gezeichnet: `url(#nabe)`-Verlauf plus zwei Kreise. Lutz am 19.9.: „das ist nicht so schön plastisch und strukturiert" — die Ösen der gelieferten Zeiger sind echtes gerendertes Messing. Übernommen ist die Ösenscheibe aus `band.webp` als `zeiger/nabe.webp`. Freistellung: Zuschnitt 304 px um das Loch, Ellipsenmaske 136 × 140 um einen Punkt **9 px über** dem Loch (die Scheibe sitzt im Bild versetzt). Der Steg nach rechts ließ sich nicht sauber wegschneiden, ohne den Rand anzuknabbern — gelöst durch **Spiegeln der linken Hälfte auf die rechte**; die gedrehte Rosette ist symmetrisch, man sieht es nicht. `NABE_BILD=25` ist die halbe Bildkante, sichtbarer Scheibenradius = 25 × 135/152 ≈ 22,2 — genau die alte Nabe. Darunter liegt ein dunkler Kreis r=6, der das Loch füllt. |
 | **Keine Markierung der aktiven Person auf dem Zifferblatt** (seit v0.71, `HI_DECK=0`) | Bis v0.70 lag ein heller Ring **außerhalb** der Messingkante. Auf dem hellen Zifferblatt liest sich das wie ein Freistellungsfehler, nicht wie eine Markierung — Lutz am 18.9.: „sieht aus wie schlecht freigestellt". Welche Person gemeint ist, sagen der hervorgehobene Chip und die Statuszeile ohnehin. Das Element bleibt im Code, liegt jetzt aber **auf** dem Messingband; `HI_DECK` > 0 schaltet es wieder ein. |
 

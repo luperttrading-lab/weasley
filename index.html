@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.72</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.73</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -480,12 +480,19 @@ function passeNamenEin(){
 // Ellipsenmaske beim Freistellen).
 // NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
 const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));   // fuellt das Loch
-{const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
+// NABE_OBEN=false: die Scheibe liegt UNTER den Zeigern, die Oesen sitzen sichtbar
+// darauf — wie bei einer echten Uhr und wie auf Lutz' Vorlage vom 19.9. Die
+// Befuerchtung, fuenf uebereinanderliegende Oesen ergaeben einen Haufen, hat sich
+// beim Rendern nicht bestaetigt: verteilt bilden sie eine Rosette, im Stapel
+// decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
+const NABE_OBEN=false;
+{const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
+ const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
                      preserveAspectRatio:'none',filter:'url(#sh)'});
  nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe.webp');
  nb.setAttribute('href','zeiger/nabe.webp');
- svg.appendChild(nb);}
+ if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
+ else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }}
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 

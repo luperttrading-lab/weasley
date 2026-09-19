@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.10</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.11</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -541,7 +541,16 @@ function neuZeichnen(){
   if(typeof highlight==='function') highlight();
   gZeiger.setAttribute('opacity','1');
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, waehle(k){ ZB=ZEIGERSATZ[k]; },
+// Nabe ueber oder unter die Zeiger haengen. Kein Neuaufbau noetig: es ist reine
+// Reihenfolge im DOM, die Elemente bleiben dieselben.
+function nabeLage(oben){
+  const t=window.NABE_TEIL; if(!t) return;
+  t.forEach(e=>{ if(oben) svg.appendChild(e); else svg.insertBefore(e,gZeiger); });
+  // die Vignette muss ganz oben bleiben, sonst liegt sie unter der Nabe
+  const v=[...svg.querySelectorAll('circle')].find(c=>c.getAttribute('fill')==='url(#vign)');
+  if(v) svg.appendChild(v);
+}
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -555,12 +564,21 @@ window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, waehle(k){ ZB=ZEIGERSATZ
 // Ellipsenmaske beim Freistellen).
 // NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
 const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
-svg.appendChild(E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));   // fuellt das Loch
-{const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
+// NABE_OBEN=false: die Scheibe liegt UNTER den Zeigern, die Oesen sitzen sichtbar
+// darauf — wie bei einer echten Uhr und wie auf Lutz' Vorlage vom 19.9. Die
+// Befuerchtung, fuenf uebereinanderliegende Oesen ergaeben einen Haufen, hat sich
+// beim Rendern nicht bestaetigt: verteilt bilden sie eine Rosette, im Stapel
+// decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
+const NABE_OBEN=false;
+{const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
+ const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
                      preserveAspectRatio:'none',filter:'url(#sh)'});
  nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe.webp');
  nb.setAttribute('href','zeiger/nabe.webp');
- svg.appendChild(nb);}
+ if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
+ else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }
+ // LABOR: umhaengbar, damit Lutz beide Lagen nebeneinander sehen kann
+ window.NABE_TEIL=[loch,nb];}
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 
@@ -1153,6 +1171,7 @@ setInterval(()=>{
   <div class="row" style="margin-top:8px">
     <button class="k" id="lkop">Einstellungen kopieren</button>
     <button class="k" id="lres">zur&uuml;cksetzen</button>
+    <button class="k" id="lnb">Nabe &uuml;ber den Zeigern</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1170,8 +1189,8 @@ setInterval(()=>{
   // 'zuruecksetzen' faehrt damit auf die echte App zurueck, nicht auf einen
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
-             farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl'};
-  let zeigerKey=STD.zeiger;
+             farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false};
+  let zeigerKey=STD.zeiger, nabeOben=STD.nabeOben;
   const $=id=>document.getElementById(id);
 
   Object.keys(L.ZEIGERSATZ).forEach(k=>{
@@ -1289,6 +1308,7 @@ setInterval(()=>{
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
   // Von Hand nach einer neuen Fassung sehen. Die Versionszeile unter der Uhr
   // kann das auch, liegt aber bei offenem Panel ausserhalb des Blickfelds.
+  $('lnb').onclick=()=>{ nabeOben=!nabeOben; spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1349,11 +1369,16 @@ setInterval(()=>{
         // Ein gespeicherter Schluessel kann inzwischen geloescht sein
         zeigerKey = L.ZEIGERSATZ[o[k]] ? o[k] : STD.zeiger;
         L.waehle(zeigerKey);
-      } else G[k]=o[k]; }); }
+      } else if(k==='nabeOben'){ nabeOben=!!o[k]; }
+      else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
-       farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey})); }catch(e){} }
+       farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
+       nabeOben:nabeOben})); }catch(e){} }
   function spiegeln(){
+    L.nabeLage(nabeOben);
+    $('lnb').textContent = nabeOben ? 'Nabe über den Zeigern' : 'Nabe unter den Zeigern';
+    $('lnb').classList.toggle('an', nabeOben);
     $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
     $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
     $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));

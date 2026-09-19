@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.11</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.12</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -543,6 +543,22 @@ function neuZeichnen(){
 }
 // Nabe ueber oder unter die Zeiger haengen. Kein Neuaufbau noetig: es ist reine
 // Reihenfolge im DOM, die Elemente bleiben dieselben.
+// LABOR: vier Kappen zur Wahl. Die Datei wechselt, die Groesse folgt dem Bild,
+// damit der polierte Ring (breiter Aussenrand) nicht kleiner wirkt als der Kern.
+const KAPPEN={ohne:null,
+  kern   :{d:'zeiger/kappe.webp',        r:10.5, t:'Kappe: Nabenkern'},
+  glatt  :{d:'zeiger/kappe-glatt.webp',  r:11.5, t:'Kappe: poliert'},
+  spindel:{d:'zeiger/kappe-spindel.webp',r:10.5, t:'Kappe: Spindel'}};
+function kappeSetzen(k){
+  const e=document.getElementById('kappe'); if(!e) return;
+  const v=KAPPEN[k];
+  if(!v){ e.setAttribute('opacity',0); return; }
+  e.setAttribute('opacity',1);
+  e.setAttribute('x',CX-v.r); e.setAttribute('y',CY-v.r);
+  e.setAttribute('width',v.r*2); e.setAttribute('height',v.r*2);
+  e.setAttributeNS('http://www.w3.org/1999/xlink','href',v.d);
+  e.setAttribute('href',v.d);
+}
 function nabeLage(oben){
   const t=window.NABE_TEIL; if(!t) return;
   t.forEach(e=>{ if(oben) svg.appendChild(e); else svg.insertBefore(e,gZeiger); });
@@ -550,7 +566,7 @@ function nabeLage(oben){
   const v=[...svg.querySelectorAll('circle')].find(c=>c.getAttribute('fill')==='url(#vign)');
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, kappeSetzen, KAPPEN, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -570,6 +586,7 @@ const NABE_BILD=25;                    // -> Scheibe r≈22,2, wie die alte Nabe
 // beim Rendern nicht bestaetigt: verteilt bilden sie eine Rosette, im Stapel
 // decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
 const NABE_OBEN=false;
+const KAPPE_R=10.5;                    // 0 = keine Deckkappe
 {const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
  const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
                      preserveAspectRatio:'none',filter:'url(#sh)'});
@@ -577,6 +594,18 @@ const NABE_OBEN=false;
  nb.setAttribute('href','zeiger/nabe.webp');
  if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
  else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }
+ // Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
+ // sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
+ // Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
+ // aus zeiger/nabe.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
+ // aus, Lutz am 19.9.: "nicht so selbst gebaut".
+ if(KAPPE_R>0){
+   const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,
+                       preserveAspectRatio:'none',filter:'url(#sh)'});
+   kp.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/kappe.webp');
+   kp.setAttribute('href','zeiger/kappe.webp');
+   svg.appendChild(kp);   // ueber den Zeigern, die Vignette kommt danach
+ }
  // LABOR: umhaengbar, damit Lutz beide Lagen nebeneinander sehen kann
  window.NABE_TEIL=[loch,nb];}
 // Vignette
@@ -1172,6 +1201,7 @@ setInterval(()=>{
     <button class="k" id="lkop">Einstellungen kopieren</button>
     <button class="k" id="lres">zur&uuml;cksetzen</button>
     <button class="k" id="lnb">Nabe &uuml;ber den Zeigern</button>
+    <button class="k" id="lkap">Kappe</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1189,8 +1219,10 @@ setInterval(()=>{
   // 'zuruecksetzen' faehrt damit auf die echte App zurueck, nicht auf einen
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
-             farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false};
-  let zeigerKey=STD.zeiger, nabeOben=STD.nabeOben;
+             farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
+             kappe:'kern'};
+  let zeigerKey=STD.zeiger, nabeOben=STD.nabeOben, kappeKey=STD.kappe;
+  const KAPFOLGE=['ohne','kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
   Object.keys(L.ZEIGERSATZ).forEach(k=>{
@@ -1309,6 +1341,8 @@ setInterval(()=>{
   // Von Hand nach einer neuen Fassung sehen. Die Versionszeile unter der Uhr
   // kann das auch, liegt aber bei offenem Panel ausserhalb des Blickfelds.
   $('lnb').onclick=()=>{ nabeOben=!nabeOben; spiegeln(); speichern(); };
+  $('lkap').onclick=()=>{ kappeKey=KAPFOLGE[(KAPFOLGE.indexOf(kappeKey)+1)%KAPFOLGE.length];
+                          spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1370,13 +1404,17 @@ setInterval(()=>{
         zeigerKey = L.ZEIGERSATZ[o[k]] ? o[k] : STD.zeiger;
         L.waehle(zeigerKey);
       } else if(k==='nabeOben'){ nabeOben=!!o[k]; }
+      else if(k==='kappe'){ kappeKey = L.KAPPEN[o[k]]!==undefined ? o[k] : STD.kappe; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
-       nabeOben:nabeOben})); }catch(e){} }
+       nabeOben:nabeOben,kappe:kappeKey})); }catch(e){} }
   function spiegeln(){
     L.nabeLage(nabeOben);
+    L.kappeSetzen(kappeKey);
+    $('lkap').textContent = kappeKey==='ohne' ? 'ohne Kappe' : L.KAPPEN[kappeKey].t;
+    $('lkap').classList.toggle('an', kappeKey!=='ohne');
     $('lnb').textContent = nabeOben ? 'Nabe über den Zeigern' : 'Nabe unter den Zeigern';
     $('lnb').classList.toggle('an', nabeOben);
     $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));

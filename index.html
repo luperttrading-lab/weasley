@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.77</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.78</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -502,8 +502,12 @@ const NABE_BILD=29.3;                  // -> Scheibe r≈26,0 (v0.76: 22,2; Lutz
 // Befuerchtung, fuenf uebereinanderliegende Oesen ergaeben einen Haufen, hat sich
 // beim Rendern nicht bestaetigt: verteilt bilden sie eine Rosette, im Stapel
 // decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
-const NABE_OBEN=false;
-const KAPPE_R=10.5;                    // 0 = keine Deckkappe
+// v0.78: Lutz hat im Labor Zustand 4 gewaehlt — eine einzige Scheibe UEBER den
+// Zeigern, r=26. Die gestapelte Fassung aus v0.73..v0.77 (Scheibe darunter plus
+// Kappe) sah nach zwei aufeinanderliegenden Scheiben aus: "die Nabe sieht
+// schlecht aus". Die Oesen verschwinden dafuer wieder darunter.
+const NABE_OBEN=true;
+const KAPPE_R=0;                       // 0 = keine Deckkappe (seit v0.78)
 {const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
  const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
                      preserveAspectRatio:'none',filter:'url(#sh)'});

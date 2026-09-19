@@ -280,6 +280,18 @@ Kappenknopf ist gesperrt, wenn der Zustand keine Kappe hat.
 | 3 | r=22,2 | aus | Ösen-Rosette sichtbar |
 | 4 | r=26 | aus | **über** den Zeigern, Schäfte setzen am Rand an |
 
+**Knopf „Prüfkreis"** (`#lpk`, seit v0.16) legt einen roten Kreis durch alle
+fünf Ringmitten plus je einen Punkt und eine Speiche. Anlass: Lutz sah dreimal
+„Emilia ist eins zu weit innen", während die DOM-Messung alle fünf auf **0,001
+Einheiten gleich** auswies (band 134,471 / perl 136,920 bei jedem). Statt ihn das
+glauben zu lassen, kann er es jetzt am Gerät sehen. ⚠️ Der Kreis zieht bei jeder
+Drehung mit, aber höchstens einmal je Bild (`requestAnimationFrame`).
+
+**Was den Eindruck erzeugt:** stehen zwei Personen im selben Sektor, fächert
+`targets()` sie um ±9° auf — die **Medaillons überlappen** dann, und vom
+hinteren ist nur die innere Hälfte zu sehen. Das liest sich als „sitzt weiter
+innen". Radial ist nichts verschoben; `targets()` ändert ausschließlich Winkel.
+
 **Knöpfe „Ende" und „Ortsring"** (`#lend`, `#lort`, seit v0.15). „Ende"
 schaltet zwischen **Spitze** (Stand bis v0.76) und **Ring** (der Ring ist die
 Spitze, Stand der App) und baut die Zeiger dabei neu auf. „Ortsring" schiebt den
@@ -608,6 +620,7 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 | **Kein Schaft-Stummel** | Wenn Namen unterschiedlich lang sind, entstehen unterschiedlich lange Reststriche — sieht uneinheitlich aus |
 | **IN GEFAHR rötlich hinterlegt**, VERSCHOLLEN nebelblau | Verschollen ist ungewiss, nicht alarmierend — soll nicht mit dem Rot konkurrieren |
 | **Gesicht steht immer aufrecht** (seit v0.76) | Bis v0.75 wurde das Portrait nur um 180° gekippt, wenn der Zeiger in der linken Hälfte stand — sonst drehte es sich **mit dem Zeiger mit**. Gemessen über `getScreenCTM()` an der Bildmatrix: Anton +90°, Claudia −90°, Leander +45°, Emilia −45°, nur Lutz zufällig 0°. Bei den Medaillons bis v0.67 (r=12,5) fiel das kaum auf, bei r=17,3 steht Anton quer im Ring — Lutz am 19.9.: „Emilia ist falsch und die Ringe noch nicht richtig zentriert." `setRot` dreht jetzt die Gesamtdrehung `cur[i] − 90 − KIPP` zurück. Nachher **0,00° bei allen fünf**. ⚠️ Der Name auf dem Schild behält die alte 180°-Regel — er soll längs des Zeigers stehen, nur nie auf dem Kopf. |
+| **Nabe wieder ÜBER den Zeigern, r=26, ohne Kappe** (seit v0.78) | Von Lutz am 19.9. im Labor aus vier gerenderten Mitten gewählt, nachdem die gestapelte Fassung (Scheibe darunter **plus** Kappe) als „die Nabe sieht schlecht aus" durchgefallen war: zwei aufeinanderliegende Scheiben mit einer flachen Ringfläche dazwischen. Jetzt eine einzige Scheibe, die Zeiger kommen dahinter hervor. Damit ist die Entscheidung von v0.73 („Ösen sichtbar auf der Nabe") wieder zurückgenommen — sie überlebte den Größensprung auf r=26 nicht. `NABE_OBEN=true`, `KAPPE_R=0`. |
 | **Deckkappe über den Ösen** (seit v0.74, `KAPPE_R=10.5`, 0 = aus) | Mit der Nabe unter den Zeigern treffen sich in der Mitte fünf Ösen. Die Kappe fasst sie zusammen, wie bei einer echten Uhr die Mutter auf dem Zeigerstapel. Eine **gezeichnete** Kappe (Farbverlauf `url(#nabe)` plus Punkt) war der erste Versuch und ist verworfen — Lutz am 19.9.: „den mittleren Ring musst du auch bitte in Messing machen und nicht so selbst gebaut". `zeiger/kappe.webp` ist deshalb echtes gerendertes Messing: der Kern von `nabe.webp` (r≤106 von 180), kreisrund freigestellt mit weicher Kante, auf 320 px gerechnet. Im Labor stehen drei zur Wahl (`KAPPEN`): **Nabenkern** (App), **poliert** aus `glatt.webp` (heller, breiter Außenrand, deshalb r=11,5) und **Spindel** aus `spindel.webp` (körnig, nur der Vollständigkeit halber). ⚠️ Reihenfolge: Zeiger → Kappe → Vignette. |
 | **Nabe UNTER den Zeigern** (seit v0.73, `NABE_OBEN=false`) | Bis v0.72 lag die Scheibe über den Zeigern und deckte deren Ösen zu; die Schäfte hörten am Nabenrand flach auf. Lutz am 19.9. mit einer Vorlage: „die Zeiger so zur Befestigung, nicht unten drunter". Der naheliegende Einwand — fünf übereinanderliegende Ösen ergäben einen Haufen — **hat sich beim Rendern nicht bestätigt**: verteilt bilden die Ösen eine Rosette um den Stift, im Stapel decken sie einander vollständig. Geprüft wurde auch eine Variante C (Nabe unten **plus** aufgesetzte gezeichnete Kappe) — die sieht wieder nach Plastik aus, genau der Vorwurf gegen die alte gezeichnete Nabe. `NABE_OBEN=true` stellt den Stand bis v0.72 wieder her. ⚠️ Die Vignette muss beim Umhängen ganz oben bleiben, sonst liegt sie unter der Nabe. |
 | **Nabe als freigestellte Messingscheibe** (seit v0.72) | Bis v0.71 war sie gezeichnet: `url(#nabe)`-Verlauf plus zwei Kreise. Lutz am 19.9.: „das ist nicht so schön plastisch und strukturiert" — die Ösen der gelieferten Zeiger sind echtes gerendertes Messing. Übernommen ist die Ösenscheibe aus `band.webp` als `zeiger/nabe.webp`. Freistellung: Zuschnitt 304 px um das Loch, Ellipsenmaske 136 × 140 um einen Punkt **9 px über** dem Loch (die Scheibe sitzt im Bild versetzt). Der Steg nach rechts ließ sich nicht sauber wegschneiden, ohne den Rand anzuknabbern — gelöst durch **Spiegeln der linken Hälfte auf die rechte**; die gedrehte Rosette ist symmetrisch, man sieht es nicht. `NABE_BILD=25` ist die halbe Bildkante, sichtbarer Scheibenradius = 25 × 135/152 ≈ 22,2 — genau die alte Nabe. Darunter liegt ein dunkler Kreis r=6, der das Loch füllt. |

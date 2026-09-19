@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.15</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.16</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -584,6 +584,33 @@ function ortsringSetzen(stufe){
   document.querySelectorAll('.ortsr').forEach(e=>e.setAttribute('transform',t));
 }
 function endeArt(a){ ENDEART=a?1:0; }
+// Pruefkreis: ein Kreis durch alle fuenf Ringmitten plus ein Punkt je Zeiger.
+// Damit laesst sich am Geraet nachsehen, ob ein Medaillon wirklich weiter innen
+// sitzt. Im DOM gemessen liegen alle fuenf auf 0,001 Einheiten gleich — wer das
+// nicht glaubt, soll es sehen koennen statt es mir glauben zu muessen.
+let gPruef=null, pruefAn=false, pruefWartet=false;
+function pruefZeichnen(){
+  if(gPruef){ gPruef.remove(); gPruef=null; }
+  if(!pruefAn) return;
+  gPruef=E('g',{id:'pruef','pointer-events':'none'});
+  gPruef.appendChild(E('circle',{cx:CX,cy:CY,r:R_ZEIGER,fill:'none',
+                                 stroke:'#d0202a','stroke-width':0.8,opacity:.85}));
+  personen.forEach((pe,i)=>{
+    const p=polar(R_ZEIGER,cur[i]);
+    gPruef.appendChild(E('line',{x1:CX,y1:CY,x2:p.x,y2:p.y,
+                                 stroke:'#d0202a','stroke-width':0.4,opacity:.6}));
+    gPruef.appendChild(E('circle',{cx:p.x,cy:p.y,r:2.2,fill:'#d0202a'}));
+  });
+  svg.appendChild(gPruef);
+}
+function pruefkreis(an){ pruefAn=!!an; pruefZeichnen(); }
+// bei jeder Drehung mitziehen, hoechstens einmal je Bild
+function pruefAnstossen(){
+  if(!pruefAn||pruefWartet) return;
+  pruefWartet=true;
+  requestAnimationFrame(()=>{ pruefWartet=false; pruefZeichnen(); });
+}
+
 function mitteSetzen(i,kapKey){
   const v=MITTE[i]||MITTE[0];
   const t=window.NABE_TEIL; const kp=document.getElementById('kappe');
@@ -609,7 +636,7 @@ function nabeLage(oben){
   if(kp) svg.insertBefore(kp, v||null);
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, ortsringSetzen, endeArt, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -692,6 +719,7 @@ function setRot(i){
     const gegen = -(cur[i] - 90 - KIPP);
     z.portraitG.setAttribute('transform',`rotate(${gegen.toFixed(2)} ${z.rcx} ${z.rcy})`);
   }
+  pruefAnstossen();
 }
 personen.forEach((p,i)=>setRot(i));
 // Jetzt einpassen: cur und setRot stehen. Cinzel kommt per Webfont und ist beim
@@ -1258,6 +1286,7 @@ setInterval(()=>{
     <button class="k" id="lnr">Nabe</button>
     <button class="k" id="lend">Ende</button>
     <button class="k" id="lort">Ortsring</button>
+    <button class="k" id="lpk">Pr&uuml;fkreis</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1276,9 +1305,9 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:0, nabgr:1, ende:1, ortsr:2};
+             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false};
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
-      endeArt=STD.ende, ortsStufe=STD.ortsr;
+      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef;
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
@@ -1404,6 +1433,7 @@ setInterval(()=>{
   // Ende und Ortsring aendern die Geometrie -> die Zeiger muessen neu gebaut werden
   $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
   $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
+  $('lpk').onclick=()=>{ pruef=!pruef; spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1470,13 +1500,17 @@ setInterval(()=>{
       else if(k==='nabgr'){ nabGr = L.NABGR[o[k]]!==undefined ? +o[k] : STD.nabgr; }
       else if(k==='ende'){ endeArt = o[k]?1:0; }
       else if(k==='ortsr'){ ortsStufe = L.ORTSR[o[k]]!==undefined ? +o[k] : STD.ortsr; }
+      else if(k==='pruef'){ pruef=!!o[k]; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
-       mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe})); }catch(e){} }
+       mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
+       pruef:pruef})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
+    L.pruefkreis(pruef);
+    $('lpk').classList.toggle('an', pruef);
     $('lend').textContent = 'Ende: ' + (endeArt ? 'Ring' : 'Spitze');
     $('lend').classList.toggle('an', !!endeArt);
     $('lort').textContent = 'Ortsring: ' + L.ORTSR[ortsStufe];

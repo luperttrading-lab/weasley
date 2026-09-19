@@ -139,6 +139,39 @@ const GRAV={fam:'Forum', gew:'700', faktor:0.95, hoehe:0.330,
   *breiten*begrenzt sind. Gemessen mit Forum: alle fünf bei **15,71**.
 - Schreibweise ist jetzt **Groß-klein** („Claudia"), nicht mehr Versalien
 
+**Verkantung der Zeigerbilder — seit v0.75 ausgeglichen (`KIPP`).** Kein
+Zeigerbild ist exakt waagerecht gezeichnet: Öse und Ringmitte liegen in der Höhe
+auseinander. Gemessen (Bildpixel bzw. Einheiten auf dem Zifferblatt):
+
+| Zeiger | dy | Winkel | Medaillon neben der Radiallinie |
+|---|---|---|---|
+| flach, hoch | −8,6 | 0,457° | 0,99 |
+| lilie | −8,6 | 0,449° | 0,97 |
+| perl (App) | −7,2 | 0,384° | **0,83** |
+| glatt | −6,0 | 0,330° | 0,71 |
+| ranke | −5,3 | 0,280° | 0,60 |
+| deko | −2,9 | 0,154° | 0,34 |
+| perlklein | −2,6 | 0,137° | 0,30 |
+| spindel | −1,5 | 0,080° | 0,17 |
+| band | −32 | 1,628° | **3,8** |
+
+`KIPP = atan2(ry−oy, rx−ox)` wird als zusätzliche Drehung um die Öse auf die
+innere Gruppe gelegt: `rotate(−90−KIPP)` statt `rotate(−90)`. Danach sitzt die
+Öse exakt im Drehpunkt **und** die Ringmitte exakt auf der Radiallinie.
+Gemessen über `getScreenCTM()` gegen den Sollwinkel: vorher 0,08°…0,46°
+Winkelfehler, nachher **0,000° bei allen zehn Zeigern**.
+
+⚠️ Die Gegenprobe gegen die alte Fassung gehört dazu — sie liefert genau die
+Tabellenwerte oben, sonst wüsste man nicht, ob die Messung überhaupt etwas prüft.
+
+**`band` (J) war damit der Sonderfall, nicht die Ausnahme.** Dort stand `oy` auf
+489 statt auf der gemessenen Ösenmitte 521 — eine Notlüge gegen dieselbe
+Verkantung, die nur funktionierte, solange die Nabe über den Zeigern lag und die
+Öse zudeckte. Seit v0.73 (Nabe darunter) standen fünf Ösen sichtbar auf einem
+Kreis von 3,8 Einheiten: Lutz am 19.9., „beim Schriftband ist der Ansatz und die
+Nabe in der Mitte völlig kreuz und quer". Seit v0.13 des Labors steht dort die
+echte Mitte, den Rest macht `KIPP`.
+
 ⚠️ **Der Fehler in v0.68 — bitte als Muster merken.** Dort stand `cut:1256` und
 ein einziges `rr:110`. Die 110 ist der Radius des **Ringlochs**, nicht der
 Außenkante; die liegt waagerecht bei 144. Der Schnitt lag also mitten im
@@ -209,14 +242,24 @@ schreibt beide Standdateien in einem Lauf.
 (`v0.10` → `v0.11`), zweistellig wie bei der App — `v0.9` waere numerisch 9 und
 laege unter 10.
 
-**Knopf „Kappe"** (`#lkap`, seit v0.12) schaltet durch ohne / Nabenkern /
-poliert / Spindel, in `labor_einst` unter `kappe` gemerkt. Ein gespeicherter
-Schlüssel, den es nicht mehr gibt, fällt auf die Voreinstellung zurück.
+**Knopf „Mitte"** (`#lnb`, seit v0.13) schaltet die ganze Nabenmitte durch vier
+benannte Zustände (`MITTE`), **Knopf „Kappe"** (`#lkap`) durch die drei
+Kappenbilder; beides in `labor_einst` unter `mitte` und `kappe` gemerkt, der
+Kappenknopf ist gesperrt, wenn der Zustand keine Kappe hat.
 
-**Knopf „Nabe unter/über den Zeigern"** (`#lnb`, seit v0.11) in der Fußzeile des
-Panels, in `labor_einst` unter `nabeOben` gemerkt. Reine DOM-Reihenfolge, kein
-Neuaufbau — `L.nabeLage(oben)` hängt die zwei Elemente um und schiebt die
-Vignette danach wieder nach oben. Voreinstellung `false` = Stand der App.
+| | Nabe | Kappe | Lage |
+|---|---|---|---|
+| 1 | r=22,2 | r=10,5 | unter den Zeigern — Stand der App |
+| 2 | aus | r=13,5 | eine einzige Schicht |
+| 3 | r=22,2 | aus | Ösen-Rosette sichtbar |
+| 4 | r=26 | aus | **über** den Zeigern, Schäfte setzen am Rand an |
+
+Hintergrund: Lutz am 19.9. — an der Nabe sei „eine Schicht zu viel", zugleich
+setzten „die Zeiger etwas zu weit innen an". Das sind **gegenläufige** Wünsche:
+weniger Scheibe zeigt mehr Schaft. Deshalb vier Konzepte zur Wahl statt einer
+weiteren Zwischenstufe. Alles ist reine DOM-Reihenfolge plus Größe, kein
+Neuaufbau. ⚠️ Reihenfolge am Ende immer: Nabe → Zeiger → Kappe → Vignette
+(bei Zustand 4: Zeiger → Nabe → Kappe → Vignette).
 
 **Knopf `↻`** (`#lupd`) in der Knopfleiste, **nur bei offenem Panel sichtbar**.
 Die Leiste klebt dann oben im Panel, der Knopf ist also ohne Scrollen erreichbar;

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.74</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.75</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -344,6 +344,11 @@ const ZB={datei:'zeiger/perl.webp', W:1536, H:1024,
           sx0:326, sx1:802, sy:500.0, sh:163,  // Schild, am Hoehenprofil gemessen
           ende:1503};                          // Spitzenende im Bild
 const ZS=160.5/(ZB.ende-ZB.ox);        // Zeigerende auf r=160,5, Tinte der Ortsnamen ab 163,2
+// Verkantung: kein Zeigerbild ist exakt waagerecht gezeichnet. Bei perl liegen
+// Oese und Ringmitte 7,2 px in der Hoehe auseinander (0,384°), das Medaillon
+// saesse 0,83 Einheiten neben der Radiallinie. Wird als zusaetzliche Drehung um
+// die Oese ausgeglichen (v0.75).
+const KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
 const RINGR=ZB.rl*ZS;                  // Portraitfenster
 const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
 // ---- Gravur, im Labor eingestellt (18.09.2026) ----
@@ -355,7 +360,7 @@ const GRAV={fam:'Forum', gew:'700', faktor:0.95, hoehe:0.330,
             sperr:0, seite:0.065, farbe:'#1b1409', deck:1, gleich:true};
 function buildNadel(p){
   const g=E('g',{});
-  const inner=E('g',{transform:`rotate(-90 ${CX} ${CY})`});
+  const inner=E('g',{transform:`rotate(${-90-KIPP} ${CX} ${CY})`});
   const bx=CX-ZB.ox*ZS, by=CY-ZB.oy*ZS;
   // Portrait zuerst, es liegt hinter dem Messing und schaut durch den Ring
   const rcx=bx+ZB.rx*ZS, rcy=by+ZB.ry*ZS;

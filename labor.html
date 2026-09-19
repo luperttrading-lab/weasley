@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.12</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.13</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -363,20 +363,27 @@ const ZEIGERSATZ={
   spindel  : {t:'I  Spindel', datei:'zeiger/spindel.webp',
               W:1536,H:1024, ox:108.9,oy:498.3, rx:1189.4,ry:496.8, rl:142.0,ra:216.0,
               sx0:380,sx1:838,sy:497,sh:114, ende:1522},
-  // oy steht bewusst auf 489 statt auf der gemessenen Oesenmitte 521: das Bild
-  // ist um 32 px verkantet gezeichnet, sonst saesse das Medaillon 3,8 Einheiten
-  // neben der Radiallinie. Die Oese liegt dadurch leicht neben dem Drehpunkt —
-  // sie verschwindet ohnehin unter der Nabe (Scheibe r=16,1 gegen Nabe r=22).
+  // oy stand bis v0.12 auf 489 statt auf der gemessenen Oesenmitte 521 — eine
+  // Notluege gegen die Verkantung von 32 px, die nur funktionierte, solange die
+  // Nabe ueber den Zeigern lag und die Oese zudeckte. Seit die Nabe darunter
+  // liegt, sah man fuenf Oesen auf einem Kreis von 3,8 Einheiten kreuz und quer
+  // stehen (Lutz, 19.9.). Jetzt steht hier die echte Mitte; die Verkantung
+  // gleicht KIPP aus.
   band     : {t:'J  Schriftband', datei:'zeiger/band.webp',
-              W:1536,H:1024, ox:165,oy:489, rx:1291,ry:489, rl:190,ra:218.5,
+              W:1536,H:1024, ox:165,oy:521, rx:1291,ry:489, rl:190,ra:218.5,
               sx0:590,sx1:930,sy:520,sh:100, ende:1510}
 };
-let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGA=1;
+let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGA=1, KIPP=0;
 function massstab(){
   ZS=ENDE_R/(ZB.ende-ZB.ox);           // Zeigerende genau auf ENDE_R
   RINGR=ZB.rl*ZS;                      // Portraitfenster
   RINGA=ZB.ra*ZS;                      // Aussenkante des Messingrings
-  R_ZEIGER=(ZB.rx-ZB.ox)*ZS;           // Ringmitte = Zeigerlaenge
+  // Verkantung des Bildes: kein Zeiger ist exakt waagerecht gezeichnet, Oese und
+  // Ringmitte liegen um bis zu 8,6 px in der Hoehe auseinander. Ungefiltert
+  // sitzt das Medaillon dadurch bis zu 1,0 Einheit neben der Radiallinie.
+  // Wird beim Zeichnen als zusaetzliche Drehung um die Oese ausgeglichen.
+  KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
+  R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
 }
 massstab();
 // ---- LABOR: Einstellungen der Gravur ----
@@ -391,7 +398,7 @@ function gravText(n){
 }
 function buildNadel(p){
   const g=E('g',{});
-  const inner=E('g',{transform:`rotate(-90 ${CX} ${CY})`});
+  const inner=E('g',{transform:`rotate(${-90-KIPP} ${CX} ${CY})`});
   const bx=CX-ZB.ox*ZS, by=CY-ZB.oy*ZS;
   // Portrait zuerst, es liegt hinter dem Messing und schaut durch den Ring
   const rcx=bx+ZB.rx*ZS, rcy=by+ZB.ry*ZS;
@@ -543,30 +550,44 @@ function neuZeichnen(){
 }
 // Nabe ueber oder unter die Zeiger haengen. Kein Neuaufbau noetig: es ist reine
 // Reihenfolge im DOM, die Elemente bleiben dieselben.
-// LABOR: vier Kappen zur Wahl. Die Datei wechselt, die Groesse folgt dem Bild,
-// damit der polierte Ring (breiter Aussenrand) nicht kleiner wirkt als der Kern.
-const KAPPEN={ohne:null,
-  kern   :{d:'zeiger/kappe.webp',        r:10.5, t:'Kappe: Nabenkern'},
-  glatt  :{d:'zeiger/kappe-glatt.webp',  r:11.5, t:'Kappe: poliert'},
-  spindel:{d:'zeiger/kappe-spindel.webp',r:10.5, t:'Kappe: Spindel'}};
-function kappeSetzen(k){
-  const e=document.getElementById('kappe'); if(!e) return;
-  const v=KAPPEN[k];
-  if(!v){ e.setAttribute('opacity',0); return; }
-  e.setAttribute('opacity',1);
-  e.setAttribute('x',CX-v.r); e.setAttribute('y',CY-v.r);
-  e.setAttribute('width',v.r*2); e.setAttribute('height',v.r*2);
-  e.setAttributeNS('http://www.w3.org/1999/xlink','href',v.d);
-  e.setAttribute('href',v.d);
+// LABOR: die ganze Mitte als vier benannte Zustaende. Lutz am 19.9.: an der Nabe
+// ist "eine Schicht zu viel" und die Zeiger "setzen zu weit innen an" — das sind
+// zwei gegenlaeufige Wuensche (weniger Scheibe zeigt mehr Schaft), deshalb vier
+// Konzepte statt einer weiteren Zwischenstufe.
+const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
+              glatt  :{d:'zeiger/kappe-glatt.webp',  t:'poliert'},
+              spindel:{d:'zeiger/kappe-spindel.webp',t:'Spindel'}};
+const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
+             {t:'2 nur die Kappe', oben:false, nr:0,    kr:13.5, kap:'kern'},
+             {t:'3 nur die Nabe',  oben:false, nr:22.2, kr:0,    kap:'kern'},
+             {t:'4 Nabe ueber den Zeigern', oben:true, nr:26, kr:0, kap:'kern'}];
+// sichtbarer Scheibenradius -> halbe Bildkante (Scheibe fuellt 135 von 152)
+const NAB_F=152/135;
+function mitteSetzen(i,kapKey){
+  const v=MITTE[i]||MITTE[0];
+  const t=window.NABE_TEIL; const kp=document.getElementById('kappe');
+  const setz=(e,r)=>{e.setAttribute('x',CX-r);e.setAttribute('y',CY-r);
+                     e.setAttribute('width',r*2);e.setAttribute('height',r*2);};
+  if(t){ t.forEach(e=>e.setAttribute('opacity', v.nr>0?1:0));
+         if(v.nr>0) setz(t[1], v.nr*NAB_F); }
+  if(kp){
+    kp.setAttribute('opacity', v.kr>0?1:0);
+    if(v.kr>0){ setz(kp,v.kr);
+      const d=(KAPPEN[kapKey]||KAPPEN.kern).d;
+      kp.setAttributeNS('http://www.w3.org/1999/xlink','href',d); kp.setAttribute('href',d); }
+  }
+  nabeLage(v.oben);
 }
 function nabeLage(oben){
   const t=window.NABE_TEIL; if(!t) return;
-  t.forEach(e=>{ if(oben) svg.appendChild(e); else svg.insertBefore(e,gZeiger); });
-  // die Vignette muss ganz oben bleiben, sonst liegt sie unter der Nabe
+  const kp=document.getElementById('kappe');
+  t.forEach(e=>{ if(oben) svg.insertBefore(e, kp||null); else svg.insertBefore(e,gZeiger); });
+  // Kappe ueber alles Messing, Vignette ganz oben
   const v=[...svg.querySelectorAll('circle')].find(c=>c.getAttribute('fill')==='url(#vign)');
+  if(kp) svg.insertBefore(kp, v||null);
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, kappeSetzen, KAPPEN, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, KAPPEN, MITTE, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1200,7 +1221,7 @@ setInterval(()=>{
   <div class="row" style="margin-top:8px">
     <button class="k" id="lkop">Einstellungen kopieren</button>
     <button class="k" id="lres">zur&uuml;cksetzen</button>
-    <button class="k" id="lnb">Nabe &uuml;ber den Zeigern</button>
+    <button class="k" id="lnb">Mitte</button>
     <button class="k" id="lkap">Kappe</button>
   </div>
   <div class="mess" id="lm"></div>
@@ -1220,9 +1241,9 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern'};
-  let zeigerKey=STD.zeiger, nabeOben=STD.nabeOben, kappeKey=STD.kappe;
-  const KAPFOLGE=['ohne','kern','glatt','spindel'];
+             kappe:'kern', mitte:0};
+  let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte;
+  const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
   Object.keys(L.ZEIGERSATZ).forEach(k=>{
@@ -1340,7 +1361,7 @@ setInterval(()=>{
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
   // Von Hand nach einer neuen Fassung sehen. Die Versionszeile unter der Uhr
   // kann das auch, liegt aber bei offenem Panel ausserhalb des Blickfelds.
-  $('lnb').onclick=()=>{ nabeOben=!nabeOben; spiegeln(); speichern(); };
+  $('lnb').onclick=()=>{ mitteIdx=(mitteIdx+1)%L.MITTE.length; spiegeln(); speichern(); };
   $('lkap').onclick=()=>{ kappeKey=KAPFOLGE[(KAPFOLGE.indexOf(kappeKey)+1)%KAPFOLGE.length];
                           spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
@@ -1403,20 +1424,21 @@ setInterval(()=>{
         // Ein gespeicherter Schluessel kann inzwischen geloescht sein
         zeigerKey = L.ZEIGERSATZ[o[k]] ? o[k] : STD.zeiger;
         L.waehle(zeigerKey);
-      } else if(k==='nabeOben'){ nabeOben=!!o[k]; }
-      else if(k==='kappe'){ kappeKey = L.KAPPEN[o[k]]!==undefined ? o[k] : STD.kappe; }
+      } else if(k==='nabeOben'){ /* bis v0.12, ersetzt durch 'mitte' */ }
+      else if(k==='mitte'){ mitteIdx = L.MITTE[o[k]] ? +o[k] : STD.mitte; }
+      else if(k==='kappe'){ kappeKey = L.KAPPEN[o[k]] ? o[k] : STD.kappe; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
-       nabeOben:nabeOben,kappe:kappeKey})); }catch(e){} }
+       mitte:mitteIdx,kappe:kappeKey})); }catch(e){} }
   function spiegeln(){
-    L.nabeLage(nabeOben);
-    L.kappeSetzen(kappeKey);
-    $('lkap').textContent = kappeKey==='ohne' ? 'ohne Kappe' : L.KAPPEN[kappeKey].t;
-    $('lkap').classList.toggle('an', kappeKey!=='ohne');
-    $('lnb').textContent = nabeOben ? 'Nabe über den Zeigern' : 'Nabe unter den Zeigern';
-    $('lnb').classList.toggle('an', nabeOben);
+    L.mitteSetzen(mitteIdx, kappeKey);
+    $('lnb').textContent = 'Mitte: ' + L.MITTE[mitteIdx].t;
+    const mitKappe = L.MITTE[mitteIdx].kr > 0;
+    $('lkap').textContent = 'Kappe: ' + L.KAPPEN[kappeKey].t;
+    $('lkap').disabled = !mitKappe;
+    $('lkap').style.opacity = mitKappe ? 1 : .4;
     $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
     $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
     $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));

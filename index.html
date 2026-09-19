@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.75</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.76</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -541,7 +541,17 @@ function setRot(i){
     const x=+t.getAttribute('x');
     t.setAttribute('transform', kopf?`rotate(180 ${x} ${z.nyBasis})`:'');
   });
-  if(z.portraitG) z.portraitG.setAttribute('transform', kopf?`rotate(180 ${z.rcx} ${z.rcy})`:'');
+  // Das Gesicht steht IMMER aufrecht. Bis v0.75 wurde es nur um 180 Grad
+  // gekippt, wenn der Zeiger in der linken Haelfte stand — sonst drehte es sich
+  // mit dem Zeiger mit. Bei den kleinen Medaillons bis v0.67 (r=12,5) fiel das
+  // kaum auf, bei r=17,3 steht Anton dann quer im Ring. Lutz am 19.9.:
+  // "Emilia ist falsch und die Ringe noch nicht richtig zentriert."
+  // Gesamtdrehung des Bildes = cur[i] (Zeiger) - 90 - KIPP (innere Gruppe);
+  // genau die wird hier zurueckgedreht.
+  if(z.portraitG){
+    const gegen = -(cur[i] - 90 - KIPP);
+    z.portraitG.setAttribute('transform',`rotate(${gegen.toFixed(2)} ${z.rcx} ${z.rcy})`);
+  }
 }
 personen.forEach((p,i)=>setRot(i));
 // Jetzt einpassen: cur und setRot stehen. Cinzel kommt per Webfont und ist beim

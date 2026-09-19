@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.13</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.14</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -557,19 +557,23 @@ function neuZeichnen(){
 const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
               glatt  :{d:'zeiger/kappe-glatt.webp',  t:'poliert'},
               spindel:{d:'zeiger/kappe-spindel.webp',t:'Spindel'}};
+const NABGR=[22.2, 26, 30, 34, 38];     // waehlbare Scheibenradien
+let nabPlus=0;                          // Aufschlag auf den Radius des Zustands
 const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
              {t:'2 nur die Kappe', oben:false, nr:0,    kr:13.5, kap:'kern'},
              {t:'3 nur die Nabe',  oben:false, nr:22.2, kr:0,    kap:'kern'},
              {t:'4 Nabe ueber den Zeigern', oben:true, nr:26, kr:0, kap:'kern'}];
 // sichtbarer Scheibenradius -> halbe Bildkante (Scheibe fuellt 135 von 152)
 const NAB_F=152/135;
+function nabeGroesse(stufe){ nabPlus=stufe; }
 function mitteSetzen(i,kapKey){
   const v=MITTE[i]||MITTE[0];
   const t=window.NABE_TEIL; const kp=document.getElementById('kappe');
   const setz=(e,r)=>{e.setAttribute('x',CX-r);e.setAttribute('y',CY-r);
                      e.setAttribute('width',r*2);e.setAttribute('height',r*2);};
-  if(t){ t.forEach(e=>e.setAttribute('opacity', v.nr>0?1:0));
-         if(v.nr>0) setz(t[1], v.nr*NAB_F); }
+  const nr = v.nr>0 ? NABGR[nabPlus]||v.nr : 0;
+  if(t){ t.forEach(e=>e.setAttribute('opacity', nr>0?1:0));
+         if(nr>0) setz(t[1], nr*NAB_F); }
   if(kp){
     kp.setAttribute('opacity', v.kr>0?1:0);
     if(v.kr>0){ setz(kp,v.kr);
@@ -587,7 +591,7 @@ function nabeLage(oben){
   if(kp) svg.insertBefore(kp, v||null);
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, KAPPEN, MITTE, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, KAPPEN, MITTE, NABGR, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -659,7 +663,17 @@ function setRot(i){
     const x=+t.getAttribute('x');
     t.setAttribute('transform', kopf?`rotate(180 ${x} ${z.nyBasis})`:'');
   });
-  if(z.portraitG) z.portraitG.setAttribute('transform', kopf?`rotate(180 ${z.rcx} ${z.rcy})`:'');
+  // Das Gesicht steht IMMER aufrecht. Bis v0.75 wurde es nur um 180 Grad
+  // gekippt, wenn der Zeiger in der linken Haelfte stand — sonst drehte es sich
+  // mit dem Zeiger mit. Bei den kleinen Medaillons bis v0.67 (r=12,5) fiel das
+  // kaum auf, bei r=17,3 steht Anton dann quer im Ring. Lutz am 19.9.:
+  // "Emilia ist falsch und die Ringe noch nicht richtig zentriert."
+  // Gesamtdrehung des Bildes = cur[i] (Zeiger) - 90 - KIPP (innere Gruppe);
+  // genau die wird hier zurueckgedreht.
+  if(z.portraitG){
+    const gegen = -(cur[i] - 90 - KIPP);
+    z.portraitG.setAttribute('transform',`rotate(${gegen.toFixed(2)} ${z.rcx} ${z.rcy})`);
+  }
 }
 personen.forEach((p,i)=>setRot(i));
 // Jetzt einpassen: cur und setRot stehen. Cinzel kommt per Webfont und ist beim
@@ -1223,6 +1237,7 @@ setInterval(()=>{
     <button class="k" id="lres">zur&uuml;cksetzen</button>
     <button class="k" id="lnb">Mitte</button>
     <button class="k" id="lkap">Kappe</button>
+    <button class="k" id="lnr">Nabe</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1241,8 +1256,8 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:0};
-  let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte;
+             kappe:'kern', mitte:0, nabgr:0};
+  let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr;
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
@@ -1364,6 +1379,7 @@ setInterval(()=>{
   $('lnb').onclick=()=>{ mitteIdx=(mitteIdx+1)%L.MITTE.length; spiegeln(); speichern(); };
   $('lkap').onclick=()=>{ kappeKey=KAPFOLGE[(KAPFOLGE.indexOf(kappeKey)+1)%KAPFOLGE.length];
                           spiegeln(); speichern(); };
+  $('lnr').onclick=()=>{ nabGr=(nabGr+1)%L.NABGR.length; spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1427,13 +1443,18 @@ setInterval(()=>{
       } else if(k==='nabeOben'){ /* bis v0.12, ersetzt durch 'mitte' */ }
       else if(k==='mitte'){ mitteIdx = L.MITTE[o[k]] ? +o[k] : STD.mitte; }
       else if(k==='kappe'){ kappeKey = L.KAPPEN[o[k]] ? o[k] : STD.kappe; }
+      else if(k==='nabgr'){ nabGr = L.NABGR[o[k]]!==undefined ? +o[k] : STD.nabgr; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
-       mitte:mitteIdx,kappe:kappeKey})); }catch(e){} }
+       mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr})); }catch(e){} }
   function spiegeln(){
+    L.nabeGroesse(nabGr);
     L.mitteSetzen(mitteIdx, kappeKey);
+    const mitNabe = L.MITTE[mitteIdx].nr > 0;
+    $('lnr').textContent = 'Nabe: ' + L.NABGR[nabGr].toFixed(0);
+    $('lnr').disabled = !mitNabe; $('lnr').style.opacity = mitNabe ? 1 : .4;
     $('lnb').textContent = 'Mitte: ' + L.MITTE[mitteIdx].t;
     const mitKappe = L.MITTE[mitteIdx].kr > 0;
     $('lkap').textContent = 'Kappe: ' + L.KAPPEN[kappeKey].t;

@@ -254,6 +254,12 @@ Kappenknopf ist gesperrt, wenn der Zustand keine Kappe hat.
 | 3 | r=22,2 | aus | Ösen-Rosette sichtbar |
 | 4 | r=26 | aus | **über** den Zeigern, Schäfte setzen am Rand an |
 
+**Knopf „Nabe"** (`#lnr`, seit v0.14) schaltet den Scheibenradius durch
+22,2 / 26 / 30 / 34 / 38 (`NABGR`), gemerkt unter `nabgr`, gesperrt bei
+Zustand 2. Grund: Lutz am 19.9., „bei allen anderen Zeigerarten bitte eine Nabe
+weiter nach außen" — welche Größe zu welchem Zeiger passt, entscheidet sich am
+Gerät, nicht am Rechner.
+
 Hintergrund: Lutz am 19.9. — an der Nabe sei „eine Schicht zu viel", zugleich
 setzten „die Zeiger etwas zu weit innen an". Das sind **gegenläufige** Wünsche:
 weniger Scheibe zeigt mehr Schaft. Deshalb vier Konzepte zur Wahl statt einer
@@ -546,6 +552,13 @@ Alle fünf Porträts hat Lutz als KI-generierte Bilder geliefert. Verarbeitung m
 
 **Stil-Befund (nicht behoben, nicht behebbar):** Lutz und Claudia sind deutlich stärker stilisiert (Pixar-Look, große Augen, weiche Formen), Anton/Emilia/Leander fotorealistischer mit feiner Hauttextur. Das ist in den Bildern angelegt und lässt sich nicht nachbearbeiten. Empfehlung, falls es stört: die drei realistischen Porträts mit demselben Prompt neu erzeugen.
 
+**Die Köpfe sitzen mittig im Bild** (gemessen 19.9. an den eingebetteten
+300×300-Bildern, Abweichung der Silhouetten-Mitte vom Bildmittelpunkt):
+Claudia −0,2 %/−0,7 %, Lutz −0,2 %/0,0 %, Anton 0,0 %/+1,7 %, Emilia
+−0,2 %/+1,2 %, Leander 0,0 %/+1,2 %. Was im Ring trotzdem versetzt wirkt, ist
+das unterschiedliche Haarvolumen, nicht die Platzierung — dort ist nichts zu
+korrigieren.
+
 **Für neue Porträts:** PNG **mit echtem Alphakanal** liefern lassen. Alle bisherigen Uploads hatten das Schachbrettmuster als Pixel eingebrannt (auch die `.PNG`-Dateien waren RGB ohne Alpha) und mussten nachträglich freigestellt werden.
 
 ### 2.10 Designentscheidungen mit Historie
@@ -559,6 +572,7 @@ Diese Punkte wurden mehrfach durchgespielt. Bitte nicht ohne Not zurückdrehen:
 | **Ortsnamen nach außen** (r=164/171) | Löst die Kollision mit den großen Medaillons |
 | **Kein Schaft-Stummel** | Wenn Namen unterschiedlich lang sind, entstehen unterschiedlich lange Reststriche — sieht uneinheitlich aus |
 | **IN GEFAHR rötlich hinterlegt**, VERSCHOLLEN nebelblau | Verschollen ist ungewiss, nicht alarmierend — soll nicht mit dem Rot konkurrieren |
+| **Gesicht steht immer aufrecht** (seit v0.76) | Bis v0.75 wurde das Portrait nur um 180° gekippt, wenn der Zeiger in der linken Hälfte stand — sonst drehte es sich **mit dem Zeiger mit**. Gemessen über `getScreenCTM()` an der Bildmatrix: Anton +90°, Claudia −90°, Leander +45°, Emilia −45°, nur Lutz zufällig 0°. Bei den Medaillons bis v0.67 (r=12,5) fiel das kaum auf, bei r=17,3 steht Anton quer im Ring — Lutz am 19.9.: „Emilia ist falsch und die Ringe noch nicht richtig zentriert." `setRot` dreht jetzt die Gesamtdrehung `cur[i] − 90 − KIPP` zurück. Nachher **0,00° bei allen fünf**. ⚠️ Der Name auf dem Schild behält die alte 180°-Regel — er soll längs des Zeigers stehen, nur nie auf dem Kopf. |
 | **Deckkappe über den Ösen** (seit v0.74, `KAPPE_R=10.5`, 0 = aus) | Mit der Nabe unter den Zeigern treffen sich in der Mitte fünf Ösen. Die Kappe fasst sie zusammen, wie bei einer echten Uhr die Mutter auf dem Zeigerstapel. Eine **gezeichnete** Kappe (Farbverlauf `url(#nabe)` plus Punkt) war der erste Versuch und ist verworfen — Lutz am 19.9.: „den mittleren Ring musst du auch bitte in Messing machen und nicht so selbst gebaut". `zeiger/kappe.webp` ist deshalb echtes gerendertes Messing: der Kern von `nabe.webp` (r≤106 von 180), kreisrund freigestellt mit weicher Kante, auf 320 px gerechnet. Im Labor stehen drei zur Wahl (`KAPPEN`): **Nabenkern** (App), **poliert** aus `glatt.webp` (heller, breiter Außenrand, deshalb r=11,5) und **Spindel** aus `spindel.webp` (körnig, nur der Vollständigkeit halber). ⚠️ Reihenfolge: Zeiger → Kappe → Vignette. |
 | **Nabe UNTER den Zeigern** (seit v0.73, `NABE_OBEN=false`) | Bis v0.72 lag die Scheibe über den Zeigern und deckte deren Ösen zu; die Schäfte hörten am Nabenrand flach auf. Lutz am 19.9. mit einer Vorlage: „die Zeiger so zur Befestigung, nicht unten drunter". Der naheliegende Einwand — fünf übereinanderliegende Ösen ergäben einen Haufen — **hat sich beim Rendern nicht bestätigt**: verteilt bilden die Ösen eine Rosette um den Stift, im Stapel decken sie einander vollständig. Geprüft wurde auch eine Variante C (Nabe unten **plus** aufgesetzte gezeichnete Kappe) — die sieht wieder nach Plastik aus, genau der Vorwurf gegen die alte gezeichnete Nabe. `NABE_OBEN=true` stellt den Stand bis v0.72 wieder her. ⚠️ Die Vignette muss beim Umhängen ganz oben bleiben, sonst liegt sie unter der Nabe. |
 | **Nabe als freigestellte Messingscheibe** (seit v0.72) | Bis v0.71 war sie gezeichnet: `url(#nabe)`-Verlauf plus zwei Kreise. Lutz am 19.9.: „das ist nicht so schön plastisch und strukturiert" — die Ösen der gelieferten Zeiger sind echtes gerendertes Messing. Übernommen ist die Ösenscheibe aus `band.webp` als `zeiger/nabe.webp`. Freistellung: Zuschnitt 304 px um das Loch, Ellipsenmaske 136 × 140 um einen Punkt **9 px über** dem Loch (die Scheibe sitzt im Bild versetzt). Der Steg nach rechts ließ sich nicht sauber wegschneiden, ohne den Rand anzuknabbern — gelöst durch **Spiegeln der linken Hälfte auf die rechte**; die gedrehte Rosette ist symmetrisch, man sieht es nicht. `NABE_BILD=25` ist die halbe Bildkante, sichtbarer Scheibenradius = 25 × 135/152 ≈ 22,2 — genau die alte Nabe. Darunter liegt ein dunkler Kreis r=6, der das Loch füllt. |

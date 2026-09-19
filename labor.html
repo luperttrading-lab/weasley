@@ -1051,19 +1051,22 @@ setInterval(()=>{
   #lab .fein .sp>i{display:block;font-style:normal;font-size:10px;color:#bfae8a;
     text-align:center;margin:0 0 2px;letter-spacing:.02em;}
   #lab .fein .box{position:relative;}
-  #lab .fein .rad{height:84px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+  /* Fensterhoehe 56 = ganze Mittelzeile (28) plus je eine halbe Nachbarzeile.
+     Die Nachbarn bleiben sichtbar, nur kleiner und blasser — daran erkennt man,
+     dass es eine Walze ist und keine Eingabezeile. */
+  #lab .fein .rad{height:56px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
     -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:8px;
-    -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 32%,#000 68%,transparent 82%,transparent 100%);
-            mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 32%,#000 68%,transparent 82%,transparent 100%);}
+    -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.78) 0,#000 24%,#000 76%,rgba(0,0,0,.78) 100%);
+            mask-image:linear-gradient(180deg,rgba(0,0,0,.78) 0,#000 24%,#000 76%,rgba(0,0,0,.78) 100%);}
   #lab .fein .rad::-webkit-scrollbar{display:none;}
   #lab .fein .rad>div{height:28px;line-height:28px;text-align:center;scroll-snap-align:center;
-    font-size:13px;color:#bfae8a;opacity:.16;font-variant-numeric:tabular-nums;
-    transition:opacity .15s,color .15s;}
-  #lab .fein .rad>div.an{opacity:1;color:#f7e6b8;}
-  #lab .fein .rad>div.pad{height:28px;}
+    font-size:11px;color:#c4b087;opacity:.72;font-variant-numeric:tabular-nums;
+    transition:opacity .15s,color .15s,font-size .15s;}
+  #lab .fein .rad>div.an{opacity:1;color:#f7e6b8;font-size:13.5px;}
+  #lab .fein .rad>div.pad{height:14px;}
   #lab .fein .bd{position:absolute;left:0;right:0;top:50%;height:28px;margin-top:-14px;
-    border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
-    background:rgba(122,95,42,.18);pointer-events:none;border-radius:4px;}
+    border-top:1px solid #a98543;border-bottom:1px solid #a98543;
+    background:rgba(122,95,42,.20);pointer-events:none;}
   #lab h4:first-child{margin-top:0;}
   #lab .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   #lab button.k{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;

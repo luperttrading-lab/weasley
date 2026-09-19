@@ -202,8 +202,16 @@ einer gemeinsamen Überschrift, Zeigerwahl unten.
 
 Die Schieberegler sind am 19.9. komplett rausgeflogen — Lutz: mit einer Walze
 trifft man den Wert besser als mit einem feinen Schieber. Zwischenschritt war
-eine zweispaltige Regleranordnung (863 → 770 px), die Walzen kosten davon 42 px
-zurück: **812 px**. Das ist der bewusst bezahlte Preis.
+eine zweispaltige Regleranordnung (863 → 770 px), die Walzen kosteten zunächst
+42 px zurück (812 px).
+
+**Fensterhöhe 56 px statt 84** (Lutz, 19.9.): ganze Mittelzeile (28) plus je eine
+**halbe** Nachbarzeile. Die Nachbarn bleiben lesbar (Schriftgrad 11 gegen 13,5,
+Deckkraft 0,72, Maske an den Kanten auf 0,78), die Mittelzeile ist durch zwei
+waagerechte Linien abgegrenzt. Erst dadurch liest sich das Feld als Walze und
+nicht als Eingabezeile. Panelinhalt damit **784 px**.
+⚠️ Die Schriftwalze oben ist bewusst **anders**: dort wollte Lutz am 18.9. die
+Nachbarzeilen fast unsichtbar (Deckkraft 0,16). Nicht versehentlich angleichen.
 
 ⚠️ Die Walzen rasten in **0,01er-Schritten** (Größe und Deckkraft 0,05), die
 Schieber konnten 0,005. Ein gespeicherter Zwischenwert wie `seite: 0,065` wird

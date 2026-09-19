@@ -191,6 +191,23 @@ Forum fett, Faktor 0,95, Höhe 0,330, längs +0,065, Groß-klein, alle gleich gr
 „Zurücksetzen" fährt damit auf die echte Uhr zurück, nicht auf einen Laborwert,
 den es so nie gegeben hat.
 
+**Aufbau des Einstellfensters (19.09. gestrafft):** Schriftwalze ganz oben, dann
+die fünf Regler **zweispaltig** (drei Zeilen statt fünf), Schreibweise und Farbe
+unter einer gemeinsamen Überschrift, Zeigerwahl unten. Panelinhalt 863 → **770 px**.
+
+**Lupe** (zweiter fester Knopf unten rechts) — drei benannte Stufen statt Zahlen:
+
+| Stufe | viewBox | sichtbar bis | wofür |
+|---|---|---|---|
+| ganz | 400 | r=200 | das ganze Zifferblatt |
+| Zeiger | 285,7 | r=143 | ganzer Zeiger, Medaillon endet bei 145 |
+| Gravur | 181,8 | r=91 | die Schrift sitzt beim Perlring bei r=25…80 |
+
+Die Lupe verkleinert die **viewBox** um die Uhrmitte — rein vektoriell, also
+verlustfrei. ⚠️ `svgPt()` rechnete bis dahin fest mit 400; beim Zoomen wäre das
+Ziehen unbrauchbar geworden. Die Funktion liest jetzt `svg.viewBox.baseVal`.
+Gemessen: Ziehen funktioniert in der Lupe weiter.
+
 Einstellbar über den Knopf unten rechts, alles in `localStorage` unter
 `labor_einst` gemerkt:
 Zeiger (10), Schriftart (16), Stärke, Schreibweise (GROSS / Groß-klein /

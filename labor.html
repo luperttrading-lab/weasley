@@ -631,7 +631,10 @@ function buildChips(){
   });
 }
 // ===== Interaktion: Zeiger greifen + ziehen ODER Bereich antippen =====
-function svgPt(cx,cy){const r=svg.getBoundingClientRect();return {x:(cx-r.left)/r.width*400, y:(cy-r.top)/r.height*400};}
+// Rechnet Bildschirm- in SVG-Koordinaten. Seit der Lupe darf hier nicht mehr
+// fest mit 400 gerechnet werden — die viewBox schrumpft beim Hineinzoomen.
+function svgPt(cx,cy){const r=svg.getBoundingClientRect(); const v=svg.viewBox.baseVal;
+  return {x:v.x+(cx-r.left)/r.width*v.width, y:v.y+(cy-r.top)/r.height*v.height};}
 function winkelVon(x,y){return (Math.atan2(x-CX,-(y-CY))*180/Math.PI+360)%360;}
 function radiusVon(x,y){return Math.hypot(x-CX,y-CY);}
 function sektorVon(w){return ((Math.round(w/STEP)%N)+N)%N;}
@@ -1015,6 +1018,10 @@ setInterval(()=>{
 <!-- Firebase-Modul im Labor entfernt -->
 
 <style>
+  #zoombtn{position:fixed;right:132px;z-index:90;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
+    background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
+    border-radius:9px;padding:9px 12px;box-shadow:0 3px 10px rgba(0,0,0,.5);}
   #labbtn{position:fixed;right:10px;z-index:90;bottom:calc(10px + env(safe-area-inset-bottom,0px));
     font-family:'Cinzel',serif;font-weight:700;font-size:13px;letter-spacing:.06em;
     background:linear-gradient(180deg,#5a441f,#3a2b13);color:#f0dca6;border:1px solid #7a5f2a;
@@ -1025,8 +1032,10 @@ setInterval(()=>{
     padding:12px 12px calc(58px + env(safe-area-inset-bottom,0px));
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   #lab[hidden]{display:none;}
-  #lab h4{margin:12px 0 5px;font:700 11px/1.2 'Cinzel',serif;letter-spacing:.12em;
+  #lab h4{margin:9px 0 4px;font:700 10.5px/1.2 'Cinzel',serif;letter-spacing:.12em;
     color:#c9a95f;text-transform:uppercase;}
+  /* Feinjustage zweispaltig: fuenf Regler brauchen so drei statt fuenf Zeilen */
+  #lab .fein{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;}
   #lab h4:first-child{margin-top:0;}
   #lab .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   #lab button.k{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;
@@ -1035,47 +1044,51 @@ setInterval(()=>{
   #lab select{background:#2e2311;color:#e6d8b8;border:1px solid #6b5124;border-radius:7px;padding:6px;font-size:13px;}
   /* Schriftwalze: scrollen und dabei die Schrift auf der Uhr sehen */
   #lfwrap{position:relative;flex:1;min-width:190px;}
-  #lfw{height:108px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+  #lfw{height:96px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
     -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:9px;
     -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);
             mask-image:linear-gradient(180deg,transparent 0,transparent 20%,#000 33%,#000 67%,transparent 80%,transparent 100%);}
   #lfw::-webkit-scrollbar{display:none;}
-  #lfw .wi{height:36px;line-height:36px;text-align:center;scroll-snap-align:center;
+  #lfw .wi{height:32px;line-height:32px;text-align:center;scroll-snap-align:center;
     color:#bfae8a;font-size:17px;white-space:nowrap;opacity:.16;transition:opacity .15s,color .15s;
     overflow:hidden;text-overflow:ellipsis;padding:0 8px;}
   #lfw .wi.an{opacity:1;color:#f7e6b8;}
-  #lfw .pad{height:36px;}
-  #lfband{position:absolute;left:0;right:0;top:50%;height:36px;margin-top:-18px;
+  #lfw .pad{height:32px;}
+  #lfband{position:absolute;left:0;right:0;top:50%;height:32px;margin-top:-16px;
     border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
     background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
   #lab input[type=range]{flex:1;min-width:110px;accent-color:#c8a155;}
-  #lab label.sl{display:flex;gap:8px;align-items:center;width:100%;}
-  #lab label.sl span{width:124px;flex:none;color:#bfae8a;font-size:12px;}
-  #lab label.sl b{width:48px;flex:none;text-align:right;color:#f0dca6;font-variant-numeric:tabular-nums;}
+  #lab label.sl{display:flex;gap:6px;align-items:center;min-width:0;}
+  #lab label.sl span{width:46px;flex:none;color:#bfae8a;font-size:11px;}
+  #lab label.sl b{width:42px;flex:none;text-align:right;color:#f0dca6;font-size:11px;
+    font-variant-numeric:tabular-nums;}
+  #lab input[type=range]{min-width:60px;}
   #lab .mess{margin-top:10px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a89670;
     white-space:pre-wrap;border-top:1px dashed #5a4620;padding-top:8px;}
   #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
   #lab .sw.an{outline:2px solid #caa25e;outline-offset:1px;}
 </style>
+<button id="zoombtn">Lupe 1&times;</button>
 <button id="labbtn">Einstellungen</button>
 <div id="lab" hidden>
-  <h4>Zeiger</h4>
-  <div class="row" id="lz"></div>
   <h4>Schriftart</h4>
   <div class="row">
     <div id="lfwrap"><div id="lfw"></div><div id="lfband"></div></div>
     <select id="lg"><option value="400">mager</option><option value="600">halbfett</option><option value="700">fett</option></select>
   </div>
-  <h4>Schreibweise</h4>
-  <div class="row" id="ls"></div>
   <h4>Feinjustage</h4>
-  <label class="sl"><span>Gr&ouml;&szlig;e</span><input type="range" id="lsz" min="0.55" max="1.45" step="0.02"><b id="vsz"></b></label>
-  <label class="sl"><span>H&ouml;he auf dem Schild</span><input type="range" id="lhh" min="0.20" max="0.50" step="0.005"><b id="vhh"></b></label>
-  <label class="sl"><span>Sperrung</span><input type="range" id="lsp" min="0" max="0.22" step="0.005"><b id="vsp"></b></label>
-  <label class="sl"><span>l&auml;ngs &nbsp;Nabe &#8592;&#8594; Bild</span><input type="range" id="lst" min="-0.35" max="0.35" step="0.005"><b id="vst"></b></label>
-  <label class="sl"><span>Deckkraft</span><input type="range" id="ldk" min="0.5" max="1" step="0.01"><b id="vdk"></b></label>
-  <h4>Farbe der Gravur</h4>
-  <div class="row" id="lc"></div>
+  <div class="fein">
+    <label class="sl"><span>Gr&ouml;&szlig;e</span><input type="range" id="lsz" min="0.55" max="1.45" step="0.02"><b id="vsz"></b></label>
+    <label class="sl"><span>H&ouml;he</span><input type="range" id="lhh" min="0.20" max="0.50" step="0.005"><b id="vhh"></b></label>
+    <label class="sl"><span>l&auml;ngs</span><input type="range" id="lst" min="-0.35" max="0.35" step="0.005"><b id="vst"></b></label>
+    <label class="sl"><span>Sperrung</span><input type="range" id="lsp" min="0" max="0.22" step="0.005"><b id="vsp"></b></label>
+    <label class="sl"><span>Deckkraft</span><input type="range" id="ldk" min="0.5" max="1" step="0.01"><b id="vdk"></b></label>
+  </div>
+  <h4>Schreibweise &middot; Farbe</h4>
+  <div class="row" id="ls"></div>
+  <div class="row" id="lc" style="margin-top:5px"></div>
+  <h4>Zeiger</h4>
+  <div class="row" id="lz"></div>
   <h4>Anzeige</h4>
   <div class="row">
     <button class="k" id="lgl">alle Namen gleich gro&szlig;</button>
@@ -1180,6 +1193,22 @@ setInterval(()=>{
   addEventListener('orientationchange',()=>setTimeout(panelPlatz,250));
   if(window.visualViewport){ visualViewport.addEventListener('resize',panelPlatz);
                              visualViewport.addEventListener('scroll',panelPlatz); }
+  // Lupe: verkleinert die viewBox um die Uhrmitte. Rein vektoriell, also
+  // verlustfrei; Ziehen und Antippen rechnen ueber svgPt mit und funktionieren
+  // im Zoom weiter.
+  // Stufen nach dem, was man sehen will — nicht nach Zahlen. 'Gravur' zeigt
+  // r bis 91; die Schrift sitzt beim Perlring zwischen r=25 und r=80, passt also
+  // ganz hinein. 'Zeiger' zeigt r bis 143, das Medaillon endet bei 145.
+  const ZOOM=[{z:1,t:'ganz'},{z:1.4,t:'Zeiger'},{z:2.2,t:'Gravur'}];
+  let zi=0;
+  function zoomSetzen(){
+    const s=400/ZOOM[zi].z;
+    document.getElementById('clock').setAttribute('viewBox',
+      ((200-s/2).toFixed(1))+' '+((200-s/2).toFixed(1))+' '+s.toFixed(1)+' '+s.toFixed(1));
+    $('zoombtn').textContent='Lupe: '+ZOOM[zi].t;
+  }
+  $('zoombtn').onclick=()=>{ zi=(zi+1)%ZOOM.length; zoomSetzen(); };
+  zoomSetzen();
   $('labbtn').onclick=()=>{ const l=$('lab'); l.hidden=!l.hidden;
     $('labbtn').textContent=l.hidden?'Einstellungen':'schließen';
     panelPlatz();

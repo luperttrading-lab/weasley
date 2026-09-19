@@ -35,6 +35,11 @@ Diese Regeln haben sich über viele Sitzungen etabliert und sollten weitergelten
 - **Fakt / Interpretation / Empfehlung sichtbar trennen.**
 - Lutz ist Trader, Statistiker und Finanzmathematiker — mathematisch präzise erklären, gern mit Zahlenbeispielen.
 - **Bewährte Arbeitsteilung:** Lutz gibt Richtung und logische Prüfung, Claude liefert Breite und Umsetzung.
+- **Am Ende jeder Antwort die Links wiederholen** (Wunsch vom 19.9.: „dass ich
+  nicht immer so weit hoch scrollen muss") — direkt über dem Kostenblock:
+  `https://luperttrading-lab.github.io/weasley/` (die Uhr) und
+  `https://luperttrading-lab.github.io/weasley/labor.html` (das Labor).
+  Dazu die Versionsnummer, damit sichtbar ist, welcher Stand gemeint ist.
 
 ### Liefer-Regeln für Dateien
 - **Doppel-Lieferung, byte-identisch:** `index.html` **und** `standort-uhr-vX.Y.html`, md5 prüfen und ausgeben.

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.80</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.81</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -256,6 +256,7 @@ defs.innerHTML=`
   <filter id="patina"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.26 0 0 0 0 0.18 0 0 0 0 0.08 0 0 0 0.5 0"/></filter>
   <filter id="paper"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.2 0 0 0 0 0.13 0 0 0 0 0.05 0 0 0 0.18 0"/></filter>
   <filter id="sh"><feDropShadow dx="0" dy="1.1" stdDeviation="1.3" flood-color="#2a1c0c" flood-opacity=".5"/></filter>
+  <filter id="shn"><feDropShadow dx="0" dy="0" stdDeviation="1.6" flood-color="#2a1c0c" flood-opacity=".45"/></filter>
   <filter id="zsh"><feDropShadow dx="0" dy="1.4" stdDeviation="1.6" flood-color="#1a120a" flood-opacity=".55"/></filter>
 `;
 svg.appendChild(defs);
@@ -347,6 +348,7 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 const ZB={datei:'zeiger/perl.webp', W:1536, H:1024,
           ox:110.7, oy:502.3,                  // Oese (Drehpunkt)
           rx:1183.6, ry:495.1, rl:150.0, ra:184.8,   // Ring: Loch und Aussenkante
+          rlx:147.6, rly:151.2,                // das Loch ist oval: 2,4 % hoeher als breit
           sx0:326, sx1:802, sy:500.0, sh:163,  // Schild, am Hoehenprofil gemessen
           ende:1503};                          // Spitzenende im Bild
 // Seit v0.77 endet das Bild an der Ringaussenkante, nicht an der Spitze: das
@@ -360,7 +362,9 @@ const ZS=160.5/(ZB_ENDE-ZB.ox);        // Zeigerende auf r=160,5
 // saesse 0,83 Einheiten neben der Radiallinie. Wird als zusaetzliche Drehung um
 // die Oese ausgeglichen (v0.75).
 const KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
-const RINGR=ZB.rl*ZS;                  // Portraitfenster
+const RINGR=ZB.rl*ZS;                  // Portraitfenster (Mittelwert, fuer Masse)
+const RINGX=(ZB.rlx||ZB.rl)*ZS;        // Loch waagerecht
+const RINGY=(ZB.rly||ZB.rl)*ZS;        // Loch senkrecht — das Loch ist oval
 const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
 R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
 // ---- Gravur, im Labor eingestellt (18.09.2026) ----
@@ -378,15 +382,19 @@ function buildNadel(p){
   const rcx=bx+ZB.rx*ZS, rcy=by+ZB.ry*ZS;
   let portraitG=null;
   if(p.bildFrei){
+    // Das Ringloch ist bei allen Vorlagen leicht oval (perl 147,6 waagerecht
+    // gegen 151,2 senkrecht, +2,4 %). Ein runder Ausschnitt laesst deshalb oben
+    // und unten Messing frei und schneidet links und rechts ins Bild — Lutz am
+    // 20.9.: "nicht richtig rund". Der Ausschnitt folgt jetzt dem Loch.
     const cid='ring'+p.name;
     const cp=E('clipPath',{id:cid});
-    cp.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96}));
+    cp.appendChild(E('ellipse',{cx:rcx,cy:rcy,rx:RINGX*0.96,ry:RINGY*0.96}));
     inner.appendChild(cp);
     // eigene Gruppe: sie kippt spaeter zusammen mit der Schrift, damit das
     // Gesicht nie auf dem Kopf steht
     portraitG=E('g',{});
-    portraitG.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:'#eadcb6'}));
-    portraitG.appendChild(E('circle',{cx:rcx,cy:rcy,r:RINGR*0.96,fill:p.ton,opacity:0.30}));
+    portraitG.appendChild(E('ellipse',{cx:rcx,cy:rcy,rx:RINGX*0.96,ry:RINGY*0.96,fill:'#eadcb6'}));
+    portraitG.appendChild(E('ellipse',{cx:rcx,cy:rcy,rx:RINGX*0.96,ry:RINGY*0.96,fill:p.ton,opacity:0.30}));
     // Bis v0.78 wurde jedes Portrait in eine Box von 0,94·RINGR gezeichnet.
     // Weil die Koepfe verschieden breit sind, fuellte der eine den Ring aus und
     // der naechste schwamm darin (Lutz, 20.9.: "manche sind zu klein").
@@ -516,8 +524,11 @@ const NABE_BILD=29.1;                  // -> Scheibe r≈26,0 (v0.76: 22,2; Lutz
 const NABE_OBEN=true;
 const KAPPE_R=0;                       // 0 = keine Deckkappe (seit v0.78)
 {const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
+ // #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten. Bei
+ // einer Scheibe von r=26 liest sich das als "sitzt zu hoch und ist nicht rund"
+ // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
  const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
-                     preserveAspectRatio:'none',filter:'url(#sh)'});
+                     preserveAspectRatio:'none',filter:'url(#shn)'});
  nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v3.webp');
  nb.setAttribute('href','zeiger/nabe-v3.webp');
  if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }

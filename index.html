@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.81</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.82</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -510,7 +510,7 @@ function passeNamenEin(){
 // r=131..146 (die Scheibe sitzt im Bild 9 px ueber dem Loch, deshalb die
 // Ellipsenmaske beim Freistellen).
 // NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
-// zeiger/nabe-v3.webp: Scheibe r=160,9 von 180 -> sichtbarer Radius = NABE_BILD*0,894
+// zeiger/nabe-v5.webp: Scheibe r=160,9 von 180 -> sichtbarer Radius = NABE_BILD*0,894
 const NABE_BILD=29.1;                  // -> Scheibe r≈26,0 (v0.76: 22,2; Lutz, 19.9.)
 // NABE_OBEN=false: die Scheibe liegt UNTER den Zeigern, die Oesen sitzen sichtbar
 // darauf — wie bei einer echten Uhr und wie auf Lutz' Vorlage vom 19.9. Die
@@ -529,14 +529,14 @@ const KAPPE_R=0;                       // 0 = keine Deckkappe (seit v0.78)
  // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
  const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
                      preserveAspectRatio:'none',filter:'url(#shn)'});
- nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v3.webp');
- nb.setAttribute('href','zeiger/nabe-v3.webp');
+ nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v5.webp');
+ nb.setAttribute('href','zeiger/nabe-v5.webp');
  if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
  else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }
  // Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
  // sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
  // Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
- // aus zeiger/nabe-v3.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
+ // aus zeiger/nabe-v5.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
  // aus, Lutz am 19.9.: "nicht so selbst gebaut".
  if(KAPPE_R>0){
    const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,

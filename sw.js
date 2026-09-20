@@ -12,7 +12,7 @@
    Server mit 304, es fliessen kaum Daten. Der Cache ist nur der Rueckfall,
    wenn gar kein Netz da ist. */
 const CACHE = 'standort-uhr-v1';
-const ASSETS = ['./', './index.html', './version.json', './apple-touch-icon-v3.png', './zeiger/perl.webp', './zeiger/nabe-v2.webp', './zeiger/kappe.webp'];
+const ASSETS = ['./', './index.html', './version.json', './apple-touch-icon-v3.png', './zeiger/perl.webp', './zeiger/nabe-v3.webp', './zeiger/kappe.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));

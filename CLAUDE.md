@@ -424,6 +424,63 @@ Registrierung je Radius — sie machte es messbar **schlechter** (mittlerer Vers
 die Verzerrung ist keine reine Verschiebung je Winkel, sondern Ovalität, die mit
 dem Radius wächst.
 
+**Ebenen und Scheibenversatz** (Labor v0.23, Knopfreihe `#leb`, `#lsch`, `#lpad`).
+Lutz am 21.9.: „dass ich die einzelnen Zeiger, die ich antippe, stufenweise unter
+die erste, zweite oder dritte Scheibe lege und die einzelnen Scheiben pixelweise
+verschieben [kann] — dann kann ich sie dir zentrieren, wenn du es nicht
+hinbekommst." Genau das, und zwar **nur im Labor**; `index.html` bleibt
+unberührt.
+
+Dafür ist die Nabe nicht mehr **ein** Bild, sondern **dreimal dasselbe Bild** mit
+je einem Kreis-Clip, jedes in einer eigenen Gruppe mit eigenem `translate`.
+Die Schnittradien sind am Helligkeitsprofil von `nabe-v9.webp` gemessen (360 px,
+halbe Kante 180): die Rillen liegen in der **Talsohle** bei r=110 und r=152, die
+Außenkante bei 160,9. Geschnitten wird bei 110,3 / 151,5 / 1,03·r — also in der
+ohnehin dunklen Rille, nie im Messing.
+
+| | Anteil am sichtbaren Radius | bei r=26 |
+|---|---|---|
+| Scheibe 1 (innen, oben) | 110,3/160,9 = 0,686 | 17,86 |
+| Scheibe 2 (Mitte) | 151,5/160,9 = 0,942 | 24,49 |
+| Scheibe 3 (Außenrand, unten) | 1,03 | 26,78 |
+
+⚠️ Jede Scheibe ist eine **volle Kreisscheibe**, kein Ring. Beim Verschieben
+entsteht deshalb kein Loch, sondern die nächstgrößere kommt darunter zum
+Vorschein. Ein Ring hätte an einer Kante klaffen müssen.
+
+⚠️ Der Schatten `#shn` hängt an der **Gruppe**, nicht am Bild: ein Filter wirkt
+*vor* dem Beschneiden, am Bild wäre der Hof sofort wieder weggeschnitten. Und er
+hängt **nur an Scheibe 3**. Probeweise alle drei zu beschatten setzt einen
+dunklen Ring an jede Stufe und um das Loch — gemessen 1,42 statt 0,33 mittlere
+Abweichung zur alten Fassung, sichtbar als dunklerer Lochrand. Mit dem Schatten
+nur auf Scheibe 3 ist die Nabe bei Versatz 0 praktisch dieselbe wie in v0.22:
+**46 876 von 7,29 Mio. Pixeln weichen um mehr als 4/255 ab, höchstens um 16** —
+und diese Pixel liegen ausschließlich an den drei Schnittkanten und am Lochrand
+(die alte Fassung warf einen Schatten *in* das Loch, weil das Bild dort
+durchsichtig ist).
+
+Die Zeiger liegen seither in **vier Behältern** innerhalb von `#zeiger`, die
+Reihenfolge ist von unten nach oben `E3 S3 E2 S2 E1 S1 E0`. `E3` = unter allem
+(Stand der App, Voreinstellung), `E0` = vor allen Scheiben. Ein Tipp auf den
+Personenknopf hebt um eine Stufe an (3→2→1→oben→3).
+- `mitteOrdnen()` sortiert per `appendChild` um — vorhandene Knoten, kein Neubau.
+- `ebenenAnwenden()` verteilt die fünf Zeiger auf die Behälter.
+- Die MITTE-Zustände 1–3 („Nabe unter den Zeigern") setzen `nabUnten` und legen
+  **alle** Zeiger auf `E0`; die Ebenenreihe wird dann matt geschaltet, weil sie
+  dort nichts bewirkt.
+- ⚠️ `stapelVon`/`naechsteNachVorn` arbeiten seither über `parentNode`, nicht
+  über `gZeiger`. Sonst hätte ein Tipp auf den Stapel einen Zeiger in eine
+  fremde Ebene sortiert. Gemessen: drei Tipps drehen einen Fünferstapel durch,
+  Ziehen aus dem Stapel funktioniert weiter, bei gemischten Ebenen sortiert
+  jeder Tipp nur innerhalb seiner eigenen.
+- ⚠️ `neuZeichnen()` darf `#zeiger` **nicht mehr leeren** — dort hängen jetzt die
+  Scheiben. Geleert werden nur die vier Behälter.
+
+Der Versatz geht in Schritten von **0,5 Einheiten** (≈0,48 px auf dem iPhone:
+382 px Uhr bei viewBox 400). Die Fehler, die Lutz sieht, liegen bei 1 bis 2,5 px
+— also zwei bis fünf Tipps. Die Anzeige nennt beide Maße. Alles in
+`labor_einst` unter `ebene`, `vers` und `sch` gemerkt.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

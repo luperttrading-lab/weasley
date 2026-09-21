@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.22</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.23</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -473,8 +473,28 @@ function buildNadel(p){
 }
 const gZeiger=E('g',{'pointer-events':'none',id:'zeiger',opacity:'0'});
 const zeiger=personen.map(p=>buildNadel(p));
+// ---- LABOR v0.23: Ebenen zwischen den Nabenscheiben ----
+// Lutz am 21.9.: jeden Zeiger stufenweise unter die erste, zweite oder dritte
+// Nabenscheibe legen koennen. Dafuer wird die Nabe in drei konzentrische
+// Scheiben zerlegt (siehe unten) und zwischen sie je ein Behaelter gehaengt.
+// Reihenfolge in #zeiger, unten nach oben:   E3  S3  E2  S2  E1  S1  E0
+// E3 = unter allem (Stand der App), E0 = ueber allem.
+const EBENEN=[0,1,2,3].map(k=>E('g',{'pointer-events':'none','data-eb':String(k)}));
+const ebene=personen.map(()=>3);        // je Person: unter welcher Scheibe sie liegt
 // Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
-[4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
+const ZSTART=[4,1,2,0,3];
+let nabUnten=false;                     // MITTE 1..3: die Nabe liegt unter allen Zeigern
+function mitteOrdnen(){                 // appendChild sortiert vorhandene Knoten um
+  const S=window.NABE_BAU||[];
+  [EBENEN[3],S[2]&&S[2].g,EBENEN[2],S[1]&&S[1].g,EBENEN[1],S[0]&&S[0].g,EBENEN[0]]
+    .forEach(e=>{ if(e) gZeiger.appendChild(e); });
+}
+function ebenenAnwenden(){
+  ZSTART.forEach(i=>EBENEN[nabUnten?0:(ebene[i]|0)].appendChild(zeiger[i].g));
+}
+function ebeneSetzen(i,e){ ebene[i]=((e%4)+4)%4; ebenenAnwenden(); }
+function ebeneVon(i){ return ebene[i]; }
+mitteOrdnen(); ebenenAnwenden();
 svg.appendChild(gZeiger);
 // ---- Stapel: mehrere Personen im selben Sektor ----
 // Die Medaillons ueberlappen dort zwangslaeufig (r~34 bei 45 Grad Sektor). Statt
@@ -483,14 +503,18 @@ svg.appendChild(gZeiger);
 // Optional laeuft das auch von selbst (STAPEL_TAKT_MS > 0, z.B. 1000).
 const STAPEL_TAKT_MS=0;
 let letzterStapelTipp=0;
+// Seit v0.23 sortiert das nur INNERHALB einer Ebene um — ein Zeiger, der unter
+// einer anderen Scheibe liegt, soll durch einen Tipp nicht die Ebene wechseln.
 function stapelVon(i){   // Mitglieder des Sektors in Zeichenreihenfolge (hinten -> vorn)
-  const sek=personen[i].sektor;
-  return Array.from(gZeiger.children).map(g=>zeiger.findIndex(z=>z.g===g)).filter(k=>personen[k].sektor===sek);
+  const sek=personen[i].sektor, par=zeiger[i].g.parentNode;
+  if(!par) return [i];
+  return Array.from(par.children).map(g=>zeiger.findIndex(z=>z.g===g))
+              .filter(k=>k>=0 && personen[k].sektor===sek);
 }
 function naechsteNachVorn(i){
   const st=stapelVon(i); if(st.length<2) return -1;
   const vorn=st[st.length-1];
-  gZeiger.insertBefore(zeiger[vorn].g, zeiger[st[0]].g);   // Vorderste hinter alle anderen
+  zeiger[i].g.parentNode.insertBefore(zeiger[vorn].g, zeiger[st[0]].g);  // Vorderste nach hinten
   return st[st.length-2];                                    // die naechste ist jetzt vorn
 }
 if(STAPEL_TAKT_MS>0) setInterval(()=>{
@@ -560,10 +584,10 @@ function gravurNeu(){
 function neuZeichnen(){
   massstab();
   {const c=document.getElementById('medClipC'); c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
-  while(gZeiger.firstChild) gZeiger.removeChild(gZeiger.firstChild);
+  EBENEN.forEach(e=>{ while(e.firstChild) e.removeChild(e.firstChild); });
   zeiger.length=0;
   personen.forEach(p=>zeiger.push(buildNadel(p)));
-  [4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
+  mitteOrdnen(); ebenenAnwenden();
   personen.forEach((p,i)=>setRot(i));
   passeNamenEin();
   if(typeof highlight==='function') highlight();
@@ -596,11 +620,34 @@ const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
 const NAB_F=180/160.9;   // nabe-v5: Scheibe r=160,9 von 180 halber Bildkante
 function nabeGroesse(stufe){ nabPlus=stufe; }
 function nabeBild(k){
-  const t=window.NABE_TEIL; if(!t) return;
+  const S=window.NABE_BAU; if(!S) return;
   const v=NABENBILD[k]||NABENBILD.scharf;
-  t[1].setAttributeNS('http://www.w3.org/1999/xlink','href',v.d);
-  t[1].setAttribute('href',v.d);
+  S.forEach(t=>{ t.im.setAttributeNS('http://www.w3.org/1999/xlink','href',v.d);
+                 t.im.setAttribute('href',v.d); });
 }
+// nr = sichtbarer Radius der aeusseren Scheibe. Alle drei Bilder sind gleich
+// gross, nur der Clip-Radius unterscheidet sie.
+function scheibenSetzen(nr){
+  const S=window.NABE_BAU; if(!S) return;
+  const he=nr*NAB_F;                       // halbe Bildkante
+  S.forEach((t,k)=>{
+    t.im.setAttribute('x',(CX-he).toFixed(3)); t.im.setAttribute('y',(CY-he).toFixed(3));
+    t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
+    t.cc.setAttribute('r',(nr*NAB_STUFE[k]).toFixed(3));
+  });
+  const lo=document.getElementById('nabLoch');
+  if(lo) lo.setAttribute('r',(nr*NAB_LOCH).toFixed(3));
+}
+// Versatz je Scheibe: Lutz' Wunsch vom 21.9. — "die einzelnen Scheiben
+// pixelweise verschieben, dann kann ich sie dir zentrieren". Der Clip sitzt in
+// derselben Gruppe, wandert also mit; verschoben wird Bild UND Ausschnitt.
+function versatzAnwenden(){
+  const S=window.NABE_BAU; if(!S) return;
+  S.forEach((t,k)=>t.g.setAttribute('transform',
+    'translate('+nabVers[k][0].toFixed(2)+' '+nabVers[k][1].toFixed(2)+')'));
+}
+function versatzSetzen(k,dx,dy){ nabVers[k]=[dx,dy]; versatzAnwenden(); }
+function versatzVon(k){ return nabVers[k].slice(); }
 // Der Ortsring rueckt als Ganzes nach aussen. Reine Skalierung um die Uhrmitte,
 // damit Trennlinien, Sektorflaechen und Textpfade zusammenbleiben. Mehr als
 // R_OUT=180 geht nicht: bei 184 stiesse der Rahmenkreis an die Pergamentkante.
@@ -640,12 +687,12 @@ function pruefAnstossen(){
 
 function mitteSetzen(i,kapKey){
   const v=MITTE[i]||MITTE[0];
-  const t=window.NABE_TEIL; const kp=document.getElementById('kappe');
+  const S=window.NABE_BAU; const kp=document.getElementById('kappe');
   const setz=(e,r)=>{e.setAttribute('x',CX-r);e.setAttribute('y',CY-r);
                      e.setAttribute('width',r*2);e.setAttribute('height',r*2);};
   const nr = v.nr>0 ? NABGR[nabPlus]||v.nr : 0;
-  if(t){ t.forEach(e=>e.setAttribute('opacity', nr>0?1:0));
-         if(nr>0) setz(t[1], nr*NAB_F); }
+  if(S){ S.forEach(t=>t.g.setAttribute('opacity', nr>0?1:0));
+         if(nr>0) scheibenSetzen(nr); }
   if(kp){
     kp.setAttribute('opacity', v.kr>0?1:0);
     if(v.kr>0){ setz(kp,v.kr);
@@ -654,16 +701,11 @@ function mitteSetzen(i,kapKey){
   }
   nabeLage(v.oben);
 }
-function nabeLage(oben){
-  const t=window.NABE_TEIL; if(!t) return;
-  const kp=document.getElementById('kappe');
-  t.forEach(e=>{ if(oben) svg.insertBefore(e, kp||null); else svg.insertBefore(e,gZeiger); });
-  // Kappe ueber alles Messing, Vignette ganz oben
-  const v=[...svg.querySelectorAll('circle')].find(c=>c.getAttribute('fill')==='url(#vign)');
-  if(kp) svg.insertBefore(kp, v||null);
-  if(v) svg.appendChild(v);
-}
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, NABENBILD, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
+// Seit v0.23 ist die Lage keine DOM-Umhaengung mehr, sondern eine Ebene:
+// "Nabe unten" heisst, alle Zeiger liegen auf Ebene 0 (ueber allen Scheiben).
+function nabeLage(oben){ nabUnten=!oben; ebenenAnwenden(); }
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, NABENBILD, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
+  ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -684,30 +726,52 @@ const NABE_BILD=29.1;                  // -> Scheibe r≈26,0; das Labor setzt d
 // decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
 const NABE_OBEN=false;
 const KAPPE_R=10.5;                    // 0 = keine Deckkappe
-{const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
- // #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten. Bei
- // einer Scheibe von r=26 liest sich das als "sitzt zu hoch und ist nicht rund"
- // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
- const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
-                     preserveAspectRatio:'none',filter:'url(#shn)'});
- nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v5.webp');
- nb.setAttribute('href','zeiger/nabe-v5.webp');
- if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
- else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }
- // Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
- // sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
- // Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
- // aus zeiger/nabe-v5.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
- // aus, Lutz am 19.9.: "nicht so selbst gebaut".
- if(KAPPE_R>0){
-   const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,
-                       preserveAspectRatio:'none',filter:'url(#sh)'});
-   kp.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/kappe.webp');
-   kp.setAttribute('href','zeiger/kappe.webp');
-   svg.appendChild(kp);   // ueber den Zeigern, die Vignette kommt danach
- }
- // LABOR: umhaengbar, damit Lutz beide Lagen nebeneinander sehen kann
- window.NABE_TEIL=[loch,nb];}
+// LABOR v0.23: die Nabe als DREI konzentrische Scheiben statt eines Bildes.
+// Am Radialprofil von nabe-v9.webp gemessen (360 px, halbe Kante 180): die
+// Rosette hat dunkle Rillen bei r=110,5 und r=150,5, die Aussenkante bei
+// r=160,9 — genau die drei Stufen, die Lutz als "Scheibe 1/2/3" sieht.
+// Jede Scheibe ist dasselbe Bild, auf einen Kreis beschnitten, in einer eigenen
+// Gruppe mit eigenem translate. Weil jede eine VOLLE Kreisscheibe ist und kein
+// Ring, entsteht beim Verschieben kein Loch: darunter kommt die naechstgroessere
+// zum Vorschein.
+// Scheibe 1 = die kleinste (oben), Scheibe 3 = die aeussere (unten).
+// Die Rillen liegen im Bild bei r=110 und r=152 (Talsohle des Helligkeitsprofils),
+// die Aussenkante bei 160,9. Dort wird geschnitten, damit die Schnittkante in
+// die ohnehin dunkle Rille faellt und nicht ins Messing.
+const NAB_STUFE=[110.3/160.9, 151.5/160.9, 1.03];   // Anteil des sichtbaren Radius
+const NAB_LOCH=37/160.9;                            // Lochrand im Bild (alt: fest 6)
+const nabVers=[[0,0],[0,0],[0,0]];                  // Versatz je Scheibe, in Einheiten
+window.NABE_BAU=[0,1,2].map(k=>{
+  const g=E('g',{'data-sch':String(k+1),transform:'translate(0 0)'});
+  const cp=E('clipPath',{id:'nabC'+k,clipPathUnits:'userSpaceOnUse'});
+  const cc=E('circle',{cx:CX,cy:CY,r:10});
+  cp.appendChild(cc); dpaths.appendChild(cp);
+  const im=E('image',{preserveAspectRatio:'none','clip-path':'url(#nabC'+k+')'});
+  im.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v9.webp');
+  im.setAttribute('href','zeiger/nabe-v9.webp');
+  // Der Schatten haengt an der GRUPPE, nicht am Bild: ein Filter wirkt vor dem
+  // Beschneiden: am Bild wuerde der Hof gleich wieder weggeschnitten.
+  // #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten; bei
+  // einer Scheibe von r=26 liest sich das als "sitzt zu hoch und ist nicht rund"
+  // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
+  if(k===2) g.setAttribute('filter','url(#shn)');
+  if(k===0) g.appendChild(E('circle',{id:'nabLoch',cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));
+  g.appendChild(im);
+  return {g,im,cc};
+});
+mitteOrdnen();
+// Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
+// sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
+// Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
+// aus zeiger/nabe-v5.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
+// aus, Lutz am 19.9.: "nicht so selbst gebaut".
+if(KAPPE_R>0){
+  const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,
+                      preserveAspectRatio:'none',filter:'url(#sh)'});
+  kp.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/kappe.webp');
+  kp.setAttribute('href','zeiger/kappe.webp');
+  svg.appendChild(kp);   // ueber den Zeigern, die Vignette kommt danach
+}
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 
@@ -1284,6 +1348,10 @@ setInterval(()=>{
     background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
   #lab .mess{margin-top:10px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a89670;
     white-space:pre-wrap;border-top:1px dashed #5a4620;padding-top:8px;}
+  #lab .vz{font:11.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c9b689;
+    font-variant-numeric:tabular-nums;}
+  #lab .pfeil{min-width:34px;font-size:15px;line-height:1;}
+  #lab .row.matt{opacity:.45;}
   #lab .sw{width:26px;height:26px;border-radius:6px;border:1px solid #6b5124;}
   #lab .sw.an{outline:2px solid #caa25e;outline-offset:1px;}
 </style>
@@ -1301,6 +1369,19 @@ setInterval(()=>{
   <div class="row" id="lc" style="margin-top:5px"></div>
   <h4>Zeiger</h4>
   <div class="row" id="lz"></div>
+  <h4>Nabe: Ebenen &middot; Scheiben ausrichten</h4>
+  <div class="row" id="leb"></div>
+  <div class="vz" id="lebh" style="margin-top:5px">unter 3 = ganz unten (Stand der App)
+    &middot; oben = vor allen Scheiben</div>
+  <div class="row" id="lsch" style="margin-top:8px"></div>
+  <div class="row" id="lpad" style="margin-top:6px">
+    <button class="k pfeil" id="lpl">&larr;</button>
+    <button class="k pfeil" id="lpr">&rarr;</button>
+    <button class="k pfeil" id="lpo">&uarr;</button>
+    <button class="k pfeil" id="lpu">&darr;</button>
+    <button class="k" id="lpn">Scheibe zur&uuml;ck</button>
+  </div>
+  <div class="vz" id="lvz" style="margin-top:5px"></div>
   <h4>Anzeige</h4>
   <div class="row">
     <button class="k" id="lgl">alle Namen gleich gro&szlig;</button>
@@ -1336,9 +1417,16 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'exakt'};
+             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'exakt',
+             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0};
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
-      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild;
+      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild,
+      schIdx=STD.sch;
+  // Ein Tipp auf den Pfeil verschiebt um eine halbe Einheit. Auf dem iPhone ist
+  // die Uhr 382 px breit bei viewBox 400, eine Einheit also 0,955 px — ein Tipp
+  // ist damit knapp ein halber Bildschirmpunkt. Die Fehler, die Lutz sieht,
+  // liegen bei 1 bis 2,5 px, also zwei bis fuenf Tipps.
+  const SCHRITT=0.5;
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
@@ -1452,6 +1540,31 @@ setInterval(()=>{
     $('lfein').appendChild(sp);
     WALZEN.push(zahlWalze(box,w[1],w[2],w[3]));
   });
+  // ---- Ebene je Zeiger: unter welcher Nabenscheibe liegt er? ----
+  // 3 = unter allen (Stand der App), 0 = ueber allen. Ein Tipp hebt ihn um eine
+  // Scheibe an; nach 0 faengt es wieder bei 3 an.
+  const ebeneTxt=e=> e===0 ? 'oben' : 'unter '+e;
+  L.personen.forEach((p,i)=>{
+    const b=document.createElement('button'); b.className='k'; b.dataset.eb=i;
+    b.onclick=()=>{ L.ebeneSetzen(i,(L.ebeneVon(i)+3)%4); spiegeln(); speichern(); };
+    $('leb').appendChild(b);
+  });
+  [0,1,2].forEach(k=>{
+    const b=document.createElement('button'); b.className='k'; b.dataset.sch=k;
+    b.textContent='Scheibe '+(k+1);
+    b.onclick=()=>{ schIdx=k; spiegeln(); speichern(); };
+    $('lsch').appendChild(b);
+  });
+  function schieben(dx,dy){
+    const v=L.versatzVon(schIdx);
+    L.versatzSetzen(schIdx, +(v[0]+dx).toFixed(2), +(v[1]+dy).toFixed(2));
+    spiegeln(); speichern();
+  }
+  $('lpl').onclick=()=>schieben(-SCHRITT,0);
+  $('lpr').onclick=()=>schieben(+SCHRITT,0);
+  $('lpo').onclick=()=>schieben(0,-SCHRITT);
+  $('lpu').onclick=()=>schieben(0,+SCHRITT);
+  $('lpn').onclick=()=>{ L.versatzSetzen(schIdx,0,0); spiegeln(); speichern(); };
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
@@ -1535,12 +1648,20 @@ setInterval(()=>{
       else if(k==='ortsr'){ ortsStufe = L.ORTSR[o[k]]!==undefined ? +o[k] : STD.ortsr; }
       else if(k==='pruef'){ pruef=!!o[k]; }
       else if(k==='nabbild'){ nabBild = L.NABENBILD[o[k]] ? o[k] : STD.nabbild; }
+      else if(k==='ebene'){ const a=Array.isArray(o[k])?o[k]:STD.ebene;
+        L.personen.forEach((p,i)=>L.ebeneSetzen(i, Number.isFinite(+a[i]) ? +a[i] : 3)); }
+      else if(k==='vers'){ const a=Array.isArray(o[k])?o[k]:STD.vers;
+        [0,1,2].forEach(m=>{ const v=Array.isArray(a[m])?a[m]:[0,0];
+          L.versatzSetzen(m, +v[0]||0, +v[1]||0); }); }
+      else if(k==='sch'){ schIdx = [0,1,2].indexOf(+o[k])>=0 ? +o[k] : STD.sch; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
        mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
-       pruef:pruef,nabbild:nabBild})); }catch(e){} }
+       pruef:pruef,nabbild:nabBild,
+       ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
+       vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
@@ -1562,6 +1683,20 @@ setInterval(()=>{
     $('lkap').textContent = 'Kappe: ' + L.KAPPEN[kappeKey].t;
     $('lkap').disabled = !mitKappe;
     $('lkap').style.opacity = mitKappe ? 1 : .4;
+    // Ebenen wirken nur, solange die Nabe ueber den Zeigern liegt (MITTE 4);
+    // sonst liegen ohnehin alle Zeiger oben. Dann die Reihe matt setzen.
+    const ebWirkt = !!L.MITTE[mitteIdx].oben;
+    $('leb').classList.toggle('matt', !ebWirkt);
+    $('leb').querySelectorAll('button').forEach(b=>{
+      const i=+b.dataset.eb;
+      b.textContent=L.personen[i].name+': '+ebeneTxt(L.ebeneVon(i));
+      b.classList.toggle('an', ebWirkt && L.ebeneVon(i)!==3);
+    });
+    $('lsch').querySelectorAll('button').forEach(b=>b.classList.toggle('an',+b.dataset.sch===schIdx));
+    { const v=L.versatzVon(schIdx),
+            z=n=>((n>0?'+':n<0?'\u2212':'\u00a0')+Math.abs(n).toFixed(2)).replace('.',',');
+      $('lvz').textContent='Scheibe '+(schIdx+1)+' \u00b7 x '+z(v[0])+'  y '+z(v[1])
+        +' Einheiten \u00b7 '+z(v[0]*0.955)+' / '+z(v[1]*0.955)+' px auf dem iPhone'; }
     $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
     $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
     $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));

@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.27</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.28</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -483,14 +483,19 @@ const EBENEN=[0,1,2,3].map(k=>E('g',{'pointer-events':'none','data-eb':String(k)
 const ebene=personen.map(()=>3);        // je Person: unter welcher Scheibe sie liegt
 // Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
 const ZSTART=[4,1,2,0,3];
-let nabUnten=false;                     // MITTE 1..3: die Nabe liegt unter allen Zeigern
+// Bis v0.27 hat der MITTE-Zustand die Ebenen ueberschrieben: bei "Nabe unter
+// den Zeigern" lagen per Programm ALLE Zeiger auf Ebene 0, die Personenknoepfe
+// taten dann sichtbar nichts (Lutz am 21.9.: "wo welcher Zeiger anbindet
+// drueber oder drunter funktioniert auch nicht"). Seit v0.28 entscheidet
+// ausschliesslich die Ebene je Person. Wer die Nabe unter allen Zeigern will,
+// stellt alle fuenf auf "oben".
 function mitteOrdnen(){                 // appendChild sortiert vorhandene Knoten um
   const S=window.NABE_BAU||[];
   [EBENEN[3],S[2]&&S[2].g,EBENEN[2],S[1]&&S[1].g,EBENEN[1],S[0]&&S[0].g,EBENEN[0]]
     .forEach(e=>{ if(e) gZeiger.appendChild(e); });
 }
 function ebenenAnwenden(){
-  ZSTART.forEach(i=>EBENEN[nabUnten?0:(ebene[i]|0)].appendChild(zeiger[i].g));
+  ZSTART.forEach(i=>EBENEN[ebene[i]|0].appendChild(zeiger[i].g));
 }
 function ebeneSetzen(i,e){ ebene[i]=((e%4)+4)%4; ebenenAnwenden(); }
 function ebeneVon(i){ return ebene[i]; }
@@ -602,19 +607,6 @@ function neuZeichnen(){
 const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
               glatt  :{d:'zeiger/kappe-glatt.webp',  t:'poliert'},
               spindel:{d:'zeiger/kappe-spindel.webp',t:'Spindel'}};
-// Zwei Nabenbilder zur Wahl. Die Vorlage ist leicht schraeg gerendert; beides
-// gleichzeitig geht nicht:
-//   scharf = nabe-v5: Ringe radial je Winkel geradegerueckt, Textur bleibt,
-//            Restversatz rund 1 px von 161 (mein Kantensucher streut selbst 0,7 px)
-//   exakt  = nabe-v6: Radialprofil ueber alle Winkel gemittelt und herumgedreht,
-//            also per Konstruktion perfekt rund und konzentrisch — dafuer weicher
-// 'drei' ist etwas anderes als die beiden anderen: dort wird EIN Bild dreimal
-// beschnitten, hier sind es drei eigene Scheiben von Lutz (21.9.). Jede hat
-// ihren eigenen Rand, also wird nicht beschnitten, sondern nur skaliert.
-// ant = Aussenkante je halber Bildkante (gemessen), r = Radius auf dem
-// Zifferblatt bei Nabe 26. Die Radien folgen der Regel "gleich breite Baender":
-// das Loch sitzt bei 0,390 des obersten Radius, daraus 0,610*r1 = r2-r1 = 26-r2
-// -> r1=11,71, r2=18,86. Alle drei Baender 7,14 Einheiten breit.
 // Drei eigene Scheiben, von Lutz am 21.9. in EINEM Bild nebeneinander
 // geliefert und daraus herausgeschnitten. Die Groessenverhaeltnisse stehen in
 // seinem Layout: r=320,3 / 235,2 / 156,2 -> aussen 26 macht 26 / 19,09 / 12,68.
@@ -625,12 +617,13 @@ const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
 // Textur 11,0 / 14,7 / 8,4 und G/B 1,65 / 1,71 / 1,81 (nach aussen waermer,
 // wie bei der alten Nabe) - deshalb unbearbeitet uebernommen.
 const DREI={ant:[0.9267,0.9242,0.9270], r:[12.68,19.09,26.0], loch:3.7};
-const NABENBILD={
-  drei  :{t:'dreiteilig', ...DREI,
-          teile:['zeiger/nabe-f1.webp','zeiger/nabe-f2.webp','zeiger/nabe-f3.webp']},
-  exakt :{d:'zeiger/nabe-v9.webp', t:'exakt rund'},
-  scharf:{d:'zeiger/nabe-v5.webp', t:'Textur (v5)'}};
-let nabDrei=null;              // gesetzt, solange der dreiteilige Satz laeuft
+// Ein einziger Nabensatz: Lutz' drei Scheiben vom 21.9. Die alten Bilder
+// (nabe.webp, -v2, -v3, -v5, -v9) sind am 21.9. aus dem Repo geflogen.
+// Die Groessenverhaeltnisse stehen in seinem Layout: r=320,3 / 235,2 / 156,2
+// -> aussen 26 macht 26,00 / 19,09 / 12,68.
+// ant = Aussenkante je halber Bildkante (gemessen), loch = dunkler Fuellkreis.
+const NABE={teile:['zeiger/nabe-f1.webp','zeiger/nabe-f2.webp','zeiger/nabe-f3.webp'],
+            ant:[0.9267,0.9242,0.9270], r:[12.68,19.09,26.0], loch:3.7};
 const NABGR=[22.2, 26, 30, 34, 38];     // waehlbare Scheibenradien
 let nabPlus=0;                          // Aufschlag auf den Radius des Zustands
 const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
@@ -638,41 +631,24 @@ const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
              {t:'3 nur die Nabe',  oben:false, nr:22.2, kr:0,    kap:'kern'},
              {t:'4 Nabe ueber den Zeigern', oben:true, nr:26, kr:0, kap:'kern'}];
 // sichtbarer Scheibenradius -> halbe Bildkante (Scheibe fuellt 135 von 152)
-const NAB_F=180/160.9;   // nabe-v5: Scheibe r=160,9 von 180 halber Bildkante
 function nabeGroesse(stufe){ nabPlus=stufe; }
-function nabeBild(k){
+function nabeBild(){
   const S=window.NABE_BAU; if(!S) return;
-  const v=NABENBILD[k]||NABENBILD.scharf;
-  nabDrei = v.teile ? v : null;
-  S.forEach((t,i)=>{ const d = v.teile ? v.teile[i] : v.d;
-                     t.im.setAttributeNS('http://www.w3.org/1999/xlink','href',d);
-                     t.im.setAttribute('href',d); });
+  S.forEach((t,i)=>{ t.im.setAttributeNS('http://www.w3.org/1999/xlink','href',NABE.teile[i]);
+                     t.im.setAttribute('href',NABE.teile[i]); });
 }
-// nr = sichtbarer Radius der aeusseren Scheibe. Alle drei Bilder sind gleich
-// gross, nur der Clip-Radius unterscheidet sie.
+// nr = sichtbarer Radius der aeusseren Scheibe. Jede Scheibe traegt ihren
+// eigenen Rand, also kein Clip: nur Groesse. Die drei Radien skalieren mit.
 function scheibenSetzen(nr){
   const S=window.NABE_BAU; if(!S) return;
-  const lo=document.getElementById('nabLoch');
-  if(nabDrei){
-    // drei eigene Scheiben: jede traegt ihren eigenen Rand, also kein Clip.
-    // Die Radien skalieren mit der gewaehlten Nabengroesse.
-    const f=nr/26;
-    S.forEach((t,k)=>{
-      const r=nabDrei.r[k]*f, he=r/nabDrei.ant[k];
-      t.im.setAttribute('x',(CX-he).toFixed(3)); t.im.setAttribute('y',(CY-he).toFixed(3));
-      t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
-      t.cc.setAttribute('r',999);
-    });
-    if(lo) lo.setAttribute('r',((nabDrei.loch||0)*f).toFixed(3));
-    markZeichnen(); return;
-  }
-  const he=nr*NAB_F;                       // halbe Bildkante
+  const f=nr/26;
   S.forEach((t,k)=>{
+    const r=NABE.r[k]*f, he=r/NABE.ant[k];
     t.im.setAttribute('x',(CX-he).toFixed(3)); t.im.setAttribute('y',(CY-he).toFixed(3));
     t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
-    t.cc.setAttribute('r',(nr*NAB_STUFE[k]).toFixed(3));
   });
-  if(lo) lo.setAttribute('r',(nr*NAB_LOCH).toFixed(3));
+  const lo=document.getElementById('nabLoch');
+  if(lo) lo.setAttribute('r',(NABE.loch*f).toFixed(3));
   markZeichnen();
 }
 // Versatz je Scheibe: Lutz' Wunsch vom 21.9. — "die einzelnen Scheiben
@@ -698,8 +674,7 @@ function markZeichnen(){
   const v=nabVers[markK];
   markEl.setAttribute('cx',(CX+v[0]).toFixed(2));
   markEl.setAttribute('cy',(CY+v[1]).toFixed(2));
-  markEl.setAttribute('r',(nabDrei ? nabDrei.r[markK]*(NABGR[nabPlus]||26)/26
-                                   : +S[markK].cc.getAttribute('r')).toFixed(2));
+  markEl.setAttribute('r',(NABE.r[markK]*(NABGR[nabPlus]||26)/26).toFixed(2));
   svg.appendChild(markEl);          // ueber allem, auch ueber der Vignette
 }
 function scheibeMarke(k,an){ markK=k|0; markAn=!!an; markZeichnen(); }
@@ -754,12 +729,13 @@ function mitteSetzen(i,kapKey){
       const d=(KAPPEN[kapKey]||KAPPEN.kern).d;
       kp.setAttributeNS('http://www.w3.org/1999/xlink','href',d); kp.setAttribute('href',d); }
   }
-  nabeLage(v.oben);
+  nabeLage();
 }
 // Seit v0.23 ist die Lage keine DOM-Umhaengung mehr, sondern eine Ebene:
 // "Nabe unten" heisst, alle Zeiger liegen auf Ebene 0 (ueber allen Scheiben).
-function nabeLage(oben){ nabUnten=!oben; ebenenAnwenden(); }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, NABENBILD, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
+// bleibt als Einstiegspunkt erhalten, greift aber nicht mehr in die Ebenen ein
+function nabeLage(){ ebenenAnwenden(); }
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
   ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, scheibeMarke, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
@@ -781,44 +757,31 @@ const NABE_BILD=29.1;                  // -> Scheibe r≈26,0; das Labor setzt d
 // decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
 const NABE_OBEN=false;
 const KAPPE_R=10.5;                    // 0 = keine Deckkappe
-// LABOR v0.23: die Nabe als DREI konzentrische Scheiben statt eines Bildes.
-// Am Radialprofil von nabe-v9.webp gemessen (360 px, halbe Kante 180): die
-// Rosette hat dunkle Rillen bei r=110,5 und r=150,5, die Aussenkante bei
-// r=160,9 — genau die drei Stufen, die Lutz als "Scheibe 1/2/3" sieht.
-// Jede Scheibe ist dasselbe Bild, auf einen Kreis beschnitten, in einer eigenen
-// Gruppe mit eigenem translate. Weil jede eine VOLLE Kreisscheibe ist und kein
-// Ring, entsteht beim Verschieben kein Loch: darunter kommt die naechstgroessere
-// zum Vorschein.
-// Scheibe 1 = die kleinste (oben), Scheibe 3 = die aeussere (unten).
-// Die Rillen liegen im Bild bei r=110 und r=152 (Talsohle des Helligkeitsprofils),
-// die Aussenkante bei 160,9. Dort wird geschnitten, damit die Schnittkante in
-// die ohnehin dunkle Rille faellt und nicht ins Messing.
-const NAB_STUFE=[110.3/160.9, 151.5/160.9, 1.03];   // Anteil des sichtbaren Radius
-const NAB_LOCH=37/160.9;                            // Lochrand im Bild (alt: fest 6)
+// Die Nabe besteht aus DREI eigenen Scheiben (zeiger/nabe-f1..f3.webp, von
+// Lutz am 21.9. geliefert). Jede liegt in einer eigenen Gruppe mit eigenem
+// translate, damit sie einzeln verschoben werden kann. Beschnitten wird nicht:
+// jede Scheibe bringt ihren eigenen Rand mit. Reihenfolge unten nach oben:
+// f3 (aussen, dunkel) - f2 (Mitte, poliert) - f1 (oben, mit Loch).
 const nabVers=[[0,0],[0,0],[0,0]];                  // Versatz je Scheibe, in Einheiten
 window.NABE_BAU=[0,1,2].map(k=>{
   const g=E('g',{'data-sch':String(k+1),transform:'translate(0 0)'});
-  const cp=E('clipPath',{id:'nabC'+k,clipPathUnits:'userSpaceOnUse'});
-  const cc=E('circle',{cx:CX,cy:CY,r:10});
-  cp.appendChild(cc); dpaths.appendChild(cp);
-  const im=E('image',{preserveAspectRatio:'none','clip-path':'url(#nabC'+k+')'});
-  im.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v9.webp');
-  im.setAttribute('href','zeiger/nabe-v9.webp');
-  // Der Schatten haengt an der GRUPPE, nicht am Bild: ein Filter wirkt vor dem
-  // Beschneiden: am Bild wuerde der Hof gleich wieder weggeschnitten.
-  // #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten; bei
-  // einer Scheibe von r=26 liest sich das als "sitzt zu hoch und ist nicht rund"
-  // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
+  const im=E('image',{preserveAspectRatio:'none'});
+  im.setAttributeNS('http://www.w3.org/1999/xlink','href',NABE.teile[k]);
+  im.setAttribute('href',NABE.teile[k]);
+  // Der Schatten haengt an der GRUPPE, nicht am Bild, und nur an der
+  // aeussersten: #shn ist ein Hof ohne Versatz (der normale #sh haengt 1,1
+  // Einheiten nach unten, das liest sich bei einer Scheibe als "sitzt zu hoch").
   if(k===2) g.setAttribute('filter','url(#shn)');
-  if(k===0) g.appendChild(E('circle',{id:'nabLoch',cx:CX,cy:CY,r:6,fill:'#3b2c0c'}));
+  // dunkler Fuellkreis hinter dem Loch der obersten Scheibe
+  if(k===0) g.appendChild(E('circle',{id:'nabLoch',cx:CX,cy:CY,r:3.7,fill:'#3b2c0c'}));
   g.appendChild(im);
-  return {g,im,cc};
+  return {g,im};
 });
 mitteOrdnen();
 // Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
 // sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
 // Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
-// aus zeiger/nabe-v5.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
+// aus dem Kern der alten Nabe geschnitten — gezeichnet sah sie nach Plastik
 // aus, Lutz am 19.9.: "nicht so selbst gebaut".
 if(KAPPE_R>0){
   const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,
@@ -1426,8 +1389,9 @@ setInterval(()=>{
   <div class="row" id="lz"></div>
   <h4>Nabe: Ebenen &middot; Scheiben ausrichten</h4>
   <div class="row" id="leb"></div>
-  <div class="vz" id="lebh" style="margin-top:5px">unter 3 = ganz unten (Stand der App)
-    &middot; oben = vor allen Scheiben</div>
+  <div class="vz" id="lebh" style="margin-top:5px">unter 3 = hinter allen Scheiben
+    &middot; unter 1 = nur hinter der Deckscheibe &middot; oben = vor allem.
+    Wirkt in jedem Mitte-Zustand.</div>
   <div class="row" id="lsch" style="margin-top:8px"></div>
   <div class="row" id="lpad" style="margin-top:6px">
     <button class="k pfeil" id="lpl">&larr;</button>
@@ -1455,7 +1419,6 @@ setInterval(()=>{
     <button class="k" id="lend">Ende</button>
     <button class="k" id="lort">Ortsring</button>
     <button class="k" id="lpk">Pr&uuml;fkreis</button>
-    <button class="k" id="lnbd">Nabenbild</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1474,11 +1437,11 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'drei',
+             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false,
              ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false};
   // Voreinstellung fuer das Nabenbild steht in STD.nabbild
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
-      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild,
+      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef,
       schIdx=STD.sch, schMark=STD.schmark;
   // Ein Tipp auf den Pfeil verschiebt um eine halbe Einheit. Auf dem iPhone ist
   // die Uhr 382 px breit bei viewBox 400, eine Einheit also 0,955 px — ein Tipp
@@ -1607,6 +1570,12 @@ setInterval(()=>{
     b.onclick=()=>{ L.ebeneSetzen(i,(L.ebeneVon(i)+3)%4); spiegeln(); speichern(); };
     $('leb').appendChild(b);
   });
+  // ein Knopf fuer alle fuenf - erst daran sieht man den Effekt deutlich
+  { const b=document.createElement('button'); b.className='k'; b.id='lebal';
+    b.onclick=()=>{ const e=L.personen.map((p,i)=>L.ebeneVon(i));
+      const n = e.every(x=>x===e[0]) ? (e[0]+3)%4 : 3;
+      L.personen.forEach((p,i)=>L.ebeneSetzen(i,n)); spiegeln(); speichern(); };
+    $('leb').appendChild(b); }
   [0,1,2].forEach(k=>{
     const b=document.createElement('button'); b.className='k'; b.dataset.sch=k;
     b.textContent='Scheibe '+(k+1);
@@ -1638,9 +1607,6 @@ setInterval(()=>{
   $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
   $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
   $('lpk').onclick=()=>{ pruef=!pruef; spiegeln(); speichern(); };
-  const NBFOLGE=['drei','exakt','scharf'];
-  $('lnbd').onclick=()=>{ nabBild = NBFOLGE[(NBFOLGE.indexOf(nabBild)+1)%NBFOLGE.length];
-                          spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1708,7 +1674,6 @@ setInterval(()=>{
       else if(k==='ende'){ endeArt = o[k]?1:0; }
       else if(k==='ortsr'){ ortsStufe = L.ORTSR[o[k]]!==undefined ? +o[k] : STD.ortsr; }
       else if(k==='pruef'){ pruef=!!o[k]; }
-      else if(k==='nabbild'){ nabBild = L.NABENBILD[o[k]] ? o[k] : STD.nabbild; }
       else if(k==='ebene'){ const a=Array.isArray(o[k])?o[k]:STD.ebene;
         L.personen.forEach((p,i)=>L.ebeneSetzen(i, Number.isFinite(+a[i]) ? +a[i] : 3)); }
       else if(k==='vers'){ const a=Array.isArray(o[k])?o[k]:STD.vers;
@@ -1721,15 +1686,13 @@ setInterval(()=>{
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
        mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
-       pruef:pruef,nabbild:nabBild,
+       pruef:pruef,
        ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
        vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
-    L.nabeBild(nabBild);
-    $('lnbd').textContent='Nabe: '+L.NABENBILD[nabBild].t;
-    $('lnbd').classList.toggle('an', nabBild.slice(0,4)==='drei');
+    L.nabeBild();
     $('lpk').classList.toggle('an', pruef);
     $('lend').textContent = 'Ende: ' + (endeArt ? 'Ring' : 'Spitze');
     $('lend').classList.toggle('an', !!endeArt);
@@ -1745,15 +1708,15 @@ setInterval(()=>{
     $('lkap').textContent = 'Kappe: ' + L.KAPPEN[kappeKey].t;
     $('lkap').disabled = !mitKappe;
     $('lkap').style.opacity = mitKappe ? 1 : .4;
-    // Ebenen wirken nur, solange die Nabe ueber den Zeigern liegt (MITTE 4);
-    // sonst liegen ohnehin alle Zeiger oben. Dann die Reihe matt setzen.
-    const ebWirkt = !!L.MITTE[mitteIdx].oben;
-    $('leb').classList.toggle('matt', !ebWirkt);
-    $('leb').querySelectorAll('button').forEach(b=>{
+    // Seit v0.28 gilt die Ebene je Person immer - der MITTE-Zustand redet
+    // nicht mehr hinein.
+    $('leb').querySelectorAll('button[data-eb]').forEach(b=>{
       const i=+b.dataset.eb;
       b.textContent=L.personen[i].name+': '+ebeneTxt(L.ebeneVon(i));
-      b.classList.toggle('an', ebWirkt && L.ebeneVon(i)!==3);
+      b.classList.toggle('an', L.ebeneVon(i)!==3);
     });
+    { const e=L.personen.map((p,i)=>L.ebeneVon(i));
+      $('lebal').textContent = 'alle: ' + (e.every(x=>x===e[0]) ? ebeneTxt(e[0]) : 'gemischt'); }
     $('lsch').querySelectorAll('button').forEach(b=>b.classList.toggle('an',+b.dataset.sch===schIdx));
     L.scheibeMarke(schIdx, schMark);
     $('lsz').classList.toggle('an', schMark);

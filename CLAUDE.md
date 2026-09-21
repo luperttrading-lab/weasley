@@ -629,12 +629,29 @@ Problem. Und das Verstärken der Feinstruktur macht eine patinierte Fläche
 körnig und schmutzig. → **Erst messen, welche Größe überhaupt aus der Reihe
 fällt, dann genau die eine anfassen.**
 
-⚠️ Der Satz `drei` funktioniert anders als die beiden einteiligen: dort wird
-**ein** Bild dreimal beschnitten, hier sind es drei eigene Scheiben mit eigenem
-Rand — also `cc.r = 999` (kein Clip), je Scheibe eine eigene Bildbox
-`halbe Kante = r/ant` mit `ant` = 0,9267 / 0,9242 / 0,9270, und der Füllkreis
-statt des Clips. `nabDrei` trägt den Zustand; `markZeichnen` muss den echten
-Radius nehmen, nicht den Clip.
+**Seit Labor v0.28 gibt es nur noch diesen einen Nabensatz.** Lutz am 21.9.:
+„Kannst du bitte alle alten Naben aus der Test App verschwinden lassen." Der
+Knopf `#lnbd` ist weg, `NABENBILD`, `NAB_F`, `NAB_STUFE`, `NAB_LOCH`, die drei
+`clipPath` und der ganze Zweig „ein Bild dreimal beschneiden" ebenfalls. Aus
+dem Repo geflogen: `nabe.webp`, `-v2`, `-v3`, `-v5`.
+⚠️ **`nabe-v9.webp` bleibt liegen** — `index.html` (App v0.83) und `sw.js`
+benutzen sie noch. Erst wenn die App auf den dreiteiligen Satz umgestellt ist,
+darf sie weg. Vor jedem Löschen eines Bildes:
+`grep -o "zeiger/[a-z0-9-]*\.webp" index.html labor.html sw.js | sort -u`.
+
+⚠️ **Der Ebenen-Schalter war tot, sobald „Mitte" nicht auf 4 stand** (Lutz:
+„wo welcher Zeiger anbindet drüber oder drunter funktioniert auch nicht"). Bis
+v0.27 setzte `nabeLage(oben)` bei den MITTE-Zuständen 1–3 ein Flag `nabUnten`,
+und `ebenenAnwenden()` schob dann **alle** Zeiger auf Ebene 0 — die
+Personenknöpfe änderten die gespeicherte Ebene, sichtbar passierte nichts, und
+die matt geschaltete Knopfreihe war als Erklärung zu leise. Seit v0.28
+entscheidet **ausschließlich** die Ebene je Person; `nabeLage()` ordnet nur
+noch neu ein. Wer die Nabe unter allen Zeigern will, stellt alle fünf auf
+„oben". Dafür gibt es den Knopf **„alle"** (`#lebal`), der alle fünf zugleich
+durchschaltet — erst damit sieht man den Effekt am Gerät überhaupt, denn er
+spielt sich innerhalb von r=26 von 200 ab.
+Gemessen: in allen vier MITTE-Zuständen wandert ein Zeiger sauber durch
+E3 → E2 → E1 → E0.
 
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 

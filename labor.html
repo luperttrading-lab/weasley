@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.20</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.21</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -578,6 +578,14 @@ function neuZeichnen(){
 const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
               glatt  :{d:'zeiger/kappe-glatt.webp',  t:'poliert'},
               spindel:{d:'zeiger/kappe-spindel.webp',t:'Spindel'}};
+// Zwei Nabenbilder zur Wahl. Die Vorlage ist leicht schraeg gerendert; beides
+// gleichzeitig geht nicht:
+//   scharf = nabe-v5: Ringe radial je Winkel geradegerueckt, Textur bleibt,
+//            Restversatz rund 1 px von 161 (mein Kantensucher streut selbst 0,7 px)
+//   exakt  = nabe-v6: Radialprofil ueber alle Winkel gemittelt und herumgedreht,
+//            also per Konstruktion perfekt rund und konzentrisch — dafuer weicher
+const NABENBILD={scharf:{d:'zeiger/nabe-v5.webp', t:'scharf'},
+                 exakt :{d:'zeiger/nabe-v6.webp', t:'exakt rund'}};
 const NABGR=[22.2, 26, 30, 34, 38];     // waehlbare Scheibenradien
 let nabPlus=0;                          // Aufschlag auf den Radius des Zustands
 const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
@@ -587,6 +595,12 @@ const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
 // sichtbarer Scheibenradius -> halbe Bildkante (Scheibe fuellt 135 von 152)
 const NAB_F=180/160.9;   // nabe-v5: Scheibe r=160,9 von 180 halber Bildkante
 function nabeGroesse(stufe){ nabPlus=stufe; }
+function nabeBild(k){
+  const t=window.NABE_TEIL; if(!t) return;
+  const v=NABENBILD[k]||NABENBILD.scharf;
+  t[1].setAttributeNS('http://www.w3.org/1999/xlink','href',v.d);
+  t[1].setAttribute('href',v.d);
+}
 // Der Ortsring rueckt als Ganzes nach aussen. Reine Skalierung um die Uhrmitte,
 // damit Trennlinien, Sektorflaechen und Textpfade zusammenbleiben. Mehr als
 // R_OUT=180 geht nicht: bei 184 stiesse der Rahmenkreis an die Pergamentkante.
@@ -649,7 +663,7 @@ function nabeLage(oben){
   if(kp) svg.insertBefore(kp, v||null);
   if(v) svg.appendChild(v);
 }
-window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
+window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, NABENBILD, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1303,6 +1317,7 @@ setInterval(()=>{
     <button class="k" id="lend">Ende</button>
     <button class="k" id="lort">Ortsring</button>
     <button class="k" id="lpk">Pr&uuml;fkreis</button>
+    <button class="k" id="lnbd">Nabenbild</button>
   </div>
   <div class="mess" id="lm"></div>
 </div>
@@ -1321,9 +1336,9 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false};
+             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'scharf'};
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
-      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef;
+      endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild;
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
@@ -1450,6 +1465,8 @@ setInterval(()=>{
   $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
   $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
   $('lpk').onclick=()=>{ pruef=!pruef; spiegeln(); speichern(); };
+  $('lnbd').onclick=()=>{ nabBild = nabBild==='scharf' ? 'exakt' : 'scharf';
+                          spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';
   $('lkop').onclick=()=>{ const s=text(); try{navigator.clipboard.writeText(s);}catch(e){}
@@ -1517,15 +1534,19 @@ setInterval(()=>{
       else if(k==='ende'){ endeArt = o[k]?1:0; }
       else if(k==='ortsr'){ ortsStufe = L.ORTSR[o[k]]!==undefined ? +o[k] : STD.ortsr; }
       else if(k==='pruef'){ pruef=!!o[k]; }
+      else if(k==='nabbild'){ nabBild = L.NABENBILD[o[k]] ? o[k] : STD.nabbild; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
        farbe:G.farbe,deck:G.deck,hoehe:G.hoehe,seite:G.seite,zeiger:zeigerKey,
        mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
-       pruef:pruef})); }catch(e){} }
+       pruef:pruef,nabbild:nabBild})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
+    L.nabeBild(nabBild);
+    $('lnbd').textContent='Nabe: '+L.NABENBILD[nabBild].t;
+    $('lnbd').classList.toggle('an', nabBild==='exakt');
     $('lpk').classList.toggle('an', pruef);
     $('lend').textContent = 'Ende: ' + (endeArt ? 'Ring' : 'Spitze');
     $('lend').classList.toggle('an', !!endeArt);

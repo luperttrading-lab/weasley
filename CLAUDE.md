@@ -389,6 +389,41 @@ Kapitälchen / klein), Größe, Höhe auf dem Schild, Sperrung, Deckkraft, Farbe
 gemessenen Werte (Portraitradius, Ringaußenkante, Schild, Bogen je Zeiger,
 Schriftgrade je Person).
 
+**Emilia: der Fall ist gemessen abgeschlossen (21.9.).** Lutz: „alle Zeiger sind
+unter Öse zwei, Emilia ist der einzige, der auf Öse zwei liegt". Prüfung: jeden
+Zeiger einzeln einblenden, gegen ein Bild ohne Zeiger differenzieren und den
+kleinsten Radius suchen, an dem Messing sichtbar wird.
+
+| Zeiger | Winkel | erstes Messing bei r |
+|---|---|---|
+| Claudia | 0° | 25,85 |
+| **Emilia** | **45°** | **25,85** |
+| Lutz | 90° | 25,90 |
+| Leander | 180° | 25,90 |
+| Anton | 225° | 25,85 |
+
+Spanne **0,07 Einheiten** — und die stammt von der Nabenkante (sichtbarer Radius
+26,0), nicht vom Zeiger. Kein Zeiger liegt über der Nabe; einzeln gerendert
+verschwinden alle fünf gleich weit darunter. Was übrig bleibt, ist die
+Restasymmetrie des Nabenbildes.
+
+⚠️ **Grenze des eigenen Messverfahrens.** Zwei Läufe desselben Kantensuchers auf
+**derselben Datei** lieferten für denselben Ring 1,44 px und 2,16 px Versatz —
+das Verfahren streut also um rund 0,7 px. Unterhalb davon ist keine Aussage mehr
+belastbar; wer feiner will, braucht ein anderes Messverfahren oder ein
+geradeaus gerendertes Bild.
+
+**Zwei Nabenbilder zur Wahl** (Labor v0.21, Knopf `#lnbd`): `nabe-v5` **scharf**
+(Ringe radial je Winkel geradegerückt, Textur erhalten, Restversatz ~1 px von
+161) gegen `nabe-v6` **exakt rund** (Radialprofil über alle Winkel gemittelt und
+herumgedreht — per Konstruktion perfekt konzentrisch, dafür weicher; Kantenenergie
+671 gegen 693 bei v5 und 975 in der Vorlage). Verworfen: `v7`, eine dichte
+Registrierung je Radius — sie machte es messbar **schlechter** (mittlerer Versatz
+2,07 statt 0,98 px), weil der starke Außenring die Fensterkorrelation dominiert.
+`v8`, Profile je Winkel ausrichten und dann mitteln, war nicht schärfer als v6:
+die Verzerrung ist keine reine Verschiebung je Winkel, sondern Ovalität, die mit
+dem Radius wächst.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

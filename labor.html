@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.29</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.30</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -293,6 +293,20 @@ for(let h=1;h<=12;h++){const p=polar(R_HOUR-9,h*30);const t=E('text',{x:p.x,y:p.
 
 // Gebogene Orts-Labels
 const dpaths=E('defs',{}); svg.appendChild(dpaths);
+// Maske, die aus jedem Zeigerbild die eigene Oese herausnimmt. Der Kreis sitzt
+// im Drehpunkt und ist deshalb drehinvariant — eine Maske reicht fuer alle fuenf.
+// Das Rechteck muss gross genug sein, dass es in jeder Drehung noch deckt.
+// ⚠ Der Bereich der Maske MUSS ausdruecklich stehen. Ohne x/y/width/height
+// nimmt Chromium den Vorgabewert -10%/-10%/120%/120% und rechnet ihn gegen die
+// Bounding-Box des maskierten Elements, ungeachtet maskUnits="userSpaceOnUse".
+// Gemessen: ohne Bereich blieben von 451 444 Messingpixeln nur 278 522 uebrig —
+// die Zeiger waren bis auf einen Stern um die Mitte weg. Mit Bereich: 450 227,
+// also genau die fuenf ausgeschnittenen Oesen weniger.
+const oeseMaske=E('mask',{id:'oeseweg',maskUnits:'userSpaceOnUse',
+                          x:-260,y:-260,width:920,height:920});
+oeseMaske.appendChild(E('rect',{x:-260,y:-260,width:920,height:920,fill:'#fff'}));
+const oeseLoch=E('circle',{cx:CX,cy:CY,r:9,fill:'#000'});
+oeseMaske.appendChild(oeseLoch); dpaths.appendChild(oeseMaske);
 const gLab=E('g',{class:'ortsr'});
 // IN GEFAHR: Sektor-Hintergrund dezent rötlich (Ringsegment hinter dem Label)
 [['danger','rgba(138,22,40,.26)'],['lost','rgba(47,58,74,.20)']].forEach(([flag,farbe])=>{
@@ -374,6 +388,27 @@ const ZEIGERSATZ={
               W:1536,H:1024, ox:165,oy:521, rx:1291,ry:489, rl:190,rlx:192.0,rly:188.4,ra:218.5,
               sx0:590,sx1:930,sy:520,sh:100, ende:1510}
 };
+// ---- EINE gemeinsame Oese statt fuenf gestapelter (Lutz, 21.9.) ----
+// "Man koennte diese Oese quasi einmal rausfotografieren und die einzelnen
+// Zeiger dann drunter machen." Genau das: aus jedem Zeigerbild ist die
+// Oesenscheibe herausgeschnitten und drehsymmetrisch neu aufgebaut
+// (Radialmedian ueber 2880 Winkel, die Schaftrichtung +-35 Grad ausgespart,
+// danach eine unscharfe Maske laengs des Radius). Sie ist damit per
+// Konstruktion rund, ohne Schaftstummel und fuer alle fuenf dieselbe.
+// oex/oey/oer = Mitte und Radius der Scheibe im Bild (nominal 1536x1024),
+// ant = Aussenkante je halber Bildkante der fertigen Datei.
+const OESE={
+  flach     :{oex:111.5, oey:503.0, oer:68.2,  ant:0.9317},
+  hoch      :{oex:111.4, oey:503.0, oer:68.3,  ant:0.9331},
+  perl      :{oex:112.0, oey:501.8, oer:69.7,  ant:0.9522},
+  perlklein :{oex:104.6, oey:505.2, oer:65.9,  ant:0.9308},
+  glatt     :{oex:149.5, oey:489.0, oer:109.9, ant:0.9442},
+  lilie     :{oex:95.4,  oey:512.8, oer:70.2,  ant:0.9286},
+  ranke     :{oex:102.9, oey:502.9, oer:73.4,  ant:0.941},
+  deko      :{oex:117.8, oey:497.7, oer:72.3,  ant:0.9563},
+  spindel   :{oex:109.1, oey:497.0, oer:72.8,  ant:0.9333},
+  band      :{oex:168.5, oey:511.7, oer:138.9, ant:0.9411}};
+let OES_EIN=true, OES_R=9, OES_KEY='perl';
 let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGX=1, RINGY=1, RINGA=1, KIPP=0;
 // ENDEART 0: das Bild endet an seiner Spitze (Stand der App).
 // ENDEART 1: das Bild endet an der Ringaussenkante — der Ring IST die Spitze,
@@ -394,6 +429,12 @@ function massstab(){
   // Wird beim Zeichnen als zusaetzliche Drehung um die Oese ausgeglichen.
   KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
   R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
+  // Schnittradius fuer die gemeinsame Oese. Gedreht wird um das LOCH, die
+  // Scheibe sitzt aber daneben (beim Schriftband 9,9 px = 1,18 Einheiten).
+  // Sie wandert also mit der Zeigerrichtung; der Schnitt muss sie in JEDER
+  // Stellung fassen, deshalb Scheibenradius + Versatz + eine Handbreit.
+  const o=OESE[OES_KEY]||OESE.perl;
+  OES_R = (o.oer + Math.hypot(o.oex-ZB.ox, o.oey-ZB.oy))*ZS + 0.15;
 }
 massstab();
 // ---- LABOR: Einstellungen der Gravur ----
@@ -445,6 +486,7 @@ function buildNadel(p){
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
   im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
   im.setAttribute('href',ZB.datei);
+  if(OES_EIN) im.setAttribute('mask','url(#oeseweg)');   // eigene Oese heraus
   const schnitt = ENDEART ? (ZB.rx+ZB.ra) : ZB.cut;
   if(schnitt){const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
     ck.appendChild(E('rect',{x:bx-2,y:by-2,width:schnitt*ZS+2,height:ZB.H*ZS+4}));
@@ -480,6 +522,22 @@ const zeiger=personen.map(p=>buildNadel(p));
 // Reihenfolge in #zeiger, unten nach oben:   E3  S3  E2  S2  E1  S1  E0
 // E3 = unter allem (Stand der App), E0 = ueber allem.
 const EBENEN=[0,1,2,3].map(k=>E('g',{'pointer-events':'none','data-eb':String(k)}));
+// Die eine gemeinsame Oese. Sie wird NICHT gedreht und sitzt genau im
+// Drehpunkt — damit ist sie fuer alle fuenf Personen dieselbe, in jeder
+// Stellung, ohne Messung.
+const gOese=E('g',{'pointer-events':'none',id:'oese'});
+const imOese=E('image',{preserveAspectRatio:'none',filter:'url(#shn)'});
+gOese.appendChild(imOese);
+function oeseSetzen(){
+  const o=OESE[OES_KEY]||OESE.perl;
+  oeseLoch.setAttribute('r', OES_EIN ? OES_R.toFixed(3) : 0);
+  const he=OES_R/o.ant, d='zeiger/'+OES_KEY+'-oese.webp';
+  imOese.setAttribute('x',(CX-he).toFixed(3)); imOese.setAttribute('y',(CY-he).toFixed(3));
+  imOese.setAttribute('width',(he*2).toFixed(3)); imOese.setAttribute('height',(he*2).toFixed(3));
+  imOese.setAttributeNS('http://www.w3.org/1999/xlink','href',d);
+  imOese.setAttribute('href',d);
+  gOese.setAttribute('opacity', OES_EIN?1:0);
+}
 const ebene=personen.map(()=>3);        // je Person: unter welcher Scheibe sie liegt
 // Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
 const ZSTART=[4,1,2,0,3];
@@ -493,13 +551,24 @@ function mitteOrdnen(){                 // appendChild sortiert vorhandene Knote
   const S=window.NABE_BAU||[];
   [EBENEN[3],S[2]&&S[2].g,EBENEN[2],S[1]&&S[1].g,EBENEN[1],S[0]&&S[0].g,EBENEN[0]]
     .forEach(e=>{ if(e) gZeiger.appendChild(e); });
+  oeseEinhaengen();
+}
+// Die gemeinsame Oese muss die Schnittkanten decken, also direkt UEBER der
+// obersten belegten Zeigerebene liegen — nicht weiter oben, sonst laege sie
+// auch auf der Nabe.
+function oeseEinhaengen(){
+  let oben=3;
+  for(let i=0;i<ebene.length;i++) if((ebene[i]|0)<oben) oben=ebene[i]|0;
+  const b=EBENEN[oben];
+  if(b.nextSibling!==gOese) gZeiger.insertBefore(gOese, b.nextSibling);
 }
 function ebenenAnwenden(){
   ZSTART.forEach(i=>EBENEN[ebene[i]|0].appendChild(zeiger[i].g));
+  oeseEinhaengen();
 }
 function ebeneSetzen(i,e){ ebene[i]=((e%4)+4)%4; ebenenAnwenden(); }
 function ebeneVon(i){ return ebene[i]; }
-mitteOrdnen(); ebenenAnwenden();
+mitteOrdnen(); ebenenAnwenden(); oeseSetzen();
 svg.appendChild(gZeiger);
 // ---- Stapel: mehrere Personen im selben Sektor ----
 // Die Medaillons ueberlappen dort zwangslaeufig (r~34 bei 45 Grad Sektor). Statt
@@ -592,7 +661,7 @@ function neuZeichnen(){
   EBENEN.forEach(e=>{ while(e.firstChild) e.removeChild(e.firstChild); });
   zeiger.length=0;
   personen.forEach(p=>zeiger.push(buildNadel(p)));
-  mitteOrdnen(); ebenenAnwenden();
+  mitteOrdnen(); ebenenAnwenden(); oeseSetzen();
   personen.forEach((p,i)=>setRot(i));
   passeNamenEin();
   if(typeof highlight==='function') highlight();
@@ -747,7 +816,9 @@ function mitteSetzen(i,kapKey){
 function nabeLage(){ ebenenAnwenden(); }
 window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
   ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, scheibeMarke,
-  scheibeAus, scheibeAusVon, waehle(k){ ZB=ZEIGERSATZ[k]; },
+  scheibeAus, scheibeAusVon,
+  oeseEine(an){ OES_EIN=!!an; }, oeseVon(){ return OES_EIN; },
+  waehle(k){ ZB=ZEIGERSATZ[k]; OES_KEY=k; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1410,6 +1481,7 @@ setInterval(()=>{
     <button class="k pfeil" id="lpr">&rarr;</button>
     <button class="k pfeil" id="lpo">&uarr;</button>
     <button class="k pfeil" id="lpu">&darr;</button>
+    <button class="k" id="loe">&Ouml;se</button>
     <button class="k" id="lsa">Scheibe aus</button>
     <button class="k" id="lpn">Scheibe zur&uuml;ck</button>
     <button class="k" id="lpa">alle drei zur&uuml;ck</button>
@@ -1451,7 +1523,7 @@ setInterval(()=>{
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
              kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false,
-             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false, aus:[false,false,false]};
+             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false, aus:[false,false,false], oese:true};
   // Voreinstellung fuer das Nabenbild steht in STD.nabbild
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
       endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef,
@@ -1604,6 +1676,7 @@ setInterval(()=>{
   $('lpr').onclick=()=>schieben(+SCHRITT,0);
   $('lpo').onclick=()=>schieben(0,-SCHRITT);
   $('lpu').onclick=()=>schieben(0,+SCHRITT);
+  $('loe').onclick=()=>{ L.oeseEine(!L.oeseVon()); anwenden(true); };   // baut die Zeiger neu
   $('lsa').onclick=()=>{ L.scheibeAus(schIdx, !L.scheibeAusVon(schIdx)); spiegeln(); speichern(); };
   $('lpn').onclick=()=>{ L.versatzSetzen(schIdx,0,0); spiegeln(); speichern(); };
   $('lpa').onclick=()=>{ [0,1,2].forEach(k=>L.versatzSetzen(k,0,0)); spiegeln(); speichern(); };
@@ -1695,6 +1768,7 @@ setInterval(()=>{
           L.versatzSetzen(m, +v[0]||0, +v[1]||0); }); }
       else if(k==='sch'){ schIdx = [0,1,2].indexOf(+o[k])>=0 ? +o[k] : STD.sch; }
       else if(k==='schmark'){ schMark=!!o[k]; }
+      else if(k==='oese'){ L.oeseEine(o[k]!==false); }
       else if(k==='aus'){ const a=Array.isArray(o[k])?o[k]:STD.aus;
         [0,1,2].forEach(m=>L.scheibeAus(m,!!a[m])); }
       else G[k]=o[k]; }); }
@@ -1705,7 +1779,7 @@ setInterval(()=>{
        pruef:pruef,
        ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
        vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark,
-       aus:[0,1,2].map(k=>L.scheibeAusVon(k))})); }catch(e){} }
+       aus:[0,1,2].map(k=>L.scheibeAusVon(k)), oese:L.oeseVon()})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
@@ -1739,6 +1813,8 @@ setInterval(()=>{
       b.classList.toggle('an',k===schIdx);
       b.style.textDecoration = L.scheibeAusVon(k) ? 'line-through' : 'none';
     });
+    $('loe').textContent = L.oeseVon() ? '\u00d6se: eine gemeinsame' : '\u00d6se: je Zeiger';
+    $('loe').classList.toggle('an', L.oeseVon());
     $('lsa').textContent = L.scheibeAusVon(schIdx) ? 'Scheibe '+(schIdx+1)+' EIN' : 'Scheibe '+(schIdx+1)+' aus';
     $('lsa').classList.toggle('an', L.scheibeAusVon(schIdx));
     L.scheibeMarke(schIdx, schMark);

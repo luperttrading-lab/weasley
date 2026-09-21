@@ -671,6 +671,56 @@ ganz weg (Nabe endet dann bei **19,09**) oder alle drei kleiner über den
 vorhandenen Knopf „Nabe" (Stufe 22,2 → **22,20 / 16,30 / 10,83**, Faktor
 0,854). Beides steht im Labor zur Wahl; die Entscheidung gehört ans Gerät.
 
+**Eine gemeinsame Öse statt fünf gestapelter** (Labor v0.30, Knopf `#loe`).
+Lutz am 21.9.: „die müssten für alle, egal wer wo steht, identisch sein … man
+könnte diese Öse quasi einmal rausfotografieren und die einzelnen Zeiger dann
+drunter machen." Genau so gebaut — und damit ist das Problem nicht gemessen
+kleingeredet, sondern **per Konstruktion weg**.
+
+*Wie:* Aus jedem Zeigerbild wird die Ösenscheibe **drehsymmetrisch neu
+aufgebaut** — Radialmedian über 2880 Winkel, die Schaftrichtung ±35° ausgespart
+(sonst bliebe der Schaftstummel stehen), danach eine unscharfe Maske längs des
+Radius gegen die Weichzeichnung des Medians. Ergebnis: `zeiger/<key>-oese.webp`,
+160 px, 10 Dateien, zusammen 148 KB. Gemessene Schärfe (Gradient je Pixel,
+umgerechnet auf dieselbe Auflösung): die neuen Ösen sind eher **schärfer** als
+die Vorlage, nicht weicher.
+
+*Geometrie je Zeiger* (Kreisfit über 1440 Winkel, nominale Bildpixel):
+
+| Zeiger | Scheibe r | oval | neben dem Drehpunkt | Schnittradius |
+|---|---|---|---|---|
+| **perl** (App) | 69,7 | −0,20 % | **0,18** | **9,22** |
+| flach / hoch | 68,2 / 68,3 | −0,8 / −0,5 % | 0,11 | 9,10 / 9,13 |
+| perlklein | 65,9 | −0,60 % | 0,14 | 8,93 |
+| lilie | 70,2 | −1,28 % | 0,13 | 8,87 |
+| ranke / deko / spindel | 73,4 / 72,3 / 72,8 | −0,2…−1,6 % | 0,07…0,24 | 9,48…9,76 |
+| glatt | 109,9 | −0,41 % | 0,11 | 14,03 |
+| **band** | 138,9 | +1,59 % | **1,18** | **18,06** |
+
+⚠️ Der Schnittradius ist **nicht** einfach der Scheibenradius: Gedreht wird um
+das **Loch**, die Scheibe sitzt aber daneben (beim Schriftband 1,18 Einheiten).
+Sie wandert also mit der Zeigerrichtung, und der Schnitt muss sie in **jeder**
+Stellung fassen → `Scheibenradius + Versatz + 0,15`. Die gemeinsame Öse wird
+auf genau diesen Radius skaliert, damit sie die Schnittkante deckt; beim
+Perlring sind das 3,7 % Vergrößerung, beim Schriftband 8,1 %.
+
+*Wie eingebaut:* Eine **Maske** `#oeseweg` (weißes Rechteck, schwarzer Kreis im
+Drehpunkt) nimmt aus jedem der fünf Messingbilder die eigene Öse heraus. Der
+Kreis sitzt im Drehpunkt und ist damit **drehinvariant** — eine Maske reicht für
+alle fünf. Die gemeinsame Öse `#oese` wird **nicht gedreht** und hängt direkt
+über der obersten belegten Zeigerebene (`oeseEinhaengen()`), damit sie die
+Schnittkanten deckt, aber nicht auf der Nabe liegt.
+
+⚠️⚠️ **Falle, die eine Stunde gekostet hätte: Chromium beachtet `maskUnits`
+nicht für den Vorgabe-Bereich der Maske.** Ohne ausdrückliche
+`x/y/width/height` am `<mask>` nimmt es −10 % / −10 % / 120 % / 120 % **der
+Bounding-Box des maskierten Elements** — obwohl `maskUnits="userSpaceOnUse"`
+gesetzt ist. Folge: Die Zeiger waren bis auf einen Stern um die Mitte
+verschwunden. Gemessen an Messingpixeln im Bild: ohne Maske 451 444, mit Maske
+ohne Bereich **278 522**, mit ausdrücklichem Bereich **450 227** — also genau
+die fünf ausgeschnittenen Ösen weniger. → **Bei jeder Maske den Bereich
+ausdrücklich setzen.**
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

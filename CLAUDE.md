@@ -583,6 +583,53 @@ ndimage.label` + `center_of_mass`) sagt: **1,10 px**. Eine Iteration brachte es
 auf 0,05 px. → Bei Löchern und Flächen immer den Schwerpunkt nehmen, nie den
 Strahlensucher; der ist nur für saubere, einzelne Kanten gut.
 
+**Ringbreiten und Farbe der dreiteiligen Nabe** (Labor v0.25). Lutz am 21.9.:
+„Die Ringe musst du von der Breite selbst richtig machen. Und eventuell auch
+von der Farbe und Glanz noch ein bisschen bearbeiten."
+
+*Breite — die Regel steht in seinem eigenen einteiligen Bild.* Dessen Bänder
+maßen 0,245 / 0,284 / 0,230 des Außenradius, also **schon fast gleich breit**.
+Daraus die Vorgabe „alle drei Bänder gleich breit". Das Loch ist mit **0,390**
+des obersten Scheibenradius fest im Bild, daraus folgt eindeutig
+
+    0,610·r1 = r2 − r1 = 26 − r2   →   r1 = 26/2,220 = 11,71 ,  r2 = 18,86
+
+also Bänder 4,57→11,71→18,86→26,00, jedes **7,14 Einheiten** breit.
+⚠️ Die Wulst (der erhabene Rand) skaliert mit der jeweiligen Scheibe: gemessen
+0,062 / 0,055 / 0,047 des Radius → 0,73 / 1,04 / 1,22 Einheiten. Sie wächst
+also nach außen; bei 0,7 bis 1,2 px auf dem iPhone ist das nicht zu sehen.
+Gleich breite Wülste wären nur mit r1 ≈ 19,7 zu haben — unbrauchbar.
+
+*Farbe — der Bezug sind die Zeiger, nicht die alte Nabe.* Gemessen auf der
+Messingfläche (alpha > 0,9):
+
+| | R / G / B | Helligkeit | Spanne p95−p5 | Sättigung |
+|---|---|---|---|---|
+| `perl.webp` Schaft | 188 / 154 / 94 | 157 | (mit Gravur) | 0,536 |
+| `nabe-a1` (oben) | 187 / 153 / 90 | 156 | 105 | 0,530 |
+| `nabe-a2` (Mitte) | 183 / 151 / 90 | 153 | 94 | 0,520 |
+| `nabe-a3` (unten) | 149 / 116 / 67 | 120 | 86 | 0,558 |
+| `nabe-v9` (alt) | 158 / 119 / 59 | 124 | 119 | 0,648 |
+
+Die oberste Scheibe trifft den Zeigerton **auf drei Einheiten genau** — der
+Farbton bleibt deshalb unangetastet. Geändert wurden nur zwei Dinge
+(`nabe-b1/b2/b3.webp`):
+1. **Helligkeit gleichmäßig gestuft**: 156 / 153 / 120 war 2+1 (die oberen
+   beiden nicht unterscheidbar), jetzt **156 / 139 / 120**.
+2. **Glanz**: Spanne aller drei auf **112** angehoben (alte Nabe 119, vorher
+   105/94/86). Faktoren 1,07 / 1,19 / 1,31, dabei unter 0,9 % abgeschnittene
+   Pixel.
+Gerechnet wird auf der Helligkeit, RGB wird nur proportional skaliert — Farbton
+und Sättigung bleiben damit erhalten.
+
+*Im Labor:* Der Knopf `#lnbd` schaltet jetzt **drei** Sätze durch,
+Voreinstellung ist **dreiteilig**. ⚠️ Der Satz `drei` funktioniert anders als
+die beiden anderen: dort wird **ein** Bild dreimal beschnitten, hier sind es
+drei eigene Scheiben mit eigenem Rand — also `cc.r = 999` (kein Clip),
+`nabLoch.r = 0` (das Loch zeigt auf die Scheibe darunter) und je Scheibe eine
+eigene Bildbox `halbe Kante = r/ant`. `nabDrei` trägt den Zustand; `markZeichnen`
+muss den echten Radius nehmen, nicht den Clip (der steht auf 999).
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

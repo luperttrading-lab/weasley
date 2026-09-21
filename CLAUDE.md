@@ -583,61 +583,58 @@ ndimage.label` + `center_of_mass`) sagt: **1,10 px**. Eine Iteration brachte es
 auf 0,05 px. → Bei Löchern und Flächen immer den Schwerpunkt nehmen, nie den
 Strahlensucher; der ist nur für saubere, einzelne Kanten gut.
 
-**Ringbreiten und Farbe der dreiteiligen Nabe** (Labor v0.26). Lutz am 21.9.:
-„Die Ringe musst du von der Breite selbst richtig machen. Und eventuell auch
-von der Farbe und Glanz noch ein bisschen bearbeiten."
+**Die dreiteilige Nabe** (Labor v0.27, `zeiger/nabe-f1/f2/f3.webp`).
+Lutz hat am 21.9. drei Scheiben in **einem** Bild nebeneinander geliefert
+(1536×1024, RGBA) — „So würden sie besser aussehen." Herausgeschnitten über
+`scipy.ndimage.label`, je Scheibe Kreisfit über 1440 Winkel:
 
-*Breite — die Regel steht in seinem eigenen einteiligen Bild.* Dessen Bänder
-maßen 0,245 / 0,284 / 0,230 des Außenradius, also **schon fast gleich breit**.
-Daraus die Vorgabe „alle drei Bänder gleich breit". Das Loch ist mit **0,390**
-des obersten Scheibenradius fest im Bild, daraus folgt eindeutig
+| | r im Bild | Ovalität | auf dem Zifferblatt |
+|---|---|---|---|
+| unten (dunkel) | 320,3 | **+0,01 %** | 26,00 |
+| Mitte (poliert) | 235,2 | **+0,10 %** | 19,09 |
+| oben (mit Loch) | 156,2 | **+0,45 %** | 12,68 |
 
-    0,610·r1 = r2 − r1 = 26 − r2   →   r1 = 26/2,220 = 11,71 ,  r2 = 18,86
+**Die Größenverhältnisse stehen in seinem Layout** (1,000 / 0,734 / 0,487) und
+werden von dort übernommen — nicht aus meiner Rechenregel. (Die Regel „alle
+Bänder gleich breit" gäbe bei Loch 0,2981 die Werte 26 / 18,41 / 10,82, also
+dicht daneben. Sein Layout ist die Ansage.)
 
-also Bänder 4,57→11,71→18,86→26,00, jedes **7,14 Einheiten** breit. Ein
-Freiheitsgrad, drei Gleichungen, eine Lösung.
-⚠️ Die Wulst (der erhabene Rand) skaliert mit ihrer Scheibe: gemessen
-0,062 / 0,055 / 0,047 des Radius → 0,73 / 1,04 / 1,22 Einheiten, wächst also
-nach außen. Gleich breite Wülste gäbe es nur bei r1 ≈ 19,7 — unbrauchbar. Bei
-0,7 bis 1,2 px auf dem iPhone sieht man es ohnehin nicht.
+**Unbearbeitet übernommen**, und zwar begründet gemessen:
 
-*Farbe — eine ganze Runde in die falsche Richtung, hier zum Nachlesen.*
-Gemessen auf der Messingfläche (alpha > 0,9), Textur = Streuung nach Abzug des
-9-px-Mittels:
+| | Helligkeit | Textur | G/B (Wärme) |
+|---|---|---|---|
+| `f1` oben | 142,8 | 10,97 | 1,651 |
+| `f2` Mitte | 139,4 | **14,69** | 1,711 |
+| `f3` unten | 109,3 | 8,43 | 1,805 |
 
-| | Helligkeit | G/B (Wärme) | Sättigung | Textur |
-|---|---|---|---|---|
-| `nabe-v9` innen / Mitte / außen | 166 / 133 / 94 | 1,82 / 2,02 / 2,33 | 0,56 / 0,63 / 0,72 | 8,1 / 16,1 / 18,2 |
-| Lutz' drei Scheiben (a1/a2/a3) | 159 / 155 / 118 | 1,67 / 1,66 / 1,72 | 0,52 / 0,51 / 0,56 | **11,0 / 2,6 / 5,7** |
-| `perl.webp` (die Zeiger) | 157 | 1,64 | 0,54 | |
+Die Textur der Mittelscheibe war im vorigen Satz der einzige Ausreißer (2,6
+gegen 11,0 und 5,7); hier ist sie **14,7** und damit im selben Bereich wie die
+Nachbarn. Und G/B steigt nach außen (1,65 → 1,81), also **in dieselbe Richtung
+wie bei der alten Nabe** (1,82 → 2,33), nur milder. Es gibt nichts zu
+korrigieren.
 
-**Was ich falsch gemacht habe (v0.25, Satz `b`):** Ich habe die Helligkeit
-gestuft (156/139/120) und den Kontrast aller drei angehoben. Lutz: „Die 3
-passen farblich noch nicht so gut, wie sie vorher waren." Er hatte recht, und
-die Tabelle sagt warum: **die alte Nabe unterscheidet sich in ihren eigenen
-Zonen um 72 Helligkeitsstufen** — mehr als Lutz' drei Scheiben mit 41. Die
-Helligkeit war also nie das Problem, ich habe an der falschen Größe gedreht.
-Ein zweiter Versuch (`c`: alle auf einen Farbton ziehen und die Textur
-anheben) war noch schlechter — die Außenscheibe wurde körnig und schmutzig.
-**Beide Sätze sind gelöscht, nicht wiederholen.**
+Das Loch misst **0,2981** des obersten Scheibenradius und saß 2,1 px neben der
+Mitte; eine Gummituch-Iteration brachte es auf **0,01 px**. Dahinter liegt der
+dunkle Füllkreis `nabLoch` mit r=**3,7**, der mit der Nabengröße mitskaliert
+(Lutz' Wahl „1").
 
-**Der einzige Ausreißer ist die Textur der Mittelscheibe: 2,6 gegen 11,0 und
-5,7.** Sie ist glatt wie Glas, die Nachbarn nicht — daran zerfällt der Eindruck
-„ein Stück Metall". Satz `d` hebt genau das an (2,6 → 6,7, Faktor 2,6 auf die
-Feinstruktur) und **fässt sonst nichts an**. Das ist der Stand im Labor.
+⚠️ **Zwei gescheiterte Farbrunden davor — nicht wiederholen.** Zum ersten
+Satz (drei Einzelbilder vom 21.9.) hatte ich (a) die Helligkeit gestuft
+(156/139/120) und den Kontrast angehoben, (b) alle auf einen Farbton gezogen
+und die Textur verstärkt. Beides war schlechter. Lutz: „Die 3 passen farblich
+noch nicht so gut, wie sie vorher waren." Die Messung sagt warum: **die alte
+Nabe unterscheidet sich in ihren eigenen Zonen um 72 Helligkeitsstufen**
+(166/133/94), die gelieferten Scheiben nur um 41 — Helligkeit war nie das
+Problem. Und das Verstärken der Feinstruktur macht eine patinierte Fläche
+körnig und schmutzig. → **Erst messen, welche Größe überhaupt aus der Reihe
+fällt, dann genau die eine anfassen.**
 
-Im Labor stehen fünf Sätze über `#lnbd`:
-`dreiteilig` (= `d`, Voreinstellung) · `dreiteilig roh` (= `a`, Lutz'
-Originale) · `dreiteilig warm` (= `e`, G/B auf die Werte der alten Nabe
-gezogen — im Render **zu gelb** gegenüber den Zeigern) · `exakt rund` (v9) ·
-`Textur (v5)`.
-
-⚠️ Der Satz `drei*` funktioniert anders als die beiden einteiligen: dort wird
+⚠️ Der Satz `drei` funktioniert anders als die beiden einteiligen: dort wird
 **ein** Bild dreimal beschnitten, hier sind es drei eigene Scheiben mit eigenem
 Rand — also `cc.r = 999` (kein Clip), je Scheibe eine eigene Bildbox
-`halbe Kante = r/ant`, und der dunkle Füllkreis `nabLoch` auf **4,4** (Lutz'
-Wahl „1"), der mit der Nabengröße mitskaliert. `nabDrei` trägt den Zustand;
-`markZeichnen` muss den echten Radius nehmen, nicht den Clip.
+`halbe Kante = r/ant` mit `ant` = 0,9267 / 0,9242 / 0,9270, und der Füllkreis
+statt des Clips. `nabDrei` trägt den Zustand; `markZeichnen` muss den echten
+Radius nehmen, nicht den Clip.
 
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 

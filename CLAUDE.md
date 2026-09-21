@@ -440,8 +440,8 @@ ohnehin dunklen Rille, nie im Messing.
 
 | | Anteil am sichtbaren Radius | bei r=26 |
 |---|---|---|
-| Scheibe 1 (innen, oben) | 110,3/160,9 = 0,686 | 17,86 |
-| Scheibe 2 (Mitte) | 151,5/160,9 = 0,942 | 24,49 |
+| Scheibe 1 (innen, oben) | 110,3/160,9 = 0,6855 | 17,82 |
+| Scheibe 2 (Mitte) | 151,5/160,9 = 0,9416 | 24,48 |
 | Scheibe 3 (Außenrand, unten) | 1,03 | 26,78 |
 
 ⚠️ Jede Scheibe ist eine **volle Kreisscheibe**, kein Ring. Beim Verschieben
@@ -475,6 +475,25 @@ Personenknopf hebt um eine Stufe an (3→2→1→oben→3).
   jeder Tipp nur innerhalb seiner eigenen.
 - ⚠️ `neuZeichnen()` darf `#zeiger` **nicht mehr leeren** — dort hängen jetzt die
   Scheiben. Geleert werden nur die vier Behälter.
+
+**Marke auf der gewählten Scheibe** (v0.24, Knopf „Scheibe zeigen" `#lsz`).
+Lutz hat am 21.9. ein Bild geschickt, auf dem alle drei Scheiben weit
+auseinandergeschoben sind — und genau daran fiel der Mangel auf: Wer „Scheibe 2"
+antippt, sieht bis zum ersten Pfeildruck nicht, welche der drei gemeint ist.
+Der gestrichelte Kreis (`#schmark`, Türkis `#17b5c8`, damit er neben dem roten
+Prüfkreis bestehen kann) liegt auf dem Clipradius der gewählten Scheibe und
+zieht beim Verschieben mit. Er wird nach `svg` angehängt, also **über** der
+Vignette; erneuert wird er aus `versatzAnwenden()` und `scheibenSetzen()`.
+Dazu ein Knopf **„alle drei zurück"** (`#lpa`), gesperrt, solange kein Versatz
+gesetzt ist — das einzelne „Scheibe zurück" holt nur eine zurück, und
+„zurücksetzen" würde auch Schrift und Zeigerwahl mitreißen.
+
+⚠️ Auf Lutz' Bild ist das Ding in der Mitte **nicht** die Nabe, sondern der
+freigelegte **Ösen-Stapel der fünf Schriftband-Zeiger**. Er wird sichtbar,
+sobald alle drei Scheiben weggeschoben sind — die roten Speichen des
+Prüfkreises laufen durch ihn hindurch, durch die Scheiben nicht. Wer das Bild
+später wieder ansieht: das ist kein Fehler, sondern das, was sonst darunter
+liegt.
 
 Der Versatz geht in Schritten von **0,5 Einheiten** (≈0,48 px auf dem iPhone:
 382 px Uhr bei viewBox 400). Die Fehler, die Lutz sieht, liegen bei 1 bis 2,5 px

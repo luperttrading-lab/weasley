@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.23</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.24</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -637,6 +637,7 @@ function scheibenSetzen(nr){
   });
   const lo=document.getElementById('nabLoch');
   if(lo) lo.setAttribute('r',(nr*NAB_LOCH).toFixed(3));
+  markZeichnen();
 }
 // Versatz je Scheibe: Lutz' Wunsch vom 21.9. — "die einzelnen Scheiben
 // pixelweise verschieben, dann kann ich sie dir zentrieren". Der Clip sitzt in
@@ -645,9 +646,26 @@ function versatzAnwenden(){
   const S=window.NABE_BAU; if(!S) return;
   S.forEach((t,k)=>t.g.setAttribute('transform',
     'translate('+nabVers[k][0].toFixed(2)+' '+nabVers[k][1].toFixed(2)+')'));
+  markZeichnen();
 }
 function versatzSetzen(k,dx,dy){ nabVers[k]=[dx,dy]; versatzAnwenden(); }
 function versatzVon(k){ return nabVers[k].slice(); }
+// Welche der drei ist gerade gewaehlt? Ohne Marke tippt man "Scheibe 2" und
+// weiss es erst, wenn man den ersten Pfeil gedrueckt hat. Eigene Farbe, damit
+// sie neben dem roten Pruefkreis bestehen kann.
+let markK=0, markAn=false, markEl=null;
+function markZeichnen(){
+  if(!markEl) markEl=E('circle',{id:'schmark',fill:'none',stroke:'#17b5c8',
+      'stroke-width':0.7,'stroke-dasharray':'3 2','pointer-events':'none'});
+  if(!markAn){ if(markEl.parentNode) markEl.parentNode.removeChild(markEl); return; }
+  const S=window.NABE_BAU; if(!S) return;
+  const v=nabVers[markK];
+  markEl.setAttribute('cx',(CX+v[0]).toFixed(2));
+  markEl.setAttribute('cy',(CY+v[1]).toFixed(2));
+  markEl.setAttribute('r',(+S[markK].cc.getAttribute('r')).toFixed(2));
+  svg.appendChild(markEl);          // ueber allem, auch ueber der Vignette
+}
+function scheibeMarke(k,an){ markK=k|0; markAn=!!an; markZeichnen(); }
 // Der Ortsring rueckt als Ganzes nach aussen. Reine Skalierung um die Uhrmitte,
 // damit Trennlinien, Sektorflaechen und Textpfade zusammenbleiben. Mehr als
 // R_OUT=180 geht nicht: bei 184 stiesse der Rahmenkreis an die Pergamentkante.
@@ -705,7 +723,7 @@ function mitteSetzen(i,kapKey){
 // "Nabe unten" heisst, alle Zeiger liegen auf Ebene 0 (ueber allen Scheiben).
 function nabeLage(oben){ nabUnten=!oben; ebenenAnwenden(); }
 window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, NABENBILD, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
-  ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, waehle(k){ ZB=ZEIGERSATZ[k]; },
+  ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, scheibeMarke, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -1380,6 +1398,8 @@ setInterval(()=>{
     <button class="k pfeil" id="lpo">&uarr;</button>
     <button class="k pfeil" id="lpu">&darr;</button>
     <button class="k" id="lpn">Scheibe zur&uuml;ck</button>
+    <button class="k" id="lpa">alle drei zur&uuml;ck</button>
+    <button class="k" id="lsz">Scheibe zeigen</button>
   </div>
   <div class="vz" id="lvz" style="margin-top:5px"></div>
   <h4>Anzeige</h4>
@@ -1418,10 +1438,10 @@ setInterval(()=>{
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
              kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'exakt',
-             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0};
+             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false};
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
       endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild,
-      schIdx=STD.sch;
+      schIdx=STD.sch, schMark=STD.schmark;
   // Ein Tipp auf den Pfeil verschiebt um eine halbe Einheit. Auf dem iPhone ist
   // die Uhr 382 px breit bei viewBox 400, eine Einheit also 0,955 px — ein Tipp
   // ist damit knapp ein halber Bildschirmpunkt. Die Fehler, die Lutz sieht,
@@ -1565,6 +1585,8 @@ setInterval(()=>{
   $('lpo').onclick=()=>schieben(0,-SCHRITT);
   $('lpu').onclick=()=>schieben(0,+SCHRITT);
   $('lpn').onclick=()=>{ L.versatzSetzen(schIdx,0,0); spiegeln(); speichern(); };
+  $('lpa').onclick=()=>{ [0,1,2].forEach(k=>L.versatzSetzen(k,0,0)); spiegeln(); speichern(); };
+  $('lsz').onclick=()=>{ schMark=!schMark; spiegeln(); speichern(); };
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
   $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
@@ -1654,6 +1676,7 @@ setInterval(()=>{
         [0,1,2].forEach(m=>{ const v=Array.isArray(a[m])?a[m]:[0,0];
           L.versatzSetzen(m, +v[0]||0, +v[1]||0); }); }
       else if(k==='sch'){ schIdx = [0,1,2].indexOf(+o[k])>=0 ? +o[k] : STD.sch; }
+      else if(k==='schmark'){ schMark=!!o[k]; }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
@@ -1661,7 +1684,7 @@ setInterval(()=>{
        mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
        pruef:pruef,nabbild:nabBild,
        ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
-       vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx})); }catch(e){} }
+       vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
@@ -1693,6 +1716,11 @@ setInterval(()=>{
       b.classList.toggle('an', ebWirkt && L.ebeneVon(i)!==3);
     });
     $('lsch').querySelectorAll('button').forEach(b=>b.classList.toggle('an',+b.dataset.sch===schIdx));
+    L.scheibeMarke(schIdx, schMark);
+    $('lsz').classList.toggle('an', schMark);
+    { const v=L.versatzVon(0), w=L.versatzVon(1), x=L.versatzVon(2);
+      const ver = v[0]||v[1]||w[0]||w[1]||x[0]||x[1];
+      $('lpa').disabled=!ver; $('lpa').style.opacity=ver?1:.4; }
     { const v=L.versatzVon(schIdx),
             z=n=>((n>0?'+':n<0?'\u2212':'\u00a0')+Math.abs(n).toFixed(2)).replace('.',',');
       $('lvz').textContent='Scheibe '+(schIdx+1)+' \u00b7 x '+z(v[0])+'  y '+z(v[1])

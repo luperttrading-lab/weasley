@@ -550,6 +550,39 @@ der Außenrand von Scheibe 2 und Scheibe 1 nur ihr Kern; beide sind in Scheibe 2
 vollständig enthalten und liegen darunter. Übrig bleibt **eine** Nabenscheibe
 (r=24,48 Einheiten).
 
+**Drei einzelne Nabenscheiben von Lutz (21.9.)** — `zeiger/nabe-a1.webp`
+(oben, mit Loch), `nabe-a2.webp` (Mitte, poliert), `nabe-a3.webp` (unten,
+dunkle Patina). Vorher hatte ich abgeraten („einzeln wäre schlechter, drei
+unabhängige Zentrierfehler"). **Das Argument trägt bei 1024 px nicht:** ein
+Kreisfit streut dort rund 0,7 px, das sind auf dem Zifferblatt **0,04
+Einheiten**. Dafür lassen sich die drei Größen jetzt frei wählen.
+
+Gemessen an den Vorlagen (robuster Kreisfit, 1440 Winkel, Ausreißer verworfen):
+
+| | Außenkante r | Ovalität | Mitte gegen Bildmitte |
+|---|---|---|---|
+| `s3` dunkel | 484,3 | **−0,09 %** | −0,4 / −6,6 px |
+| `s2` poliert | 427,4 | **+0,01 %** | −1,9 / −7,7 px |
+| `s1` mit Loch | 453,2 | −0,77 % | −0,7 / −2,8 px |
+
+Aufbereitet: auf die gemessene Scheibenmitte geschoben, Loch durchsichtig
+gemacht, auf 512 px gerechnet. Kontrolle danach: Versatz **unter 0,3 px** bei
+allen dreien, Loch 0,02 px von der Scheibenmitte, Loch r = **0,390** der
+Scheibe. Außenkante je halber Bildkante: a1 **0,8873**, a2 **0,8368**,
+a3 **0,9483** — daraus folgt die Bildbox, `halbe Kante = r_soll / Anteil`.
+
+⚠️⚠️ **Lehre zum Messen: ein Strahlensucher lügt im Trichter.** Für das Loch
+in `s1` lieferte das Verfahren „je Winkel nach innen laufen, bis die Helligkeit
+unter die Schwelle fällt" einen Versatz von **8,6 px**; die Korrektur
+übersteuerte daraufhin um das Doppelte und machte es schlimmer (7,5 px statt
+8,6). Der Grund: `s1` ist ein Trichter mit dunklen Ringen auf dem Weg nach
+innen — der Strahl bleibt je nach Winkel an einer anderen Kante hängen, und
+der Kreisfit mittelt den Unsinn zu einer plausiblen Zahl. **Der Flächen-
+schwerpunkt des zusammenhängenden dunklen Gebiets um die Bildmitte** (`scipy.
+ndimage.label` + `center_of_mass`) sagt: **1,10 px**. Eine Iteration brachte es
+auf 0,05 px. → Bei Löchern und Flächen immer den Schwerpunkt nehmen, nie den
+Strahlensucher; der ist nur für saubere, einzelne Kanten gut.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

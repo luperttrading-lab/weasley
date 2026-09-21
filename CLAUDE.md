@@ -721,6 +721,36 @@ ohne Bereich **278 522**, mit ausdrücklichem Bereich **450 227** — also genau
 die fünf ausgeschnittenen Ösen weniger. → **Bei jeder Maske den Bereich
 ausdrücklich setzen.**
 
+**Der Fuß des Schriftbands auf Normalmaß** (Labor v0.31, `zeiger/band2.webp`).
+Lutz am 21.9.: „Kannst du den Pergamentbanner so machen, dass er die gleiche
+Füße in der Mitte hat wie alle andern auch und nicht so eine voluminöse."
+Gemessen — der gezeichnete Fußradius auf dem Zifferblatt (`OES_R`):
+
+| Zeiger | Fuß r | | Zeiger | Fuß r |
+|---|---|---|---|---|
+| perlklein | 7,85 | | ranke | 8,72 |
+| flach / hoch | 8,10 / 8,11 | | **glatt** | **13,31** |
+| lilie | 8,23 | | **band** | **17,91** |
+| perl (App) | 8,35 | | deko / spindel | 8,60 / 8,57 |
+
+Das Schriftband ist also **gut doppelt so voluminös** wie die Normalgruppe
+(7,85…8,72), `glatt` der zweite Ausreißer. Gebaut: Im Bild sitzt die
+Ösenscheibe mit r=138,9 nominalen Pixeln am Drehpunkt; sie ist an ihrer
+**rechten Kante** (nominal x=307) herausgeschnitten und der dünne Hals dahinter
+(16 Bildpixel hoch) nach innen bis auf den Drehpunkt verlängert — seine Mitte
+läuft dabei von y=514,8 auf die Drehpunkthöhe y=521 zu. `OESE.band` sitzt
+seither **mittig auf dem Drehpunkt** (Versatz 0 statt 1,19 Einheiten) mit
+`oer=68,7` → **Fuß r=8,35**, genau der Wert von `perl`.
+
+Gegenprobe: die fünf Portraitmitten stehen vorher wie nachher auf **0,00 px**
+genau an derselben Stelle — nur der Fuß hat sich geändert. Radial abgetastet
+ist von r≈2 bis r≈17 durchgehend Messing, es klafft also keine Lücke zwischen
+Schaftende und gemeinsamer Öse.
+
+⚠️ **Mit der Nabe der App (r=26 über den Zeigern) sieht man davon nichts** —
+sie deckt beide Fassungen zu. Sichtbar wird der Unterschied erst, wenn die
+Nabenscheiben kleiner gestellt oder ausgeblendet sind.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

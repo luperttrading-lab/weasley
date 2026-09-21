@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.30</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.31</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -384,7 +384,16 @@ const ZEIGERSATZ={
   // liegt, sah man fuenf Oesen auf einem Kreis von 3,8 Einheiten kreuz und quer
   // stehen (Lutz, 19.9.). Jetzt steht hier die echte Mitte; die Verkantung
   // gleicht KIPP aus.
-  band     : {t:'J  Schriftband (schief gezeichnet)', datei:'zeiger/band.webp',
+  // band2.webp (21.9.): Im Original sitzt am Drehpunkt eine Oesenscheibe von
+  // r=138,9 Bildpixeln = 16,6 Einheiten — doppelt so gross wie bei allen
+  // anderen (7,6...8,4). Lutz: "der Pergamentbanner ... nicht so eine
+  // voluminoese [Fuss], bei allen anderen stimmen sie". Deshalb ist die
+  // Scheibe an ihrer rechten Kante (nominal x=307) herausgeschnitten und der
+  // duenne Hals dahinter nach innen bis auf den Drehpunkt verlaengert; seine
+  // Mitte laeuft dabei von y=514,8 auf die Drehpunkthoehe y=521 zu.
+  // Die gemeinsame Oese sitzt jetzt MITTIG auf dem Drehpunkt (Versatz 0 statt
+  // 1,19 Einheiten) und wird auf oer=68,7 skaliert -> Fuss r=8,35 Einheiten.
+  band     : {t:'J  Schriftband (schief gezeichnet)', datei:'zeiger/band2.webp',
               W:1536,H:1024, ox:165,oy:521, rx:1291,ry:489, rl:190,rlx:192.0,rly:188.4,ra:218.5,
               sx0:590,sx1:930,sy:520,sh:100, ende:1510}
 };
@@ -407,7 +416,7 @@ const OESE={
   ranke     :{oex:102.9, oey:502.9, oer:73.4,  ant:0.941},
   deko      :{oex:117.8, oey:497.7, oer:72.3,  ant:0.9563},
   spindel   :{oex:109.1, oey:497.0, oer:72.8,  ant:0.9333},
-  band      :{oex:168.5, oey:511.7, oer:138.9, ant:0.9411}};
+  band      :{oex:165.0, oey:521.0, oer:68.7,  ant:0.9411}};
 let OES_EIN=true, OES_R=9, OES_KEY='perl';
 let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGX=1, RINGY=1, RINGA=1, KIPP=0;
 // ENDEART 0: das Bild endet an seiner Spitze (Stand der App).

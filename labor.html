@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.31</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.32</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -1453,7 +1453,21 @@ setInterval(()=>{
     overflow:hidden;text-overflow:ellipsis;padding:0 8px;}
   #lfw .wi.an{opacity:1;color:#f7e6b8;}
   #lfw .pad{height:32px;}
-  #lfband{position:absolute;left:0;right:0;top:50%;height:32px;margin-top:-16px;
+  /* Zeigerwalze: dieselbe Mechanik, aber die Nachbarzeilen bleiben lesbar —
+     man scrollt hier auf ein Ziel zu, bei der Schrift vergleicht man nur. */
+  #lzwrap{position:relative;flex:1;min-width:220px;}
+  #lzw{height:96px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    overscroll-behavior:contain;touch-action:pan-y;
+    -webkit-overflow-scrolling:touch;background:#2e2311;border:1px solid #6b5124;border-radius:9px;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 16%,#000 31%,#000 69%,transparent 84%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,transparent 16%,#000 31%,#000 69%,transparent 84%,transparent 100%);}
+  #lzw::-webkit-scrollbar{display:none;}
+  #lzw .wi{height:32px;line-height:32px;text-align:center;scroll-snap-align:center;
+    color:#bfae8a;font-size:14.5px;white-space:nowrap;opacity:.5;transition:opacity .15s,color .15s;
+    overflow:hidden;text-overflow:ellipsis;padding:0 10px;}
+  #lzw .wi.an{opacity:1;color:#f7e6b8;font-size:16px;}
+  #lzw .pad{height:32px;}
+  #lfband,#lzband{position:absolute;left:0;right:0;top:50%;height:32px;margin-top:-16px;
     border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
     background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
   #lab .mess{margin-top:10px;font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#a89670;
@@ -1478,7 +1492,9 @@ setInterval(()=>{
   <div class="row" id="ls"></div>
   <div class="row" id="lc" style="margin-top:5px"></div>
   <h4>Zeiger</h4>
-  <div class="row" id="lz"></div>
+  <div class="row">
+    <div id="lzwrap"><div id="lzw"></div><div id="lzband"></div></div>
+  </div>
   <h4>Nabe: Ebenen &middot; Scheiben ausrichten</h4>
   <div class="row" id="leb"></div>
   <div class="vz" id="lebh" style="margin-top:5px">unter 3 = hinter allen Scheiben
@@ -1529,10 +1545,17 @@ setInterval(()=>{
   // Voreinstellung = der Stand, der in index.html eingebaut ist (v0.71).
   // 'zuruecksetzen' faehrt damit auf die echte App zurueck, nicht auf einen
   // Laborwert, den es so nie gegeben hat.
+  // Welche Nabenscheiben sind sichtbar? Das haengt am ZEIGER, nicht an der Uhr
+  // (Lutz, 21.9.): "alle Zeiger nur mit Ring 1 und nur das Schriftband mit
+  // Ring 1 und Ring 2". true = ausgeblendet. Scheibe 1 ist die innere
+  // Deckscheibe (r=12,68), 2 die polierte (19,09), 3 die dunkle (26,00).
+  const AUS_STD={}; Object.keys(L.ZEIGERSATZ).forEach(k=>{
+    AUS_STD[k] = (k==='band') ? [false,false,true] : [false,true,true]; });
+  let ausJe={}; Object.keys(AUS_STD).forEach(k=>ausJe[k]=AUS_STD[k].slice());
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
              kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false,
-             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false, aus:[false,false,false], oese:true};
+             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false, ausz:AUS_STD, oese:true};
   // Voreinstellung fuer das Nabenbild steht in STD.nabbild
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
       endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef,
@@ -1545,12 +1568,46 @@ setInterval(()=>{
   const KAPFOLGE=['kern','glatt','spindel'];
   const $=id=>document.getElementById(id);
 
-  Object.keys(L.ZEIGERSATZ).forEach(k=>{
-    const b=document.createElement('button'); b.className='k'; b.dataset.k=k;
-    b.textContent=L.ZEIGERSATZ[k].t;
-    b.onclick=()=>{ zeigerKey=k; L.waehle(k); anwenden(true); };
-    $('lz').appendChild(b);
-  });
+  // ---- Zeigerwalze (Lutz, 21.9.: "die Zeiger als Scrollrad zum Waehlen") ----
+  // Die Knopfreihe brauchte fuenf Zeilen im Panel; die Walze braucht eine.
+  const ZKEYS=Object.keys(L.ZEIGERSATZ);
+  function ausVon(k){ const a=ausJe[k]||AUS_STD[k]||AUS_STD.perl;
+                      return [!!a[0],!!a[1],!!a[2]]; }
+  function ausAnwenden(){ const a=ausVon(zeigerKey); [0,1,2].forEach(m=>L.scheibeAus(m,a[m])); }
+  const ZIH=32, zwal=$('lzw');
+  { const p1=document.createElement('div'); p1.className='pad'; zwal.appendChild(p1);
+    ZKEYS.forEach((k,i)=>{ const d=document.createElement('div'); d.className='wi';
+      d.dataset.k=k; d.textContent=L.ZEIGERSATZ[k].t;
+      d.onclick=()=>zuZeiger(i,true); zwal.appendChild(d); });
+    const p2=document.createElement('div'); p2.className='pad'; zwal.appendChild(p2); }
+  function zwalIdx(){ return Math.max(0,Math.min(ZKEYS.length-1,Math.round(zwal.scrollTop/ZIH))); }
+  function zwalMark(i){ zwal.querySelectorAll('.wi').forEach((d,k)=>d.classList.toggle('an',k===i)); }
+  let zwalStumm=false, zwalTimer=null;
+  function zwalSetzen(){
+    const i=ZKEYS.indexOf(zeigerKey); if(i<0) return;
+    zwalStumm=true; zwal.scrollTop=i*ZIH; zwalMark(i);
+    setTimeout(()=>{ zwalStumm=false; },150);
+  }
+  function zeigerNehmen(k){
+    if(k===zeigerKey || !L.ZEIGERSATZ[k]) return;
+    zeigerKey=k; L.waehle(k); ausAnwenden(); anwenden(true);
+  }
+  zwal.addEventListener('scroll',()=>{
+    if(zwalStumm || $('lab').hidden) return;
+    const i=zwalIdx(); zwalMark(i);
+    // Ein Zeigerwechsel baut alle fuenf Zeiger neu auf, ist also teurer als
+    // eine Gravuraenderung. Deshalb hoechstens einer je Bild, und gelesen wird
+    // die Raststellung erst im Bild selbst - sonst haengt man hinterher.
+    if(ZKEYS[i]!==zeigerKey && !zwalTimer){
+      zwalTimer=requestAnimationFrame(()=>{ zwalTimer=null; zeigerNehmen(ZKEYS[zwalIdx()]); });
+    }
+  },{passive:true});
+  function zuZeiger(i,glatt){
+    zwalStumm=true;
+    try{ zwal.scrollTo({top:i*ZIH,behavior:glatt?'smooth':'auto'}); }catch(e){ zwal.scrollTop=i*ZIH; }
+    zwalMark(i); setTimeout(()=>{zwalStumm=false;}, glatt?450:150);
+    zeigerNehmen(ZKEYS[i]);
+  }
   // Schriftwalze. Jede Zeile steht in ihrer eigenen Schrift, die mittlere gilt.
   const IH=36, wal=$('lfw');
   { const p1=document.createElement('div'); p1.className='pad'; wal.appendChild(p1);
@@ -1686,13 +1743,14 @@ setInterval(()=>{
   $('lpo').onclick=()=>schieben(0,-SCHRITT);
   $('lpu').onclick=()=>schieben(0,+SCHRITT);
   $('loe').onclick=()=>{ L.oeseEine(!L.oeseVon()); anwenden(true); };   // baut die Zeiger neu
-  $('lsa').onclick=()=>{ L.scheibeAus(schIdx, !L.scheibeAusVon(schIdx)); spiegeln(); speichern(); };
+  $('lsa').onclick=()=>{ const a=ausVon(zeigerKey); a[schIdx]=!a[schIdx];
+    ausJe[zeigerKey]=a; ausAnwenden(); spiegeln(); speichern(); };
   $('lpn').onclick=()=>{ L.versatzSetzen(schIdx,0,0); spiegeln(); speichern(); };
   $('lpa').onclick=()=>{ [0,1,2].forEach(k=>L.versatzSetzen(k,0,0)); spiegeln(); speichern(); };
   $('lsz').onclick=()=>{ schMark=!schMark; spiegeln(); speichern(); };
   $('lgl').onclick=()=>{ G.gleich=!G.gleich; anwenden(); };
   ['lv1','lv2','lv3'].forEach(id=>$(id).onclick=()=>L.setSektoren(VERT[id]));
-  $('lres').onclick=()=>{ uebernehmen(STD); anwenden(true); };   // kann den Zeiger wechseln
+  $('lres').onclick=()=>{ uebernehmen(STD); ausAnwenden(); anwenden(true); };   // kann den Zeiger wechseln
   // Von Hand nach einer neuen Fassung sehen. Die Versionszeile unter der Uhr
   // kann das auch, liegt aber bei offenem Panel ausserhalb des Blickfelds.
   $('lnb').onclick=()=>{ mitteIdx=(mitteIdx+1)%L.MITTE.length; spiegeln(); speichern(); };
@@ -1746,7 +1804,7 @@ setInterval(()=>{
     if(l.hidden){ document.body.appendChild(leiste); leiste.className=''; }
     else { l.insertBefore(leiste, l.firstChild); leiste.className='oben'; }
     panelPlatz();
-    if(!l.hidden){ walSetzen(); WALZEN.forEach(w=>w.setzen()); }   // jetzt erst scrollbar
+    if(!l.hidden){ walSetzen(); zwalSetzen(); WALZEN.forEach(w=>w.setzen()); }   // jetzt erst scrollbar
   };
 
   function text(){
@@ -1778,8 +1836,12 @@ setInterval(()=>{
       else if(k==='sch'){ schIdx = [0,1,2].indexOf(+o[k])>=0 ? +o[k] : STD.sch; }
       else if(k==='schmark'){ schMark=!!o[k]; }
       else if(k==='oese'){ L.oeseEine(o[k]!==false); }
-      else if(k==='aus'){ const a=Array.isArray(o[k])?o[k]:STD.aus;
-        [0,1,2].forEach(m=>L.scheibeAus(m,!!a[m])); }
+      // bis Labor v0.31 galt EINE Liste fuer alle Zeiger. Sie wird bewusst
+      // verworfen: welche Scheibe passt, haengt am Zeiger.
+      else if(k==='aus'){ /* alt, ersetzt durch 'ausz' */ }
+      else if(k==='ausz'){ const m=(o[k]&&typeof o[k]==='object')?o[k]:{};
+        ausJe={}; ZKEYS.forEach(z=>{ const a=Array.isArray(m[z])?m[z]:AUS_STD[z];
+          ausJe[z]=[!!a[0],!!a[1],!!a[2]]; }); }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
@@ -1788,7 +1850,7 @@ setInterval(()=>{
        pruef:pruef,
        ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
        vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark,
-       aus:[0,1,2].map(k=>L.scheibeAusVon(k)), oese:L.oeseVon()})); }catch(e){} }
+       ausz:ausJe, oese:L.oeseVon()})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
@@ -1835,7 +1897,9 @@ setInterval(()=>{
             z=n=>((n>0?'+':n<0?'\u2212':'\u00a0')+Math.abs(n).toFixed(2)).replace('.',',');
       $('lvz').textContent='Scheibe '+(schIdx+1)+' \u00b7 x '+z(v[0])+'  y '+z(v[1])
         +' Einheiten \u00b7 '+z(v[0]*0.955)+' / '+z(v[1]*0.955)+' px auf dem iPhone'; }
-    $('lz').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.k===zeigerKey));
+    { const i=ZKEYS.indexOf(zeigerKey);
+      if(i>=0){ zwalMark(i);
+                if(!$('lab').hidden && zwalIdx()!==i) zwalSetzen(); } }
     $('ls').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.s===G.schreib));
     $('lc').querySelectorAll('button').forEach(b=>b.classList.toggle('an',b.dataset.c===G.farbe));
     { const i=SCHRIFTEN.indexOf(G.fam);
@@ -1878,6 +1942,7 @@ setInterval(()=>{
 
   let s=null; try{ s=localStorage.getItem('labor_einst'); }catch(e){}
   uebernehmen(s?JSON.parse(s):STD);
+  ausAnwenden();                       // Scheiben haengen am gewaehlten Zeiger
   L.setSektoren(VERT.lv1);
   anwenden(true);
   if(document.fonts&&document.fonts.ready) document.fonts.ready.then(anwenden);

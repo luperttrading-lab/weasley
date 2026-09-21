@@ -751,6 +751,41 @@ Schaftende und gemeinsamer Öse.
 sie deckt beide Fassungen zu. Sichtbar wird der Unterschied erst, wenn die
 Nabenscheiben kleiner gestellt oder ausgeblendet sind.
 
+**Die Nabenscheiben hängen am Zeiger, nicht an der Uhr** (Labor v0.32).
+Lutz am 21.9.: „alle Zeiger nur mit Ring 1 und nur das letzte mit der Banderole
+… mit Ring 1 und Ring 2." Voreinstellung je Zeigerschlüssel:
+
+| Zeiger | sichtbare Scheiben | Nabenradius |
+|---|---|---|
+| die neun Messingzeiger | **nur Scheibe 1** | 12,68 |
+| **band** (Schriftband) | **Scheibe 1 + 2** | 19,09 |
+
+`labor_einst.aus` (eine Liste für alle) ist damit abgelöst durch
+**`labor_einst.ausz`** — eine Liste **je Zeiger**. Eine alte gespeicherte
+Fassung wird bewusst verworfen und fällt auf die Voreinstellung zurück; der
+Knopf „Scheibe aus" schreibt seither nur noch in den gerade gewählten Zeiger.
+Gemessen: `band` behält ein von Hand ausgeblendetes Ring 2 über einen
+Zeigerwechsel und über ein Neuladen hinweg, `glatt` bleibt davon unberührt.
+
+**Die Zeigerwahl ist eine Walze** (Labor v0.32, `#lzwrap`/`#lzw`/`#lzband`).
+Die Knopfreihe brauchte auf dem iPhone fünf Zeilen. Mechanik wie die
+Schriftwalze (Rastmaß 32 px, `overscroll-behavior:contain`, stumm bei
+geschlossenem Panel), zwei Unterschiede:
+- Die Nachbarzeilen stehen auf **Deckkraft 0,5** statt 0,16 — hier scrollt man
+  auf ein Ziel zu, bei der Schrift vergleicht man nur. ⚠️ Die Schriftwalze
+  bleibt bei 0,16, das ist Lutz' Vorgabe vom 18.9.
+- Ein Zeigerwechsel baut **alle fünf Zeiger neu auf**, ist also teurer als eine
+  Gravuränderung. Deshalb höchstens einer je Bild (`requestAnimationFrame`),
+  und die Raststellung wird erst **im** Bild gelesen (`zwalIdx()` im Callback),
+  sonst hinkt die Uhr dem Finger hinterher.
+Gemessen (390×844): Walze zeigt zehn Einträge, die Uhr folgt beim Scrollen,
+keine JS-Fehler, Panelinhalt 1174 → 1140 px.
+
+⚠️ **Offen: „in der Hauptapp die Zeiger als Scrollrad"** — umgesetzt ist es im
+**Labor**. `index.html` hat gar keine Zeigerwahl; sie dorthin zu bringen hieße,
+zehn Messingbilder und ein Einstellfenster in die Familienuhr zu holen — genau
+das, wogegen das Labor gebaut wurde. Vor dem Bauen mit Lutz klären.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

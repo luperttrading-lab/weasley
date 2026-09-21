@@ -653,6 +653,24 @@ spielt sich innerhalb von r=26 von 200 ab.
 Gemessen: in allen vier MITTE-Zuständen wandert ein Zeiger sauber durch
 E3 → E2 → E1 → E0.
 
+**Scheiben einzeln ausblendbar** (Labor v0.29, Knopf `#lsa`). Lutz am 21.9.:
+„ob du ein[en] ausblendest — Kreis außen ist zu groß, der dritte." Der Knopf
+schaltet die gerade gewählte Scheibe aus und wieder ein; eine ausgeblendete
+steht in der Auswahl **durchgestrichen**. Gemerkt in `labor_einst` unter `aus`.
+
+⚠️ Zwei Dinge hängen daran und dürfen nicht vergessen werden:
+- **Der Schatten `#shn` muss an die äußerste SICHTBARE Scheibe.** Er hing fest
+  an Nummer 3; blendet man die aus, läge Nummer 2 ohne Saum auf dem
+  Zifferblatt. `scheibenSetzen` sucht deshalb von außen nach innen die erste
+  sichtbare und hängt ihn dort hin, bei allen anderen `removeAttribute`.
+- **Der dunkle Füllkreis `nabLoch` liegt in der obersten Scheibe.** Ist die
+  aus, muss er auf r=0, sonst schwebt ein dunkler Punkt frei in der Mitte.
+
+Zur Größe: „außen ist zu groß" lässt sich auf zwei Wegen beheben — Scheibe 3
+ganz weg (Nabe endet dann bei **19,09**) oder alle drei kleiner über den
+vorhandenen Knopf „Nabe" (Stufe 22,2 → **22,20 / 16,30 / 10,83**, Faktor
+0,854). Beides steht im Labor zur Wahl; die Entscheidung gehört ans Gerät.
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

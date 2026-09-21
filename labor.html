@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.28</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.29</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -642,15 +642,25 @@ function nabeBild(){
 function scheibenSetzen(nr){
   const S=window.NABE_BAU; if(!S) return;
   const f=nr/26;
+  // Der Schatten gehoert an die AEUSSERSTE SICHTBARE Scheibe. Blendet man die
+  // dritte aus, wuerde die zweite sonst ohne Saum auf dem Zifferblatt liegen.
+  let aussen=-1;
+  for(let k=2;k>=0;k--) if(!nabAus[k] && nr>0){ aussen=k; break; }
   S.forEach((t,k)=>{
     const r=NABE.r[k]*f, he=r/NABE.ant[k];
     t.im.setAttribute('x',(CX-he).toFixed(3)); t.im.setAttribute('y',(CY-he).toFixed(3));
     t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
+    t.g.setAttribute('opacity', (nr>0 && !nabAus[k]) ? 1 : 0);
+    if(k===aussen) t.g.setAttribute('filter','url(#shn)');
+    else t.g.removeAttribute('filter');
   });
   const lo=document.getElementById('nabLoch');
-  if(lo) lo.setAttribute('r',(NABE.loch*f).toFixed(3));
+  // Der Fuellkreis liegt in der obersten Scheibe; ist die aus, ist er es auch.
+  if(lo) lo.setAttribute('r', nabAus[0] ? 0 : (NABE.loch*f).toFixed(3));
   markZeichnen();
 }
+function scheibeAus(k,an){ nabAus[k]=!!an; }
+function scheibeAusVon(k){ return !!nabAus[k]; }
 // Versatz je Scheibe: Lutz' Wunsch vom 21.9. — "die einzelnen Scheiben
 // pixelweise verschieben, dann kann ich sie dir zentrieren". Der Clip sitzt in
 // derselben Gruppe, wandert also mit; verschoben wird Bild UND Ausschnitt.
@@ -721,8 +731,8 @@ function mitteSetzen(i,kapKey){
   const setz=(e,r)=>{e.setAttribute('x',CX-r);e.setAttribute('y',CY-r);
                      e.setAttribute('width',r*2);e.setAttribute('height',r*2);};
   const nr = v.nr>0 ? NABGR[nabPlus]||v.nr : 0;
-  if(S){ S.forEach(t=>t.g.setAttribute('opacity', nr>0?1:0));
-         if(nr>0) scheibenSetzen(nr); }
+  if(S){ if(nr>0) scheibenSetzen(nr);
+         else S.forEach(t=>t.g.setAttribute('opacity',0)); }
   if(kp){
     kp.setAttribute('opacity', v.kr>0?1:0);
     if(v.kr>0){ setz(kp,v.kr);
@@ -736,7 +746,8 @@ function mitteSetzen(i,kapKey){
 // bleibt als Einstiegspunkt erhalten, greift aber nicht mehr in die Ebenen ein
 function nabeLage(){ ebenenAnwenden(); }
 window.LABOR={GRAV, ZEIGERSATZ, neuZeichnen, gravurNeu, nabeLage, mitteSetzen, nabeGroesse, nabeBild, ortsringSetzen, endeArt, pruefkreis, KAPPEN, MITTE, NABGR, ORTSR,
-  ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, scheibeMarke, waehle(k){ ZB=ZEIGERSATZ[k]; },
+  ebeneSetzen, ebeneVon, versatzSetzen, versatzVon, scheibeMarke,
+  scheibeAus, scheibeAusVon, waehle(k){ ZB=ZEIGERSATZ[k]; },
   masse(){ return {RINGR:RINGR, RINGA:RINGA, ZS:ZS, R_ZEIGER:R_ZEIGER,
                    schildB:(ZB.sx1-ZB.sx0)*ZS, schildH:ZB.sh*ZS, ende:(ZB.ende-ZB.ox)*ZS,
                    grade:zeiger.map(z=>z.nameTx?+z.nameTx[0].getAttribute('font-size'):null)}; },
@@ -763,6 +774,7 @@ const KAPPE_R=10.5;                    // 0 = keine Deckkappe
 // jede Scheibe bringt ihren eigenen Rand mit. Reihenfolge unten nach oben:
 // f3 (aussen, dunkel) - f2 (Mitte, poliert) - f1 (oben, mit Loch).
 const nabVers=[[0,0],[0,0],[0,0]];                  // Versatz je Scheibe, in Einheiten
+const nabAus=[false,false,false];                   // einzeln ausblendbar (Lutz, 21.9.)
 window.NABE_BAU=[0,1,2].map(k=>{
   const g=E('g',{'data-sch':String(k+1),transform:'translate(0 0)'});
   const im=E('image',{preserveAspectRatio:'none'});
@@ -1398,6 +1410,7 @@ setInterval(()=>{
     <button class="k pfeil" id="lpr">&rarr;</button>
     <button class="k pfeil" id="lpo">&uarr;</button>
     <button class="k pfeil" id="lpu">&darr;</button>
+    <button class="k" id="lsa">Scheibe aus</button>
     <button class="k" id="lpn">Scheibe zur&uuml;ck</button>
     <button class="k" id="lpa">alle drei zur&uuml;ck</button>
     <button class="k" id="lsz">Scheibe zeigen</button>
@@ -1438,7 +1451,7 @@ setInterval(()=>{
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
              kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false,
-             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false};
+             ebene:[3,3,3,3,3], vers:[[0,0],[0,0],[0,0]], sch:0, schmark:false, aus:[false,false,false]};
   // Voreinstellung fuer das Nabenbild steht in STD.nabbild
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
       endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef,
@@ -1591,6 +1604,7 @@ setInterval(()=>{
   $('lpr').onclick=()=>schieben(+SCHRITT,0);
   $('lpo').onclick=()=>schieben(0,-SCHRITT);
   $('lpu').onclick=()=>schieben(0,+SCHRITT);
+  $('lsa').onclick=()=>{ L.scheibeAus(schIdx, !L.scheibeAusVon(schIdx)); spiegeln(); speichern(); };
   $('lpn').onclick=()=>{ L.versatzSetzen(schIdx,0,0); spiegeln(); speichern(); };
   $('lpa').onclick=()=>{ [0,1,2].forEach(k=>L.versatzSetzen(k,0,0)); spiegeln(); speichern(); };
   $('lsz').onclick=()=>{ schMark=!schMark; spiegeln(); speichern(); };
@@ -1681,6 +1695,8 @@ setInterval(()=>{
           L.versatzSetzen(m, +v[0]||0, +v[1]||0); }); }
       else if(k==='sch'){ schIdx = [0,1,2].indexOf(+o[k])>=0 ? +o[k] : STD.sch; }
       else if(k==='schmark'){ schMark=!!o[k]; }
+      else if(k==='aus'){ const a=Array.isArray(o[k])?o[k]:STD.aus;
+        [0,1,2].forEach(m=>L.scheibeAus(m,!!a[m])); }
       else G[k]=o[k]; }); }
   function speichern(){ try{ localStorage.setItem('labor_einst', JSON.stringify(
       {fam:G.fam,gew:G.gew,faktor:G.faktor,sperr:G.sperr,schreib:G.schreib,gleich:G.gleich,
@@ -1688,7 +1704,8 @@ setInterval(()=>{
        mitte:mitteIdx,kappe:kappeKey,nabgr:nabGr,ende:endeArt,ortsr:ortsStufe,
        pruef:pruef,
        ebene:L.personen.map((p,i)=>L.ebeneVon(i)),
-       vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark})); }catch(e){} }
+       vers:[0,1,2].map(k=>L.versatzVon(k)), sch:schIdx, schmark:schMark,
+       aus:[0,1,2].map(k=>L.scheibeAusVon(k))})); }catch(e){} }
   function spiegeln(){
     L.ortsringSetzen(ortsStufe);
     L.pruefkreis(pruef);
@@ -1717,7 +1734,13 @@ setInterval(()=>{
     });
     { const e=L.personen.map((p,i)=>L.ebeneVon(i));
       $('lebal').textContent = 'alle: ' + (e.every(x=>x===e[0]) ? ebeneTxt(e[0]) : 'gemischt'); }
-    $('lsch').querySelectorAll('button').forEach(b=>b.classList.toggle('an',+b.dataset.sch===schIdx));
+    $('lsch').querySelectorAll('button').forEach(b=>{
+      const k=+b.dataset.sch;
+      b.classList.toggle('an',k===schIdx);
+      b.style.textDecoration = L.scheibeAusVon(k) ? 'line-through' : 'none';
+    });
+    $('lsa').textContent = L.scheibeAusVon(schIdx) ? 'Scheibe '+(schIdx+1)+' EIN' : 'Scheibe '+(schIdx+1)+' aus';
+    $('lsa').classList.toggle('an', L.scheibeAusVon(schIdx));
     L.scheibeMarke(schIdx, schMark);
     $('lsz').classList.toggle('an', schMark);
     { const v=L.versatzVon(0), w=L.versatzVon(1), x=L.versatzVon(2);

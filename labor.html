@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.21</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.22</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -584,8 +584,8 @@ const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
 //            Restversatz rund 1 px von 161 (mein Kantensucher streut selbst 0,7 px)
 //   exakt  = nabe-v6: Radialprofil ueber alle Winkel gemittelt und herumgedreht,
 //            also per Konstruktion perfekt rund und konzentrisch — dafuer weicher
-const NABENBILD={scharf:{d:'zeiger/nabe-v5.webp', t:'scharf'},
-                 exakt :{d:'zeiger/nabe-v6.webp', t:'exakt rund'}};
+const NABENBILD={exakt :{d:'zeiger/nabe-v9.webp', t:'exakt rund'},
+                 scharf:{d:'zeiger/nabe-v5.webp', t:'Textur (v5)'}};
 const NABGR=[22.2, 26, 30, 34, 38];     // waehlbare Scheibenradien
 let nabPlus=0;                          // Aufschlag auf den Radius des Zustands
 const MITTE=[{t:'1 Nabe + Kappe',  oben:false, nr:22.2, kr:10.5, kap:'kern'},
@@ -1336,7 +1336,7 @@ setInterval(()=>{
   // Laborwert, den es so nie gegeben hat.
   const STD={fam:'Forum',gew:'700',faktor:0.95,sperr:0,schreib:'normal',gleich:true,
              farbe:'#1b1409',deck:1,hoehe:0.330,seite:0.065,zeiger:'perl',nabeOben:false,
-             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'scharf'};
+             kappe:'kern', mitte:3, nabgr:1, ende:1, ortsr:2, pruef:false, nabbild:'exakt'};
   let zeigerKey=STD.zeiger, kappeKey=STD.kappe, mitteIdx=STD.mitte, nabGr=STD.nabgr,
       endeArt=STD.ende, ortsStufe=STD.ortsr, pruef=STD.pruef, nabBild=STD.nabbild;
   const KAPFOLGE=['kern','glatt','spindel'];
@@ -1465,7 +1465,7 @@ setInterval(()=>{
   $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
   $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
   $('lpk').onclick=()=>{ pruef=!pruef; spiegeln(); speichern(); };
-  $('lnbd').onclick=()=>{ nabBild = nabBild==='scharf' ? 'exakt' : 'scharf';
+  $('lnbd').onclick=()=>{ nabBild = nabBild==='exakt' ? 'scharf' : 'exakt';
                           spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
   $('lupd').title='nach einer neuen Fassung sehen';

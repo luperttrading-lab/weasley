@@ -146,6 +146,37 @@
     -webkit-tap-highlight-color:transparent;vertical-align:middle;}
   #lgovl{z-index:60;}
   #zeiger{transition:opacity .45s ease;}
+  /* ---- Zeigerwahl (v0.84) ----
+     Eine Walze UNTEN, kein Overlay: beim Drehen soll man die Uhr sehen.
+     Deshalb sitzt sie am unteren Rand und laesst das Zifferblatt frei. */
+  .zbtn{position:fixed;right:12px;bottom:max(env(safe-area-inset-bottom),10px);z-index:55;
+    font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.06em;color:#e6d8b8;
+    background:linear-gradient(#3d2e1d,#241a10);border:1px solid #7d5f30;border-radius:999px;
+    padding:7px 13px;cursor:pointer;-webkit-tap-highlight-color:transparent;opacity:.72;}
+  .zwahl{position:fixed;left:0;right:0;bottom:0;z-index:56;
+    padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+    background:linear-gradient(#2a1f12,#180f07);border-top:1px solid #6b5124;
+    box-shadow:0 -3px 14px rgba(0,0,0,.5);}
+  .zwahl[hidden]{display:none;}
+  .zreihe{display:flex;gap:10px;align-items:center;}
+  .zwrap{position:relative;flex:1;min-width:0;}
+  #zwal{height:96px;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+    overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;
+    background:#2e2311;border:1px solid #6b5124;border-radius:9px;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 16%,#000 31%,#000 69%,transparent 84%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,transparent 16%,#000 31%,#000 69%,transparent 84%,transparent 100%);}
+  #zwal::-webkit-scrollbar{display:none;}
+  #zwal .wi{height:32px;line-height:32px;text-align:center;scroll-snap-align:center;
+    color:#bfae8a;font-size:14.5px;white-space:nowrap;opacity:.5;transition:opacity .15s,color .15s;
+    overflow:hidden;text-overflow:ellipsis;padding:0 10px;}
+  #zwal .wi.an{opacity:1;color:#f7e6b8;font-size:16px;}
+  #zwal .pad{height:32px;}
+  .zband{position:absolute;left:0;right:0;top:50%;height:32px;margin-top:-16px;
+    border-top:1px solid #7a5f2a;border-bottom:1px solid #7a5f2a;
+    background:rgba(122,95,42,.18);pointer-events:none;border-radius:5px;}
+  .zfertig{font-family:'Cinzel',serif;font-size:12px;letter-spacing:.05em;color:#efd79a;
+    background:linear-gradient(#3d2e1d,#241a10);border:1px solid #7d5f30;border-radius:999px;
+    padding:9px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex:none;}
 </style>
 </head>
 <body>
@@ -162,7 +193,14 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.83</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">v0.84</div>
+</div>
+<button class="zbtn" id="zbtn">Zeiger</button>
+<div class="zwahl" id="zwahl" hidden>
+  <div class="zreihe">
+    <div class="zwrap"><div id="zwal"></div><div class="zband"></div></div>
+    <button class="zfertig" id="zfertig">fertig</button>
+  </div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -299,6 +337,18 @@ for(let h=1;h<=12;h++){const p=polar(R_HOUR-9,h*30);const t=E('text',{x:p.x,y:p.
 
 // Gebogene Orts-Labels
 const dpaths=E('defs',{}); svg.appendChild(dpaths);
+// Maske, die aus jedem Zeigerbild seine EIGENE Oese herausnimmt (v0.84). An
+// ihre Stelle tritt eine einzige gemeinsame Oese im Drehpunkt — damit sieht der
+// Ansatz bei allen fuenf Personen gleich aus, in jeder Stellung.
+// ⚠ Der Bereich der Maske MUSS ausdruecklich stehen: Chromium nimmt sonst
+// -10 %/-10 %/120 %/120 % der Bounding-Box des maskierten Elements, obwohl
+// maskUnits="userSpaceOnUse" gesetzt ist. Die Zeiger waren damit bis auf einen
+// Stern um die Mitte verschwunden (gemessen: 278 522 statt 450 227 Messingpixel).
+const oeseMaske=E('mask',{id:'oeseweg',maskUnits:'userSpaceOnUse',
+                          x:-260,y:-260,width:920,height:920});
+oeseMaske.appendChild(E('rect',{x:-260,y:-260,width:920,height:920,fill:'#fff'}));
+const oeseLoch=E('circle',{cx:CX,cy:CY,r:9,fill:'#000'});
+oeseMaske.appendChild(oeseLoch); dpaths.appendChild(oeseMaske);
 const gLab=E('g',{});
 // IN GEFAHR: Sektor-Hintergrund dezent rötlich (Ringsegment hinter dem Label)
 [['danger','rgba(138,22,40,.26)'],['lost','rgba(47,58,74,.20)']].forEach(([flag,farbe])=>{
@@ -345,28 +395,119 @@ const NY=CY-Math.round((R_NABE+(R_ZEIGER-MED_R))/2);   // Name mittig zwischen N
 // Schild 54,9 x 18,8 (v0.69: 51,7 x 12,6), Zeigerende r=160,5.
 // Preis: Der Zeiger belegt 19,8 Grad Bogen statt 15,5 — im vollen Sektor wird
 // es also enger. Das Durchtippen des Stapels (v0.61) faengt das auf.
-const ZB={datei:'zeiger/perl.webp', W:1536, H:1024,
-          ox:110.7, oy:502.3,                  // Oese (Drehpunkt)
-          rx:1183.6, ry:495.1, rl:150.0, ra:184.8,   // Ring: Loch und Aussenkante
-          rlx:147.6, rly:151.2,                // das Loch ist oval: 2,4 % hoeher als breit
-          sx0:326, sx1:802, sy:500.0, sh:163,  // Schild, am Hoehenprofil gemessen
-          ende:1503};                          // Spitzenende im Bild
+// ---- Zehn Zeiger zur Wahl (v0.84) ----
+// Bis v0.83 stand hier EIN fest verdrahteter Zeiger (perl). Seit v0.84 traegt
+// die App denselben Satz wie das Labor, und die Wahl trifft man am Geraet ueber
+// die Walze unten rechts. Gemerkt wird sie in localStorage unter 'uhr_zeiger',
+// also je Geraet — sie geht nicht in die Datenbank und sieht bei den anderen
+// vier nicht anders aus, als sie es dort selbst eingestellt haben.
+// Alle Masse sind am Alphakanal der Bilder gemessen (nominal 1536x1024):
+// ox/oy = Oese (Drehpunkt), rx/ry = Ringmitte, rl/rlx/rly = Portraitfenster
+// (das Loch ist bei fast jeder Vorlage oval), ra = Aussenkante des Messingrings,
+// sx0/sx1/sy/sh = Schild (Gravurflaeche), ende = Spitzenende.
+const ZEIGERSATZ={
+  flach    : {t:'A  flaches Schild', datei:'zeiger/flach.webp',
+              W:1536,H:1024, ox:111.2,oy:503.8, rx:1188.6,ry:495.2, rl:151.2,rlx:146.4,rly:151.2,ra:182.4,
+              sx0:342,sx1:825,sy:500.5,sh:116, ende:1506},
+  hoch     : {t:'B  hohes Schild', datei:'zeiger/hoch.webp',
+              W:1536,H:1024, ox:110.7,oy:503.5, rx:1188.2,ry:494.9, rl:151.2,rlx:146.4,rly:151.2,ra:181.2,
+              sx0:328,sx1:809,sy:500.5,sh:160, ende:1506},
+  perl     : {t:'D  Perlring \u2014 aktuell in der App', datei:'zeiger/perl.webp',
+              W:1536,H:1024, ox:110.7,oy:502.3, rx:1183.6,ry:495.1, rl:150.0,rlx:147.6,rly:151.2,ra:184.8,
+              sx0:326,sx1:802,sy:500.0,sh:163, ende:1503},
+  perlklein: {t:'C  Perlring klein', datei:'zeiger/perlklein.webp',
+              W:1536,H:1024, ox:103.7,oy:505.8, rx:1192.9,ry:503.2, rl:109.2,rlx:109.2,rly:109.2,ra:157.2,
+              sx0:358,sx1:778,sy:504.0,sh:141, ende:1500},
+  glatt    : {t:'E  glatt, grosser Ring', datei:'zeiger/glatt.webp',
+              W:1536,H:1024, ox:148.6,oy:489.1, rx:1191.6,ry:483.1, rl:218.0,rlx:219.6,rly:216.0,ra:252.5,
+              sx0:378,sx1:846,sy:483,sh:99, ende:1500},
+  lilie    : {t:'F  Lilien', datei:'zeiger/lilie.webp',
+              W:1536,H:1024, ox:94.7,oy:513.6, rx:1191.7,ry:505.0, rl:123.8,rlx:123.6,rly:124.8,ra:238.5,
+              sx0:332,sx1:863,sy:505,sh:107, ende:1511},
+  ranke    : {t:'G  Ranken', datei:'zeiger/ranke.webp',
+              W:1536,H:1024, ox:101.3,oy:501.9, rx:1186.0,ry:496.6, rl:148.0,rlx:147.6,rly:148.8,ra:192.5,
+              sx0:323,sx1:840,sy:497,sh:130, ende:1511},
+  deko     : {t:'H  Stufen', datei:'zeiger/deko.webp',
+              W:1536,H:1024, ox:117.3,oy:497.5, rx:1193.7,ry:494.6, rl:127.2,rlx:126.0,rly:129.6,ra:190.5,
+              sx0:416,sx1:799,sy:495,sh:158, ende:1500},
+  spindel  : {t:'I  Spindel', datei:'zeiger/spindel.webp',
+              W:1536,H:1024, ox:108.9,oy:498.3, rx:1189.4,ry:496.8, rl:142.0,rlx:144.0,rly:141.6,ra:216.0,
+              sx0:380,sx1:838,sy:497,sh:114, ende:1522},
+  // oy stand bis v0.12 auf 489 statt auf der gemessenen Oesenmitte 521 — eine
+  // Notluege gegen die Verkantung von 32 px, die nur funktionierte, solange die
+  // Nabe ueber den Zeigern lag und die Oese zudeckte. Seit die Nabe darunter
+  // liegt, sah man fuenf Oesen auf einem Kreis von 3,8 Einheiten kreuz und quer
+  // stehen (Lutz, 19.9.). Jetzt steht hier die echte Mitte; die Verkantung
+  // gleicht KIPP aus.
+  // band2.webp (21.9.): Im Original sitzt am Drehpunkt eine Oesenscheibe von
+  // r=138,9 Bildpixeln = 16,6 Einheiten — doppelt so gross wie bei allen
+  // anderen (7,6...8,4). Lutz: "der Pergamentbanner ... nicht so eine
+  // voluminoese [Fuss], bei allen anderen stimmen sie". Deshalb ist die
+  // Scheibe an ihrer rechten Kante (nominal x=307) herausgeschnitten und der
+  // duenne Hals dahinter nach innen bis auf den Drehpunkt verlaengert; seine
+  // Mitte laeuft dabei von y=514,8 auf die Drehpunkthoehe y=521 zu.
+  // Die gemeinsame Oese sitzt jetzt MITTIG auf dem Drehpunkt (Versatz 0 statt
+  // 1,19 Einheiten) und wird auf oer=68,7 skaliert -> Fuss r=8,35 Einheiten.
+  band     : {t:'J  Schriftband (schief gezeichnet)', datei:'zeiger/band2.webp',
+              W:1536,H:1024, ox:165,oy:521, rx:1291,ry:489, rl:190,rlx:192.0,rly:188.4,ra:218.5,
+              sx0:590,sx1:930,sy:520,sh:100, ende:1510}
+};
+// ---- EINE gemeinsame Oese statt fuenf gestapelter (Lutz, 21.9.) ----
+// "Man koennte diese Oese quasi einmal rausfotografieren und die einzelnen
+// Zeiger dann drunter machen." Genau das: aus jedem Zeigerbild ist die
+// Oesenscheibe herausgeschnitten und drehsymmetrisch neu aufgebaut
+// (Radialmedian ueber 2880 Winkel, die Schaftrichtung +-35 Grad ausgespart,
+// danach eine unscharfe Maske laengs des Radius). Sie ist damit per
+// Konstruktion rund, ohne Schaftstummel und fuer alle fuenf dieselbe.
+// oex/oey/oer = Mitte und Radius der Scheibe im Bild (nominal 1536x1024),
+// ant = Aussenkante je halber Bildkante der fertigen Datei.
+const OESE={
+  flach     :{oex:111.5, oey:503.0, oer:68.2,  ant:0.9317},
+  hoch      :{oex:111.4, oey:503.0, oer:68.3,  ant:0.9331},
+  perl      :{oex:112.0, oey:501.8, oer:69.7,  ant:0.9522},
+  perlklein :{oex:104.6, oey:505.2, oer:65.9,  ant:0.9308},
+  glatt     :{oex:149.5, oey:489.0, oer:109.9, ant:0.9442},
+  lilie     :{oex:95.4,  oey:512.8, oer:70.2,  ant:0.9286},
+  ranke     :{oex:102.9, oey:502.9, oer:73.4,  ant:0.941},
+  deko      :{oex:117.8, oey:497.7, oer:72.3,  ant:0.9563},
+  spindel   :{oex:109.1, oey:497.0, oer:72.8,  ant:0.9333},
+  band      :{oex:165.0, oey:521.0, oer:68.7,  ant:0.9411}};
+// oex/oey/oer = Mitte und Radius der eigenen Oesenscheibe im Bild,
+// ant = Aussenkante je halber Bildkante der Datei <key>-oese.webp.
+// Beim Schriftband sitzt die Oese seit v0.31 des Labors mittig auf dem
+// Drehpunkt und auf Normalmass (oer 138,9 -> 68,7), siehe zeiger/band2.webp.
+let OES_KEY='perl', OES_R=9;
+let ZB=ZEIGERSATZ.perl, ZS=1, RINGR=1, RINGX=1, RINGY=1, RINGA=1, KIPP=0, ZB_ENDE=1;
 // Seit v0.77 endet das Bild an der Ringaussenkante, nicht an der Spitze: das
 // Schriftband macht das von sich aus, alle anderen verschenkten 15,5 Einheiten
 // an einen Dorn (Lutz, 19.9.: "alle anderen Zeiger muessen auch einen Ring
-// weiter nach aussen"). Medaillon-Aussenkante 145,0 -> 160,5, Portrait +10,7 %.
-const ZB_ENDE=ZB.rx+ZB.ra;             // Ringaussenkante im Bild
-const ZS=160.5/(ZB_ENDE-ZB.ox);        // Zeigerende auf r=160,5
-// Verkantung: kein Zeigerbild ist exakt waagerecht gezeichnet. Bei perl liegen
-// Oese und Ringmitte 7,2 px in der Hoehe auseinander (0,384°), das Medaillon
-// saesse 0,83 Einheiten neben der Radiallinie. Wird als zusaetzliche Drehung um
-// die Oese ausgeglichen (v0.75).
-const KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
-const RINGR=ZB.rl*ZS;                  // Portraitfenster (Mittelwert, fuer Masse)
-const RINGX=(ZB.rlx||ZB.rl)*ZS;        // Loch waagerecht
-const RINGY=(ZB.rly||ZB.rl)*ZS;        // Loch senkrecht — das Loch ist oval
-const RINGA=ZB.ra*ZS;                  // Aussenkante des Messingrings
-R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
+// weiter nach aussen"). Medaillon-Aussenkante 145,0 -> 160,5.
+function massstab(){
+  ZB_ENDE=ZB.rx+ZB.ra;                 // der Ring IST die Spitze
+  ZS=160.5/(ZB_ENDE-ZB.ox);            // Zeigerende auf r=160,5
+  RINGR=ZB.rl*ZS;                      // Portraitfenster (Mittelwert, fuer Masse)
+  RINGX=(ZB.rlx||ZB.rl)*ZS;            // Loch waagerecht
+  RINGY=(ZB.rly||ZB.rl)*ZS;            // Loch senkrecht - das Loch ist oval
+  RINGA=ZB.ra*ZS;                      // Aussenkante des Messingrings
+  // Verkantung: kein Zeigerbild ist exakt waagerecht gezeichnet. Bei perl liegen
+  // Oese und Ringmitte 7,2 px in der Hoehe auseinander (0,384 Grad), das
+  // Medaillon saesse 0,83 Einheiten neben der Radiallinie. Wird als zusaetzliche
+  // Drehung um die Oese ausgeglichen (v0.75).
+  KIPP=Math.atan2(ZB.ry-ZB.oy, ZB.rx-ZB.ox)*180/Math.PI;
+  R_ZEIGER=Math.hypot(ZB.rx-ZB.ox, ZB.ry-ZB.oy)*ZS;   // Ringmitte = Zeigerlaenge
+  // Schnittradius fuer die gemeinsame Oese: gedreht wird um das LOCH, die
+  // Scheibe sitzt aber daneben. Sie wandert also mit der Zeigerrichtung, der
+  // Schnitt muss sie in JEDER Stellung fassen.
+  const o=OESE[OES_KEY]||OESE.perl;
+  OES_R=(o.oer+Math.hypot(o.oex-ZB.ox, o.oey-ZB.oy))*ZS+0.15;
+}
+function zeigerWaehlen(k){ if(!ZEIGERSATZ[k]) k='perl'; OES_KEY=k; ZB=ZEIGERSATZ[k]; massstab(); }
+{ let k=null; try{ k=localStorage.getItem('uhr_zeiger'); }catch(e){}
+  zeigerWaehlen(ZEIGERSATZ[k]?k:'perl');
+  // R_ZEIGER steht erst jetzt fest (er haengt am Bild), also den Medaillon-Clip
+  // nachziehen — oben wurde er noch mit dem Startwert gesetzt.
+  const c=document.getElementById('medClipC');
+  c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R); }
 // ---- Gravur, im Labor eingestellt (18.09.2026) ----
 // seite verschiebt den Namen laengs des Zeigers, in Anteilen der Schildbreite.
 // gleich=true gibt allen fuenf den Schriftgrad des laengsten Namens; ohne das
@@ -413,6 +554,7 @@ function buildNadel(p){
   const im=E('image',{x:bx,y:by,width:ZB.W*ZS,height:ZB.H*ZS,preserveAspectRatio:'none'});
   im.setAttributeNS('http://www.w3.org/1999/xlink','href',ZB.datei);
   im.setAttribute('href',ZB.datei);
+  im.setAttribute('mask','url(#oeseweg)');          // eigene Oese heraus (v0.84)
   {const kid='cut'+p.name;const ck=E('clipPath',{id:kid});
    ck.appendChild(E('rect',{x:bx-2,y:by-2,width:ZB_ENDE*ZS+2,height:ZB.H*ZS+4}));
    inner.appendChild(ck); im.setAttribute('clip-path','url(#'+kid+')');}
@@ -442,8 +584,29 @@ function buildNadel(p){
 }
 const gZeiger=E('g',{'pointer-events':'none',id:'zeiger',opacity:'0'});
 const zeiger=personen.map(p=>buildNadel(p));
+// Die EINE gemeinsame Oese (v0.84). Sie wird nicht gedreht und sitzt genau im
+// Drehpunkt; damit ist sie fuer alle fuenf dieselbe, ohne dass etwas gemessen
+// werden muesste. Aus jedem Messingbild ist die eigene Oese per Maske
+// herausgenommen, diese hier deckt die Schnittkante.
+const gOese=E('g',{'pointer-events':'none',id:'oese'});
+const imOese=E('image',{preserveAspectRatio:'none',filter:'url(#shn)'});
+gOese.appendChild(imOese);
+function oeseSetzen(){
+  const o=OESE[OES_KEY]||OESE.perl;
+  oeseLoch.setAttribute('r', OES_R.toFixed(3));
+  const he=OES_R/o.ant, d='zeiger/'+OES_KEY+'-oese.webp';
+  imOese.setAttribute('x',(CX-he).toFixed(3)); imOese.setAttribute('y',(CY-he).toFixed(3));
+  imOese.setAttribute('width',(he*2).toFixed(3)); imOese.setAttribute('height',(he*2).toFixed(3));
+  imOese.setAttributeNS('http://www.w3.org/1999/xlink','href',d);
+  imOese.setAttribute('href',d);
+}
 // Sichtbarkeits-Reihenfolge bei Überlappung (hinten -> vorn): Leander, Lutz, Anton, Claudia, Emilia
-[4,1,2,0,3].forEach(i=>gZeiger.appendChild(zeiger[i].g));
+const ZSTART=[4,1,2,0,3];
+function zeigerEinhaengen(){
+  ZSTART.forEach(i=>gZeiger.appendChild(zeiger[i].g));
+  gZeiger.appendChild(gOese);          // ueber den Zeigern, unter der Nabe
+}
+zeigerEinhaengen(); oeseSetzen();
 svg.appendChild(gZeiger);
 // ---- Stapel: mehrere Personen im selben Sektor ----
 // Die Medaillons ueberlappen dort zwangslaeufig (r~34 bei 45 Grad Sektor). Statt
@@ -454,7 +617,11 @@ const STAPEL_TAKT_MS=0;
 let letzterStapelTipp=0;
 function stapelVon(i){   // Mitglieder des Sektors in Zeichenreihenfolge (hinten -> vorn)
   const sek=personen[i].sektor;
-  return Array.from(gZeiger.children).map(g=>zeiger.findIndex(z=>z.g===g)).filter(k=>personen[k].sektor===sek);
+  // ⚠ Seit v0.84 haengt in #zeiger auch die gemeinsame Oese. findIndex liefert
+  // fuer sie -1; ohne die Pruefung k>=0 griffe personen[-1] ins Leere und der
+  // Tipp auf einen Stapel warf einen Fehler, statt durchzublaettern.
+  return Array.from(gZeiger.children).map(g=>zeiger.findIndex(z=>z.g===g))
+              .filter(k=>k>=0 && personen[k].sektor===sek);
 }
 function naechsteNachVorn(i){
   const st=stapelVon(i); if(st.length<2) return -1;
@@ -503,48 +670,68 @@ function passeNamenEin(){
   if(typeof cur!=='undefined') personen.forEach((p,i)=>setRot(i));   // Kipplage neu setzen
 }
 
-// Nabe (über Zeiger-Ursprung).
-// Bis v0.71 war sie gezeichnet: Farbverlauf plus zwei Kreise. Seit v0.72 ist es
-// die freigestellte Oesenscheibe aus zeiger/band.webp — echtes gerendertes
-// Messing statt Verlauf. Zuschnitt 304 px, Loch in der Mitte, Scheibenrand bei
-// r=131..146 (die Scheibe sitzt im Bild 9 px ueber dem Loch, deshalb die
-// Ellipsenmaske beim Freistellen).
-// NABE_BILD ist die HALBE Bildkante; sichtbarer Scheibenradius = NABE_BILD*135/152.
-// zeiger/nabe-v9.webp: Scheibe r=160,9 von 180 -> sichtbarer Radius = NABE_BILD*0,894
-const NABE_BILD=29.1;                  // -> Scheibe r≈26,0 (v0.76: 22,2; Lutz, 19.9.)
-// NABE_OBEN=false: die Scheibe liegt UNTER den Zeigern, die Oesen sitzen sichtbar
-// darauf — wie bei einer echten Uhr und wie auf Lutz' Vorlage vom 19.9. Die
-// Befuerchtung, fuenf uebereinanderliegende Oesen ergaeben einen Haufen, hat sich
-// beim Rendern nicht bestaetigt: verteilt bilden sie eine Rosette, im Stapel
-// decken sie einander. true legt die Scheibe wieder darueber (Stand bis v0.72).
-// v0.78: Lutz hat im Labor Zustand 4 gewaehlt — eine einzige Scheibe UEBER den
-// Zeigern, r=26. Die gestapelte Fassung aus v0.73..v0.77 (Scheibe darunter plus
-// Kappe) sah nach zwei aufeinanderliegenden Scheiben aus: "die Nabe sieht
-// schlecht aus". Die Oesen verschwinden dafuer wieder darunter.
-const NABE_OBEN=true;
-const KAPPE_R=0;                       // 0 = keine Deckkappe (seit v0.78)
-{const loch=E('circle',{cx:CX,cy:CY,r:6,fill:'#3b2c0c'});        // fuellt das Loch
- // #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten. Bei
- // einer Scheibe von r=26 liest sich das als "sitzt zu hoch und ist nicht rund"
- // (Lutz, 20.9.). #shn ist ein Hof ohne Versatz.
- const nb=E('image',{x:CX-NABE_BILD,y:CY-NABE_BILD,width:NABE_BILD*2,height:NABE_BILD*2,
-                     preserveAspectRatio:'none',filter:'url(#shn)'});
- nb.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/nabe-v9.webp');
- nb.setAttribute('href','zeiger/nabe-v9.webp');
- if(NABE_OBEN){ svg.appendChild(loch); svg.appendChild(nb); }
- else { svg.insertBefore(loch,gZeiger); svg.insertBefore(nb,gZeiger); }
- // Deckkappe ueber den Oesen (v0.74). Liegt die Nabe unter den Zeigern, treffen
- // sich dort fuenf Oesen; die Kappe fasst sie zusammen, so wie bei einer echten
- // Uhr die Mutter auf dem Zeigerstapel sitzt. Sie ist ausgeschnittenes Messing
- // aus zeiger/nabe-v9.webp (Kern r<=106 von 180) — gezeichnet sah sie nach Plastik
- // aus, Lutz am 19.9.: "nicht so selbst gebaut".
- if(KAPPE_R>0){
-   const kp=E('image',{id:'kappe',x:CX-KAPPE_R,y:CY-KAPPE_R,width:KAPPE_R*2,height:KAPPE_R*2,
-                       preserveAspectRatio:'none',filter:'url(#sh)'});
-   kp.setAttributeNS('http://www.w3.org/1999/xlink','href','zeiger/kappe.webp');
-   kp.setAttribute('href','zeiger/kappe.webp');
-   svg.appendChild(kp);   // ueber den Zeigern, die Vignette kommt danach
- }}
+// ---- Zeiger komplett neu aufbauen (nur beim Wechsel ueber die Walze) ----
+function neuZeichnen(){
+  massstab();
+  {const c=document.getElementById('medClipC');
+   c.setAttribute('cy',CY-R_ZEIGER); c.setAttribute('r',MED_R);}
+  while(gZeiger.firstChild) gZeiger.removeChild(gZeiger.firstChild);
+  zeiger.length=0;
+  personen.forEach(p=>zeiger.push(buildNadel(p)));
+  zeigerEinhaengen(); oeseSetzen(); nabeSetzen();
+  personen.forEach((p,i)=>setRot(i));
+  passeNamenEin();
+  highlight();
+  // die Deckkraft von #zeiger bleibt, wie sie ist: sie sagt, ob schon ein
+  // Stand aus der Datenbank da ist, und darf vom Zeigerwechsel nicht
+  // ueberschrieben werden.
+}
+
+// ---- Nabe: drei eigene Scheiben (v0.84) ----
+// Bis v0.83 war es EIN Bild (nabe-v9.webp), drehsymmetrisch aus der
+// Oesenscheibe des Schriftbands gerechnet. Seit v0.84 sind es Lutz' drei
+// Scheiben vom 21.9., in einem Bild geliefert und herausgeschnitten. Die
+// Groessenverhaeltnisse stehen in seinem Layout: r=320,3 / 235,2 / 156,2 ->
+// aussen 26 macht 26,00 / 19,09 / 12,68. Ovalitaet der Vorlagen +0,01 % /
+// +0,10 % / +0,45 %, also praktisch rund; Helligkeit, Textur und Farbton
+// passen zueinander, deshalb sind sie unbearbeitet uebernommen.
+// ant = Aussenkante je halber Bildkante (gemessen), loch = dunkler Fuellkreis.
+const DREI={teile:['zeiger/nabe-f1.webp','zeiger/nabe-f2.webp','zeiger/nabe-f3.webp'],
+            ant:[0.9267,0.9242,0.9270], r:[12.68,19.09,26.0], loch:3.7};
+// Wie viele Scheiben sichtbar sind, haengt am ZEIGER (Lutz, 21.9.: "alle Zeiger
+// nur mit Ring 1 und nur das Schriftband mit Ring 1 und Ring 2"). Der Fuss des
+// Schriftbands ist breiter gezeichnet und braucht die zweite Scheibe.
+const RINGE={band:2};
+function ringeVon(k){ return RINGE[k]||1; }
+// Reihenfolge unten nach oben: f3 (aussen, dunkel) - f2 (poliert) - f1 (mit Loch).
+// Die Nabe liegt UEBER den Zeigern (v0.78, von Lutz im Labor gewaehlt): eine
+// einzige sichtbare Scheibe, die Zeiger kommen dahinter hervor.
+const NAB=[2,1,0].map(k=>{
+  const g=E('g',{'data-sch':String(k+1),'pointer-events':'none'});
+  // Der dunkle Fuellkreis liegt HINTER der obersten Scheibe und fuellt ihr Loch.
+  if(k===0) g.appendChild(E('circle',{id:'nabLoch',cx:CX,cy:CY,r:DREI.loch,fill:'#3b2c0c'}));
+  const im=E('image',{preserveAspectRatio:'none'});
+  im.setAttributeNS('http://www.w3.org/1999/xlink','href',DREI.teile[k]);
+  im.setAttribute('href',DREI.teile[k]);
+  g.appendChild(im); svg.appendChild(g);
+  return {k,g,im};
+}).sort((a,b)=>a.k-b.k);
+// #shn statt #sh: der normale Schatten haengt 1,1 Einheiten nach unten. Bei
+// einer Scheibe liest sich das als "sitzt zu hoch und ist nicht rund" (Lutz,
+// 20.9.). #shn ist ein Hof ohne Versatz — und er gehoert an die AEUSSERSTE
+// SICHTBARE Scheibe, sonst laege die darunter ohne Saum auf dem Zifferblatt.
+function nabeSetzen(){
+  const n=ringeVon(OES_KEY);
+  NAB.forEach((t,k)=>{
+    const he=DREI.r[k]/DREI.ant[k];
+    t.im.setAttribute('x',(CX-he).toFixed(3)); t.im.setAttribute('y',(CY-he).toFixed(3));
+    t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
+    t.g.setAttribute('opacity', k<n ? 1 : 0);
+    if(k===n-1) t.g.setAttribute('filter','url(#shn)');
+    else t.g.removeAttribute('filter');
+  });
+}
+nabeSetzen();
 // Vignette
 svg.appendChild(E('circle',{cx:CX,cy:CY,r:200,fill:'url(#vign)','pointer-events':'none'}));
 
@@ -1029,6 +1216,64 @@ window.UHR={
   lebt(){ syncLebt=true; },          // Sync-Modul meldet sich -> Waechter stillhalten
   neuBewerten(){ statusText(); }
 };
+
+// ---- Zeigerwahl als Walze (v0.84, Lutz am 21.9.: "die Zeiger als Scrollrad") ----
+// Dieselbe Mechanik wie im Labor: Rastmass 32 px, der Wert folgt sofort, aber
+// hoechstens ein Neuaufbau je Bild — ein Zeigerwechsel baut alle fuenf Zeiger
+// neu auf und ist damit deutlich teurer als eine reine Drehung.
+(function(){
+  const ZKEYS=Object.keys(ZEIGERSATZ), IH=32;
+  const wal=document.getElementById('zwal'), feld=document.getElementById('zwahl'),
+        knopf=document.getElementById('zbtn'), fertig=document.getElementById('zfertig');
+  if(!wal||!feld||!knopf) return;
+  {const p1=document.createElement('div'); p1.className='pad'; wal.appendChild(p1);
+   ZKEYS.forEach((k,i)=>{ const d=document.createElement('div'); d.className='wi';
+     // Der Zusatz "aktuell in der App" stammt aus dem Labor und waere hier
+     // falsch: in der App ist jetzt der, den diese Walze zeigt.
+     d.dataset.k=k; d.textContent=ZEIGERSATZ[k].t.replace(/\s*\u2014\s*aktuell in der App$/,'');
+     d.onclick=()=>zu(i,true); wal.appendChild(d); });
+   const p2=document.createElement('div'); p2.className='pad'; wal.appendChild(p2);}
+  function idx(){ return Math.max(0,Math.min(ZKEYS.length-1,Math.round(wal.scrollTop/IH))); }
+  function mark(i){ wal.querySelectorAll('.wi').forEach((d,k)=>d.classList.toggle('an',k===i)); }
+  let stumm=false, wartet=null, stummT=null;
+  // Ein verborgenes Element laesst sich nicht scrollen: solange das Feld zu ist,
+  // bleibt scrollTop auf 0. Wird es sichtbar gemacht und sofort gesetzt, kann
+  // der Browser den Wert noch auf 0 klemmen, weil das Layout fehlt — die Walze
+  // meldete dann beim Oeffnen den ERSTEN Zeiger und stellte ihn auch ein.
+  // Deshalb: Layout erzwingen, setzen, im naechsten Bild noch einmal, und bis
+  // dahin stumm bleiben.
+  function setzen(){
+    const i=ZKEYS.indexOf(OES_KEY); if(i<0) return;
+    stumm=true; void wal.offsetHeight; wal.scrollTop=i*IH; mark(i);
+    if(stummT) clearTimeout(stummT);
+    stummT=setTimeout(()=>{stumm=false;},300);
+  }
+  function nehmen(k){
+    if(k===OES_KEY || !ZEIGERSATZ[k]) return;
+    zeigerWaehlen(k); neuZeichnen();
+    try{ localStorage.setItem('uhr_zeiger',k); }catch(e){}
+  }
+  wal.addEventListener('scroll',()=>{
+    if(stumm || feld.hidden) return;
+    const i=idx(); mark(i);
+    if(ZKEYS[i]!==OES_KEY && !wartet){
+      wartet=requestAnimationFrame(()=>{ wartet=null; nehmen(ZKEYS[idx()]); });
+    }
+  },{passive:true});
+  function zu(i,glatt){
+    stumm=true;
+    try{ wal.scrollTo({top:i*IH,behavior:glatt?'smooth':'auto'}); }catch(e){ wal.scrollTop=i*IH; }
+    mark(i); setTimeout(()=>{stumm=false;}, glatt?450:150);
+    nehmen(ZKEYS[i]);
+  }
+  function auf(an){
+    feld.hidden=!an; knopf.hidden=an;
+    if(an){ setzen(); requestAnimationFrame(setzen); }
+  }
+  knopf.onclick=()=>auf(true);
+  fertig.onclick=()=>auf(false);
+  auf(false);
+})();
 
 // Altersanzeige und Verschollen-Automatik laufen mit der Uhr mit
 setInterval(()=>{

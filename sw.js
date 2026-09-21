@@ -12,7 +12,14 @@
    Server mit 304, es fliessen kaum Daten. Der Cache ist nur der Rueckfall,
    wenn gar kein Netz da ist. */
 const CACHE = 'standort-uhr-v1';
-const ASSETS = ['./', './index.html', './version.json', './apple-touch-icon-v3.png', './zeiger/perl.webp', './zeiger/nabe-v9.webp', './zeiger/kappe.webp'];
+// Nur das Noetigste fuer den Offline-Rueckfall: die Seite selbst, das Icon und
+// die Bilder des voreingestellten Zeigers samt Nabe. Die neun anderen
+// Zeigerbilder holt der Worker beim ersten Anzeigen ohnehin in den Cache
+// (jede Antwort wird dort abgelegt) — sie hier aufzufuehren wuerde die
+// Installation unnoetig teuer machen (zehn Bilder statt zwei).
+const ASSETS = ['./', './index.html', './version.json', './apple-touch-icon-v3.png',
+                './zeiger/perl.webp', './zeiger/perl-oese.webp',
+                './zeiger/nabe-f1.webp', './zeiger/nabe-f2.webp', './zeiger/nabe-f3.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));

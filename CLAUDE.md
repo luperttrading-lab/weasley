@@ -1,6 +1,6 @@
 # Standort-Uhr — Projektübergabe
 
-**Stand:** App v0.61 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
+**Stand:** App v0.84 mit Firebase-Sync **im Einsatz** (14.09.2026 auf Lutz' Geraet verifiziert) · Hardware in Planung
 **Für:** Weiterarbeit in Claude Code
 **Wichtig:** Dieses Dokument ersetzt nicht die Datei. Gib Claude Code **immer auch die aktuelle `index.html`** dazu — dort steht die Wahrheit, hier nur das Warum.
 
@@ -240,6 +240,53 @@ BORD = #6e1a24   IN GEFAHR
 NEBEL= #2f3a4a   VERSCHOLLEN
 ```
 
+
+**Seit v0.84 traegt die App den ganzen Zeigersatz** — zehn Zeiger, die
+gemeinsame Oese, die dreiteilige Nabe und eine **Walze zum Waehlen** unten
+rechts (Knopf „Zeiger", `#zbtn` → `#zwahl`/`#zwal`). Lutz am 21.9.: „Kannst du
+die Zeiger bitte in der Hauptapp installieren? Mit dem Drehrad zum Auswählen."
+
+- `ZB` ist kein `const` mehr, sondern zeigt in `ZEIGERSATZ`; `massstab()` rechnet
+  `ZS`, `RINGR/RINGX/RINGY/RINGA`, `KIPP`, `R_ZEIGER` und `OES_R` daraus.
+  `zeigerWaehlen(k)` + `neuZeichnen()` bauen die fuenf Zeiger neu auf.
+- **Die Wahl liegt in `localStorage` unter `uhr_zeiger`, also je Geraet.** Sie
+  geht nicht in die Datenbank — wer auf seinem iPhone den Perlring stehen
+  laesst, sieht ihn weiter, egal was Lutz einstellt. Das ist Absicht: die
+  Datenbank traegt Standorte, keine Geschmacksfragen.
+- Die Nabe ist der dreiteilige Satz (`nabe-f1/f2/f3.webp`) mit der Regel aus
+  Labor v0.32: **alle Zeiger nur Ring 1 (r=12,68), `band` Ring 1+2 (19,09)**.
+  `nabe-v9.webp` und `kappe.webp` sind in `index.html` und `sw.js` nicht mehr
+  referenziert; `kappe*.webp` braucht das Labor noch, `nabe-v9.webp` niemand —
+  sie bleibt vorerst liegen, damit ein Geraet, das noch auf v0.83 haengt, nicht
+  ins Leere greift.
+- Die Walze steht **unten am Rand, nicht als Overlay**: beim Drehen soll die Uhr
+  sichtbar bleiben. Gemessen (390×844): Uhr endet bei y=445, das Feld beginnt
+  bei y=729 — kein Ueberdecken.
+
+⚠️ **Zwei Fallen, beide gemessen aufgefallen:**
+- **`stapelVon()` muss `k>=0` pruefen.** In `#zeiger` haengt seit v0.84 auch die
+  gemeinsame Oese; `findIndex` liefert fuer sie −1 und `personen[-1].sektor`
+  warf bei jedem Tipp auf einen Stapel einen Fehler.
+- **Die Walze darf beim Oeffnen nicht auf 0 stehen bleiben.** Ein verborgenes
+  Element laesst sich nicht scrollen; wird es sichtbar gemacht und `scrollTop`
+  sofort gesetzt, klemmt der Browser den Wert mangels Layout auf 0 — die Walze
+  meldete dann den ERSTEN Zeiger und **stellte ihn auch ein**. Fix: Layout
+  erzwingen (`void wal.offsetHeight`), setzen, im naechsten Bild noch einmal,
+  und bis dahin stumm bleiben. Gemessen: vorher „flach", nachher „perl".
+
+**Gegenprobe App gegen Labor** (beide 390×844, dieselbe Verteilung, Zeiger
+`perl` / `band` / `glatt`, Bild gegen Bild):
+
+| | Pixel > 8/255 abweichend |
+|---|---|
+| **innerhalb r=142** (Zeiger, Medaillon, Gravur, Oese, Nabe) | **0** bei `band` und `glatt`, 562 von 1,32 Mio. bei `perl` (Kantenglaettung an zwei Buchstaben, max 60) |
+| ab r=142 (Ortsring) | ~26 500, max 175 |
+
+⚠️ Der Unterschied am **Ortsring ist alt und nicht von v0.84**: Die App hat
+`ORTS_F` in die Radien eingerechnet (`R_LAB_UP=164*ORTS_F`), die Schriftgroesse
+der Ortsnamen aber gelassen; das Labor **skaliert die ganze Gruppe** um die
+Uhrmitte, also waechst dort auch die Schrift um 2,7 %. Wer beide angleichen
+will, muss sich fuer einen der beiden Wege entscheiden.
 
 ### 2.2b Das Zeiger-Labor (`labor.html`, seit 18.09.2026)
 

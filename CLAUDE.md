@@ -500,6 +500,56 @@ Der Versatz geht in Schritten von **0,5 Einheiten** (≈0,48 px auf dem iPhone:
 — also zwei bis fünf Tipps. Die Anzeige nennt beide Maße. Alles in
 `labor_einst` unter `ebene`, `vers` und `sch` gemerkt.
 
+**Emilia ist gelöst — es war nie die Geometrie, sondern die Zeichenreihenfolge
+(21.9.).** Lutz: „das ist genau die Scheibe, wo Emilia einmal in der Mitte der
+Scheibe ansetzt und alle andern drunter." Das Ding in der Uhrmitte, das er
+„Scheibe 0" nennt, gehört **gar nicht zur Nabe**: Es ist die **Ösenscheibe, die
+in jedem Zeigerbild mit drinsteckt**, fünfmal übereinander. Oben auf dem Stapel
+liegt die des **vordersten** Zeigers — und das ist nach `[4,1,2,0,3]` Emilia.
+Ihre Scheibe deckt die vier anderen zu, deshalb setzt nur ihr Schaft in der
+Mitte an und die anderen kommen unter dem Rand hervor.
+
+Gegenprobe (Render, nur `appendChild` auf eine andere Gruppe, kein Maß
+angefasst): Leander nach vorn → **jetzt sitzt Leander in der Mitte und Emilia
+kommt unter dem Rand hervor**. Der Effekt wandert mit dem Stapel.
+
+⚠️ Damit sind alle früheren Emilia-Messungen erklärt, die nichts fanden: Sie
+haben die **Zeigergeometrie** geprüft, und die war immer in Ordnung. Gesucht
+werden musste in den **Ösenscheiben der Zeigerbilder**. Dasselbe Muster wie beim
+Overlay-Schleier und bei der Gravur: an der falschen Sache gemessen.
+
+**Die Ösenscheibe ist nicht konzentrisch mit ihrem eigenen Loch** (21.9.,
+Kreisfit an Außenkante und Lochkante, nominale Bildpixel 1536×1024):
+
+| Zeiger | Loch | Scheibe | Abstand | auf dem Zifferblatt |
+|---|---|---|---|---|
+| **band** | 164,3 / 519,6 · r=33,2 | 167,1 / 510,6 · r=138,3 | **9,4 px** | **1,12 Einheiten** |
+| perl (App) | 110,0 / 501,1 · r=31,6 | 111,2 / 500,5 · r=68,9 | 1,4 px | 0,18 Einheiten |
+
+Gedreht wird um das **Loch** (das ist der Drehpunkt). Die Scheibe wandert also
+mit der Zeigerrichtung: Fünf Zeiger, fünf Richtungen → die fünf Scheiben liegen
+auf einem Kreis von 1,12 Einheiten Radius, **Spannweite 2,24**. Genau das sieht
+Lutz als „noch eine Scheibe unten drunter integriert, die rechts unten
+rausguckt". Beim Perlring ist es 0,18 Einheiten und die Nabe (r=26) deckt die
+Öse (r=8,2) ohnehin komplett zu — **in der App fällt davon nichts auf.**
+
+Nebenbefund: `nabe.webp` stammt aus genau dieser Ösenscheibe, und der dort
+dokumentierte Versatz „Scheibe 9,3 px über dem Loch" (v0.79) ist derselbe
+Fehler. Er war also von Anfang an im Bild und ist beim Zuschnitt mitgewandert.
+
+**Die Ösenscheibe des Schriftbands besteht aus zwei Stufen** (am Helligkeits-
+profil um die **Scheibenmitte** gemessen): innere Scheibe bis r=103 (12,30
+Einheiten), gedrehter Seilring 103…139 (16,59 Einheiten), Loch r=33 (3,96).
+Das ist Lutz' „besteht im Prinzip aus zwei Scheiben, die musst du noch mal
+trennen".
+
+**Die Nabenscheiben 1 und 3 sind überflüssig** (Lutz, 21.9.): „Scheibe zwei und
+Scheibe drei sind identisch, davon kannst du Scheibe drei löschen; Scheibe eins
+ist auch unten drunter, die kannst du auch löschen." Stimmt — Scheibe 3 war nur
+der Außenrand von Scheibe 2 und Scheibe 1 nur ihr Kern; beide sind in Scheibe 2
+vollständig enthalten und liegen darunter. Übrig bleibt **eine** Nabenscheibe
+(r=24,48 Einheiten).
+
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
 | Teil | Befund |

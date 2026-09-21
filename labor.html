@@ -162,7 +162,7 @@
   <div class="syncz" id="syncz"></div>
   <div class="gpsmsg" id="gpsmsg"></div>
   <div class="hint">Zeiger greifen und herumziehen, oder Person antippen und Ort w&auml;hlen. Stapel antippen bl&auml;ttert durch.</div>
-  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.25</div>
+  <div id="verzeile" title="antippen: nach neuer Version suchen" class="ver">Zeiger-Labor v0.26</div>
 </div>
 <div class="ovl" id="ovl" hidden>
   <div class="ovlbox">
@@ -615,11 +615,18 @@ const KAPPEN={kern   :{d:'zeiger/kappe.webp',        t:'Nabenkern'},
 // Zifferblatt bei Nabe 26. Die Radien folgen der Regel "gleich breite Baender":
 // das Loch sitzt bei 0,390 des obersten Radius, daraus 0,610*r1 = r2-r1 = 26-r2
 // -> r1=11,71, r2=18,86. Alle drei Baender 7,14 Einheiten breit.
-const NABENBILD={drei  :{t:'dreiteilig',
-                         teile:['zeiger/nabe-b1.webp','zeiger/nabe-b2.webp','zeiger/nabe-b3.webp'],
-                         ant:[0.8873,0.8368,0.9483], r:[11.71,18.86,26.0]},
-                 exakt :{d:'zeiger/nabe-v9.webp', t:'exakt rund'},
-                 scharf:{d:'zeiger/nabe-v5.webp', t:'Textur (v5)'}};
+// loch = Radius des dunklen Fuellkreises (Lutz am 21.9.: "1" = dunkler
+// Fuellkreis wie in der alten Nabe). Das Loch im Bild sitzt bei 4,57.
+const DREI={ant:[0.8873,0.8368,0.9483], r:[11.71,18.86,26.0], loch:4.4};
+const NABENBILD={
+  drei  :{t:'dreiteilig', ...DREI,
+          teile:['zeiger/nabe-d1.webp','zeiger/nabe-d2.webp','zeiger/nabe-d3.webp']},
+  dreiroh:{t:'dreiteilig roh', ...DREI,
+          teile:['zeiger/nabe-a1.webp','zeiger/nabe-a2.webp','zeiger/nabe-a3.webp']},
+  dreiwarm:{t:'dreiteilig warm', ...DREI,
+          teile:['zeiger/nabe-e1.webp','zeiger/nabe-e2.webp','zeiger/nabe-e3.webp']},
+  exakt :{d:'zeiger/nabe-v9.webp', t:'exakt rund'},
+  scharf:{d:'zeiger/nabe-v5.webp', t:'Textur (v5)'}};
 let nabDrei=null;              // gesetzt, solange der dreiteilige Satz laeuft
 const NABGR=[22.2, 26, 30, 34, 38];     // waehlbare Scheibenradien
 let nabPlus=0;                          // Aufschlag auf den Radius des Zustands
@@ -653,7 +660,7 @@ function scheibenSetzen(nr){
       t.im.setAttribute('width',(he*2).toFixed(3)); t.im.setAttribute('height',(he*2).toFixed(3));
       t.cc.setAttribute('r',999);
     });
-    if(lo) lo.setAttribute('r',0);   // das Loch zeigt auf die Scheibe darunter
+    if(lo) lo.setAttribute('r',((nabDrei.loch||0)*f).toFixed(3));
     markZeichnen(); return;
   }
   const he=nr*NAB_F;                       // halbe Bildkante
@@ -1628,7 +1635,7 @@ setInterval(()=>{
   $('lend').onclick=()=>{ endeArt=endeArt?0:1; L.endeArt(endeArt); anwenden(true); };
   $('lort').onclick=()=>{ ortsStufe=(ortsStufe+1)%L.ORTSR.length; spiegeln(); speichern(); };
   $('lpk').onclick=()=>{ pruef=!pruef; spiegeln(); speichern(); };
-  const NBFOLGE=['drei','exakt','scharf'];
+  const NBFOLGE=['drei','dreiroh','dreiwarm','exakt','scharf'];
   $('lnbd').onclick=()=>{ nabBild = NBFOLGE[(NBFOLGE.indexOf(nabBild)+1)%NBFOLGE.length];
                           spiegeln(); speichern(); };
   $('lupd').onclick=()=>pruefeVersion(true,true,$('lupd'));
@@ -1719,7 +1726,7 @@ setInterval(()=>{
     L.pruefkreis(pruef);
     L.nabeBild(nabBild);
     $('lnbd').textContent='Nabe: '+L.NABENBILD[nabBild].t;
-    $('lnbd').classList.toggle('an', nabBild==='drei');
+    $('lnbd').classList.toggle('an', nabBild.slice(0,4)==='drei');
     $('lpk').classList.toggle('an', pruef);
     $('lend').textContent = 'Ende: ' + (endeArt ? 'Ring' : 'Spitze');
     $('lend').classList.toggle('an', !!endeArt);

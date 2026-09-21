@@ -583,7 +583,7 @@ ndimage.label` + `center_of_mass`) sagt: **1,10 px**. Eine Iteration brachte es
 auf 0,05 px. → Bei Löchern und Flächen immer den Schwerpunkt nehmen, nie den
 Strahlensucher; der ist nur für saubere, einzelne Kanten gut.
 
-**Ringbreiten und Farbe der dreiteiligen Nabe** (Labor v0.25). Lutz am 21.9.:
+**Ringbreiten und Farbe der dreiteiligen Nabe** (Labor v0.26). Lutz am 21.9.:
 „Die Ringe musst du von der Breite selbst richtig machen. Und eventuell auch
 von der Farbe und Glanz noch ein bisschen bearbeiten."
 
@@ -594,41 +594,50 @@ des obersten Scheibenradius fest im Bild, daraus folgt eindeutig
 
     0,610·r1 = r2 − r1 = 26 − r2   →   r1 = 26/2,220 = 11,71 ,  r2 = 18,86
 
-also Bänder 4,57→11,71→18,86→26,00, jedes **7,14 Einheiten** breit.
-⚠️ Die Wulst (der erhabene Rand) skaliert mit der jeweiligen Scheibe: gemessen
-0,062 / 0,055 / 0,047 des Radius → 0,73 / 1,04 / 1,22 Einheiten. Sie wächst
-also nach außen; bei 0,7 bis 1,2 px auf dem iPhone ist das nicht zu sehen.
-Gleich breite Wülste wären nur mit r1 ≈ 19,7 zu haben — unbrauchbar.
+also Bänder 4,57→11,71→18,86→26,00, jedes **7,14 Einheiten** breit. Ein
+Freiheitsgrad, drei Gleichungen, eine Lösung.
+⚠️ Die Wulst (der erhabene Rand) skaliert mit ihrer Scheibe: gemessen
+0,062 / 0,055 / 0,047 des Radius → 0,73 / 1,04 / 1,22 Einheiten, wächst also
+nach außen. Gleich breite Wülste gäbe es nur bei r1 ≈ 19,7 — unbrauchbar. Bei
+0,7 bis 1,2 px auf dem iPhone sieht man es ohnehin nicht.
 
-*Farbe — der Bezug sind die Zeiger, nicht die alte Nabe.* Gemessen auf der
-Messingfläche (alpha > 0,9):
+*Farbe — eine ganze Runde in die falsche Richtung, hier zum Nachlesen.*
+Gemessen auf der Messingfläche (alpha > 0,9), Textur = Streuung nach Abzug des
+9-px-Mittels:
 
-| | R / G / B | Helligkeit | Spanne p95−p5 | Sättigung |
+| | Helligkeit | G/B (Wärme) | Sättigung | Textur |
 |---|---|---|---|---|
-| `perl.webp` Schaft | 188 / 154 / 94 | 157 | (mit Gravur) | 0,536 |
-| `nabe-a1` (oben) | 187 / 153 / 90 | 156 | 105 | 0,530 |
-| `nabe-a2` (Mitte) | 183 / 151 / 90 | 153 | 94 | 0,520 |
-| `nabe-a3` (unten) | 149 / 116 / 67 | 120 | 86 | 0,558 |
-| `nabe-v9` (alt) | 158 / 119 / 59 | 124 | 119 | 0,648 |
+| `nabe-v9` innen / Mitte / außen | 166 / 133 / 94 | 1,82 / 2,02 / 2,33 | 0,56 / 0,63 / 0,72 | 8,1 / 16,1 / 18,2 |
+| Lutz' drei Scheiben (a1/a2/a3) | 159 / 155 / 118 | 1,67 / 1,66 / 1,72 | 0,52 / 0,51 / 0,56 | **11,0 / 2,6 / 5,7** |
+| `perl.webp` (die Zeiger) | 157 | 1,64 | 0,54 | |
 
-Die oberste Scheibe trifft den Zeigerton **auf drei Einheiten genau** — der
-Farbton bleibt deshalb unangetastet. Geändert wurden nur zwei Dinge
-(`nabe-b1/b2/b3.webp`):
-1. **Helligkeit gleichmäßig gestuft**: 156 / 153 / 120 war 2+1 (die oberen
-   beiden nicht unterscheidbar), jetzt **156 / 139 / 120**.
-2. **Glanz**: Spanne aller drei auf **112** angehoben (alte Nabe 119, vorher
-   105/94/86). Faktoren 1,07 / 1,19 / 1,31, dabei unter 0,9 % abgeschnittene
-   Pixel.
-Gerechnet wird auf der Helligkeit, RGB wird nur proportional skaliert — Farbton
-und Sättigung bleiben damit erhalten.
+**Was ich falsch gemacht habe (v0.25, Satz `b`):** Ich habe die Helligkeit
+gestuft (156/139/120) und den Kontrast aller drei angehoben. Lutz: „Die 3
+passen farblich noch nicht so gut, wie sie vorher waren." Er hatte recht, und
+die Tabelle sagt warum: **die alte Nabe unterscheidet sich in ihren eigenen
+Zonen um 72 Helligkeitsstufen** — mehr als Lutz' drei Scheiben mit 41. Die
+Helligkeit war also nie das Problem, ich habe an der falschen Größe gedreht.
+Ein zweiter Versuch (`c`: alle auf einen Farbton ziehen und die Textur
+anheben) war noch schlechter — die Außenscheibe wurde körnig und schmutzig.
+**Beide Sätze sind gelöscht, nicht wiederholen.**
 
-*Im Labor:* Der Knopf `#lnbd` schaltet jetzt **drei** Sätze durch,
-Voreinstellung ist **dreiteilig**. ⚠️ Der Satz `drei` funktioniert anders als
-die beiden anderen: dort wird **ein** Bild dreimal beschnitten, hier sind es
-drei eigene Scheiben mit eigenem Rand — also `cc.r = 999` (kein Clip),
-`nabLoch.r = 0` (das Loch zeigt auf die Scheibe darunter) und je Scheibe eine
-eigene Bildbox `halbe Kante = r/ant`. `nabDrei` trägt den Zustand; `markZeichnen`
-muss den echten Radius nehmen, nicht den Clip (der steht auf 999).
+**Der einzige Ausreißer ist die Textur der Mittelscheibe: 2,6 gegen 11,0 und
+5,7.** Sie ist glatt wie Glas, die Nachbarn nicht — daran zerfällt der Eindruck
+„ein Stück Metall". Satz `d` hebt genau das an (2,6 → 6,7, Faktor 2,6 auf die
+Feinstruktur) und **fässt sonst nichts an**. Das ist der Stand im Labor.
+
+Im Labor stehen fünf Sätze über `#lnbd`:
+`dreiteilig` (= `d`, Voreinstellung) · `dreiteilig roh` (= `a`, Lutz'
+Originale) · `dreiteilig warm` (= `e`, G/B auf die Werte der alten Nabe
+gezogen — im Render **zu gelb** gegenüber den Zeigern) · `exakt rund` (v9) ·
+`Textur (v5)`.
+
+⚠️ Der Satz `drei*` funktioniert anders als die beiden einteiligen: dort wird
+**ein** Bild dreimal beschnitten, hier sind es drei eigene Scheiben mit eigenem
+Rand — also `cc.r = 999` (kein Clip), je Scheibe eine eigene Bildbox
+`halbe Kante = r/ant`, und der dunkle Füllkreis `nabLoch` auf **4,4** (Lutz'
+Wahl „1"), der mit der Nabengröße mitskaliert. `nabDrei` trägt den Zustand;
+`markZeichnen` muss den echten Radius nehmen, nicht den Clip.
 
 **Rundheit aller Messingteile, gemessen am 20.9.** (senkrecht gegen waagerecht):
 
